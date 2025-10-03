@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>السيرة الذاتية - TIGIST GIRMA AYADA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: hsl(213, 47%, 27%);
+            --secondary-color: hsl(207, 77%, 45%);
+            --background-color: hsl(0, 0%, 94%);
+            --sidebar-bg: hsl(0, 0%, 100%);
+            --text-color: hsl(204, 44%, 29%);
+            --label-color: hsl(0, 0%, 47%);
+            --border-color: hsl(0, 0%, 78%);
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 500;
+            font-size: 1.2rem;
+            background-color: #e0e0e0;
+            margin: 0;
+            padding: 30px;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-weight: bold;
+        }
+
+        .cv-container {
+            display: flex;
+            width: 210mm;
+            height: 297mm;
+            background-color: var(--sidebar-bg);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sidebar {
+            background-color: var(--primary-color);
+            color: white;
+            /* padding: 10px; */
+            /* width: 35%; */
+            padding-left: 10px;
+            padding-bottom: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-right: 10px;
+        }
+
+        .profile-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-pic-wrapper {
+    width: 200px;
+    height: 250px;
+    /* border-radius: 50%; */
+    overflow: hidden;
+    margin: 0 auto 20px;
+    border: 5px solid #43dacb;
+    border-top: #43dacb;
+    border-bottom-right-radius: 2100px;
+    border-bottom-left-radius: 2100px;
+}
+
+        .header-logo {
+            width: 400px;
+            height: 110px;
+        }
+
+        .profile-pic {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .name {
+            font-size: 1.8rem;
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .title {
+            font-size: 1.2rem;
+            color: white;
+            font-weight: 500;
+        }
+
+        .sidebar-section {
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        .sidebar-header {
+            font-size: 1.3rem;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        .passport-details p,
+        .experience-details p {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .label {
+            font-weight: 500;
+        }
+
+        .value {
+            font-weight: 400;
+            text-align: left;
+        }
+
+        .footer-sidebar {
+            margin-top: auto;
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #4a627a;
+            width: 100%;
+        }
+
+        .flag {
+            width: 200px;
+            margin-bottom: 10px;
+        }
+
+        .code {
+            display: block;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .main-content {
+            padding: 40px;
+            width: 55%;
+            background-color: #e9e9e9;
+        }
+
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            max-height: 60px;
+        }
+
+        .section-header {
+            font-size: 1.6rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .job-info {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .info-box {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            flex-grow: 1;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .info-box .label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--label-color);
+            margin-bottom: 5px;
+        }
+
+        .info-box .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px 30px;
+        }
+
+        .details-grid p {
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            border-right: 4px solid var(--secondary-color);
+            margin: 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .languages .details-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .language-item {
+            display: grid;
+            grid-template-columns: 100px 1fr 80px;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .language-item .label {
+            font-weight: 700;
+        }
+
+        .skill-bar {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .skill-level {
+            height: 100%;
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            /* align-content: stretch; */
+            align-items: center;
+            padding-bottom: 10px;
+        }
+
+        .skill-tag-group {
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .tag {
+            background-color: #2ecc71;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .watermark {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .watermark-text {
+            font-size: 7vw;
+            font-weight: bold;
+            color: rgba(0, 0, 0, 0.08);
+            transform: rotate(-30deg);
+            padding: 3vw;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+
+            .cv-container {
+                flex-direction: column;
+                border-radius: 0;
+            }
+
+            .sidebar,
+            .main-content {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .skills-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="watermark">
+        <span class="watermark-text">QSO</span><span class="watermark-text">QSO</span><span
+            class="watermark-text">QSO</span><span class="watermark-text">QSO</span>
+        <span class="watermark-text">QSO</span><span class="watermark-text">QSO</span><span
+            class="watermark-text">QSO</span><span class="watermark-text">QSO</span>
+        <span class="watermark-text">QSO</span><span class="watermark-text">QSO</span><span
+            class="watermark-text">QSO</span><span class="watermark-text">QSO</span>
+        <span class="watermark-text">QSO</span><span class="watermark-text">QSO</span><span
+            class="watermark-text">QSO</span><span class="watermark-text">QSO</span>
+        <span class="watermark-text">QSO</span><span class="watermark-text">QSO</span><span
+            class="watermark-text">QSO</span><span class="watermark-text">QSO</span>
+        <span class="watermark-text">QSO</span><span class="watermark-text">QSO</span><span
+            class="watermark-text">QSO</span><span class="watermark-text">QSO</span>
+    </div>
+    <div class="cv-container">
+        <aside class="sidebar">
+            <div class="profile-section">
+                <div class="profile-pic-wrapper">
+                    <img src="1527009139396.jpeg" alt="صورة المرشحة" class="profile-pic">
+                </div>
+
+                <img src="1.png" alt="صورة المرشحة" style="width:250px;border-radius:20px" class="frame-1">
+
+                <h1 class="name">TIGIST GIRMA AYADA</h1>
+                <p class="title">تيقيست جيرما أبادا</p>
+            </div>
+
+            <section class="sidebar-section">
+                <img src="2.png" alt="صورة المرشحة" style="width:250px;border-radius:20px" class="frame-1">
+
+                <div class="passport-details">
+                    <p><span class="label">الرقم</span><span class="value">EP9117881</span></p>
+                    <p><span class="label">تاريخ الاصدار</span><span class="value">2024/08/20</span></p>
+                    <p><span class="label">تاريخ الانتهاء</span><span class="value">2029/08/19</span></p>
+                    <p><span class="label">مكان الاصدار</span><span class="value">ARSI</span></p>
+                </div>
+            </section>
+
+            <section class="sidebar-section">
+                <img src="3.png" alt="صورة المرشحة" style="width:250px;border-radius:20px" class="frame-1">
+                <div class="experience-details">
+                    <p><span class="label">البلد</span><span class="value">السعودية</span></p>
+                    <p><span class="label">المدة</span><span class="value">٢</span></p>
+                </div>
+            </section>
+
+            <div class="footer-sidebar">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/Flag_of_Ethiopia.svg" alt="علم إثيوبيا"
+                    class="flag">
+                <span class="code">CODE: ED-0019</span>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <img src="image.jpg" alt="شعار وزارة الموارد البشرية والتنمية الاجتماعية" class="header-logo">
+            </header>
+
+            <section class="job-info">
+                <div class="info-box">
+                    <span class="label">الوظيفة المطلوبة</span>
+                    <span class="value">عاملة منزلية</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">الدولة المطلوبة</span>
+                    <span class="value">السعودية</span>
+                </div>
+                <div class="info-box">
+                    <span class="label">الراتب</span>
+                    <span class="value">١٢٠٠ ريال</span>
+                </div>
+            </section>
+
+            <section class="personal-info">
+                <img src="6.png" alt="صورة المرشحة" style="width:500px;margin-bottom: 5px;border-radius:20px"
+                    class="frame-1">
+                <div class="details-grid">
+                    <p><span class="label">الجنسية</span><span class="value">أثيوبيا</span></p>
+                    <p><span class="label">الديانة</span><span class="value">الإسلام</span></p>
+                    <p><span class="label">تاريخ الميلاد</span><span class="value">١٩٨٧/١١/١٦</span></p>
+                    <p><span class="label">العمر</span><span class="value">٣٧</span></p>
+                    <p><span class="label">مكان الميلاد</span><span class="value">ARSI</span></p>
+                    <p><span class="label">مكان السكن</span><span class="value">ARSI</span></p>
+                    <p><span class="label">الحالة الإجتماعية</span><span class="value">عزباء</span></p>
+                    <p><span class="label">عدد الاطفال</span><span class="value">٥</span></p>
+                    <p><span class="label">الوزن</span><span class="value">٥٩ كجم</span></p>
+                    <p><span class="label">الطول</span><span class="value">١٦٥ سم</span></p>
+                    <p><span class="label">لون البشرة</span><span class="value">بني فاتح</span></p>
+                    <p><span class="label">الدرجة العلمية</span><span class="value">متوسطة</span></p>
+                </div>
+            </section>
+
+            <section class="languages">
+                <img src="5.png" alt="صورة المرشحة"
+                    style="width:500px;margin-bottom: 5px;margin-top: 15px;border-radius:20px" class="frame-1">
+                <div class="details-grid">
+                    <div class="language-item">
+                        <span class="label">الانجليزية</span>
+                        <div class="skill-bar">
+                            <div class="skill-level" style="width: 25%;"></div>
+                        </div>
+                        <span class="value">لا تجيد</span>
+                    </div>
+                    <div class="language-item">
+                        <span class="label">العربية</span>
+                        <div class="skill-bar">
+                            <div class="skill-level" style="width: 75%;"></div>
+                        </div>
+                        <span class="value">جيدة</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="skills-experience">
+                <img src="4.png" alt="صورة المرشحة"
+                    style="width:500px;margin-bottom: 5px;margin-top: 15px;border-radius:20px" class="frame-1">
+                <div class="skills-grid">
+                    <div class="skill-tag-group">
+                        <span>رعاية الاطفال</span><span class="tag">نعم</span>
+                    </div>
+                    <div class="skill-tag-group">
+                        <span>كي الملابس</span><span class="tag">نعم</span>
+                    </div>
+                    <div class="skill-tag-group">
+                        <span>العناية بالاطفال</span><span class="tag">نعم</span>
+                    </div>
+                    <div class="skill-tag-group">
+                        <span>الطبخ</span><span class="tag">نعم</span>
+                    </div>
+                    <div class="skill-tag-group">
+                        <span>التنظيف</span><span class="tag">نعم</span>
+                    </div>
+                    <div class="skill-tag-group">
+                        <span>العمل المنزلي</span><span class="tag">نعم</span>
+                    </div>
+                    <div class="skill-tag-group">
+                        <span>الغسيل</span><span class="tag">نعم</span>
+                    </div>
+                    <div class="skill-tag-group">
+                        <span>الطبخ العربي</span><span class="tag">نعم</span>
+                    </div>
+                    <div class="skill-tag-group">
+                        <span>مستعدة للتعلم</span><span class="tag">نعم</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>

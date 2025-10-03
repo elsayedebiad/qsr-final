@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  name          String
+  password      String
+  role          Role           @default(USER)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  activities    ActivityLog[]
+  bookedCVs     Booking[]      @relation("BookedCVs")
+  createdCVs    CV[]           @relation("CVCreatedBy")
+  updatedCVs    CV[]           @relation("CVUpdatedBy")
+  notifications Notification[]
+  sessions      Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model CV {
+  id                 Int            @id @default(autoincrement())
+  fullName           String
+  fullNameArabic     String?
+  email              String?
+  phone              String?
+  referenceCode      String?        @unique
+  monthlySalary      String?
+  contractPeriod     String?
+  position           String?
+  passportNumber     String?        @unique
+  passportIssueDate  String?
+  passportExpiryDate String?
+  passportIssuePlace String?
+  nationality        String?
+  religion           String?
+  dateOfBirth        String?
+  placeOfBirth       String?
+  livingTown         String?
+  maritalStatus      MaritalStatus?
+  numberOfChildren   Int?
+  weight             String?
+  height             String?
+  complexion         String?
+  age                Int?
+  englishLevel       SkillLevel?
+  arabicLevel        SkillLevel?
+  babySitting        SkillLevel?
+  childrenCare       SkillLevel?
+  tutoring           SkillLevel?
+  disabledCare       SkillLevel?
+  cleaning           SkillLevel?
+  washing            SkillLevel?
+  ironing            SkillLevel?
+  arabicCooking      SkillLevel?
+  sewing             SkillLevel?
+  driving            SkillLevel?
+  previousEmployment String?
+  profileImage       String?
+  cvImageUrl         String?  // رابط صورة السيرة الكاملة المصممة
+  videoLink          String?
+  experience         String?
+  education          String?
+  skills             String?
+  summary            String?
+  content            String?
+  notes              String?
+  attachments        String?
+  status             CVStatus       @default(NEW)
+  priority           Priority       @default(MEDIUM)
+  source             String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  createdById        Int
+  updatedById        Int?
+  cooking            SkillLevel?
+  educationLevel     String?
+  elderCare          SkillLevel?
+  housekeeping       SkillLevel?
+  activities         ActivityLog[]
+  booking            Booking?
+  contract           Contract?
+  versions           CVVersion[]
+  createdBy          User           @relation("CVCreatedBy", fields: [createdById], references: [id])
+  updatedBy          User?          @relation("CVUpdatedBy", fields: [updatedById], references: [id])
+
+  @@map("cvs")
+}
+
+model CVVersion {
+  id        Int      @id @default(autoincrement())
+  cvId      Int
+  content   String
+  version   Int
+  createdAt DateTime @default(now())
+  createdBy Int
+  cv        CV       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@unique([cvId, version])
+  @@map("cv_versions")
+}
+
+model Booking {
+  id             Int      @id @default(autoincrement())
+  cvId           Int      @unique
+  identityNumber String
+  notes          String?
+  bookedAt       DateTime @default(now())
+  bookedById     Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  bookedBy       User     @relation("BookedCVs", fields: [bookedById], references: [id])
+  cv             CV       @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@map("bookings")
+}
+
+model Contract {
+  id                Int       @id @default(autoincrement())
+  cvId              Int       @unique
+  identityNumber    String
+  contractStartDate DateTime  @default(now())
+  contractEndDate   DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  cv                CV        @relation(fields: [cvId], references: [id], onDelete: Cascade)
+
+  @@map("contracts")
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  title     String
+  message   String
+  type      NotificationType
+  category  String
+  data      String?
+  isRead    Boolean          @default(false)
+  userId    Int
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  cvId        Int?
+  action      String
+  description String
+  metadata    Json?
+  targetType  String?
+  targetId    String?
+  targetName  String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  cv          CV?      @relation(fields: [cvId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}
+
+model SalesConfig {
+  id             String   @id @default(cuid())
+  salesPageId    String   @unique
+  whatsappNumber String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("sales_configs")
+}
+
+enum Role {
+  ADMIN
+  SUB_ADMIN
+  USER
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum CVStatus {
+  NEW
+  BOOKED
+  HIRED
+  REJECTED
+  RETURNED
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum SkillLevel {
+  YES
+  NO
+  WILLING
+}
+
+enum ActivityType {
+  CV_CREATED
+  CV_UPDATED
+  CV_DELETED
+  CV_STATUS_CHANGED
+  CV_EXPORTED
+  USER_LOGIN
+  USER_LOGOUT
+  EXCEL_IMPORT
+}

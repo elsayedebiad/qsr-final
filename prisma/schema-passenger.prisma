@@ -1,0 +1,26 @@
+model Passenger {
+  id              Int       @id @default(autoincrement())
+  passportNumber  String    @unique
+  name            String
+  nameArabic      String?
+  dateOfBirth     DateTime?
+  nationality     String?
+  address         String?
+  phone           String?
+  email          String?
+  
+  // Tracking fields
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdById    Int?
+  updatedById    Int?
+  lastImportAt   DateTime?
+  importSource   String?   // Name of the Excel file that last updated this record
+  
+  // Relations
+  createdBy      User?     @relation("PassengerCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User?     @relation("PassengerUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([passportNumber])
+  @@map("passengers")
+}
