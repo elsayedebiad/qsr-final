@@ -851,27 +851,23 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
-              {/* خلفية العلم الكبيرة */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                <div className="text-[150px] sm:text-[180px] leading-none">🇵🇭</div>
-              </div>
-              
-              {/* تراكب شفاف */}
+              {/* تراكب ملون */}
               <div className={`absolute inset-0 transition-all duration-300 ${
                 nationalityFilter === 'FILIPINO' && religionFilter === 'MUSLIM'
-                  ? 'bg-gradient-to-br from-[#1e3a8a]/95 to-[#1e40af]/95'
-                  : 'bg-gradient-to-br from-gray-900/60 to-gray-800/60 group-hover:from-gray-900/70 group-hover:to-gray-800/70'
+                  ? 'bg-gradient-to-br from-blue-600 to-blue-800'
+                  : 'bg-gradient-to-br from-indigo-500 to-purple-600 group-hover:from-indigo-600 group-hover:to-purple-700'
               }`}></div>
               
               {/* المحتوى */}
               <div className="relative p-4 sm:p-6 flex flex-col items-center justify-center min-h-[120px] sm:min-h-[140px] z-10">
+                {/* العلم */}
+                <div className="mb-3 text-5xl sm:text-6xl">🇵🇭</div>
+                
                 <h3 className="text-white font-bold text-base sm:text-lg mb-2 drop-shadow-lg">فلبينية</h3>
-                <p className="text-white/90 text-xs sm:text-sm mb-3 drop-shadow-lg flex items-center gap-1">
-                  <span>🕌</span>
-                  <span>مسلم</span>
-                </p>
-                <div className="bg-white rounded-full px-5 py-2.5 shadow-lg">
-                  <span className="text-[#1e3a8a] font-bold text-xl sm:text-2xl">
+                <p className="text-white/90 text-xs sm:text-sm mb-3 drop-shadow-lg">مسلم</p>
+                
+                <div className="bg-white rounded-lg px-6 py-3 shadow-xl">
+                  <span className="text-blue-600 font-bold text-2xl sm:text-3xl">
                     {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'FILIPINO') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length}
                   </span>
                 </div>
@@ -1088,23 +1084,24 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-[120px] leading-none opacity-90">🚗</div>
-              </div>
+              {/* تراكب ملون */}
               <div className={`absolute inset-0 transition-all duration-300 ${
                 drivingFilter === 'YES'
-                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
-                  : 'bg-black/20 group-hover:bg-black/30'
+                  ? 'bg-gradient-to-br from-green-600 to-green-800'
+                  : 'bg-gradient-to-br from-emerald-500 to-teal-600 group-hover:from-emerald-600 group-hover:to-teal-700'
               }`}></div>
-              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
-                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">سائق خاص</h3>
-                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
-                  <span>🚘</span>
-                  <span>قيادة</span>
-                </p>
-                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
-                  <span className="text-[#1e3a8a] font-bold text-sm">
-                    {cvs.filter(cv => cv.driving === 'YES').length} سيرة
+              
+              {/* المحتوى */}
+              <div className="relative p-4 sm:p-6 flex flex-col items-center justify-center min-h-[120px] sm:min-h-[140px] z-10">
+                {/* الأيقونة */}
+                <div className="mb-3 text-5xl sm:text-6xl">🚗</div>
+                
+                <h3 className="text-white font-bold text-base sm:text-lg mb-2 drop-shadow-lg">سائق خاص</h3>
+                <p className="text-white/90 text-xs sm:text-sm mb-3 drop-shadow-lg">قيادة</p>
+                
+                <div className="bg-white rounded-lg px-6 py-3 shadow-xl">
+                  <span className="text-green-600 font-bold text-2xl sm:text-3xl">
+                    {cvs.filter(cv => cv.driving === 'YES').length}
                   </span>
                 </div>
               </div>
@@ -1164,23 +1161,24 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-[120px] leading-none opacity-90">🔄</div>
-              </div>
+              {/* تراكب ملون */}
               <div className={`absolute inset-0 transition-all duration-300 ${
                 statusFilter === CVStatus.RETURNED
-                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
-                  : 'bg-black/20 group-hover:bg-black/30'
+                  ? 'bg-gradient-to-br from-orange-600 to-orange-800'
+                  : 'bg-gradient-to-br from-amber-500 to-orange-600 group-hover:from-amber-600 group-hover:to-orange-700'
               }`}></div>
-              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
-                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">نقل خدمات</h3>
-                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
-                  <span>📋</span>
-                  <span>معاد</span>
-                </p>
-                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
-                  <span className="text-[#1e3a8a] font-bold text-sm">
-                    {cvs.filter(cv => cv.status === CVStatus.RETURNED).length} سيرة
+              
+              {/* المحتوى */}
+              <div className="relative p-4 sm:p-6 flex flex-col items-center justify-center min-h-[120px] sm:min-h-[140px] z-10">
+                {/* الأيقونة */}
+                <div className="mb-3 text-5xl sm:text-6xl">🔄</div>
+                
+                <h3 className="text-white font-bold text-base sm:text-lg mb-2 drop-shadow-lg">نقل خدمات</h3>
+                <p className="text-white/90 text-xs sm:text-sm mb-3 drop-shadow-lg">معاد</p>
+                
+                <div className="bg-white rounded-lg px-6 py-3 shadow-xl">
+                  <span className="text-orange-600 font-bold text-2xl sm:text-3xl">
+                    {cvs.filter(cv => cv.status === CVStatus.RETURNED).length}
                   </span>
                 </div>
               </div>
