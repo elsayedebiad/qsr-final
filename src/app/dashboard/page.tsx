@@ -1529,7 +1529,6 @@ export default function CVsPage() {
                             </button>
                           )}
                           {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
-                          <>
                             <button
                               onClick={() => openBookingModal(cv)}
                               className="p-2 text-warning hover:text-warning/80 hover:bg-warning/10 rounded-lg"
@@ -1537,6 +1536,9 @@ export default function CVsPage() {
                             >
                               <Bookmark className="h-5 w-5" />
                             </button>
+                        )}
+                        {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                          <>
                             <button
                               onClick={() => {
                                 setContractingCv(cv)
