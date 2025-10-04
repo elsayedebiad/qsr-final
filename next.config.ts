@@ -15,13 +15,28 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
-    serverComponentsExternalPackages: ['xlsx', 'sharp', 'puppeteer-core'],
+    serverComponentsExternalPackages: ['xlsx', 'sharp', 'puppeteer-core', '@prisma/client', 'prisma'],
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
       // تقليل حجم الـbundle للـserver
-      config.externals = [...(config.externals || []), 'puppeteer', 'puppeteer-core', 'chrome-aws-lambda'];
+      config.externals = [...(config.externals || []), 
+        'puppeteer', 
+        'puppeteer-core', 
+        'chrome-aws-lambda',
+        '@prisma/client',
+        'prisma'
+      ];
     }
+    
+    // إضافة fallbacks للـNode.js modules
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    };
+    
     return config;
   },
   images: {

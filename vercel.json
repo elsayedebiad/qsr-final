@@ -17,9 +17,11 @@
   },
   "build": {
     "env": {
-      "SKIP_ENV_VALIDATION": "1"
+      "SKIP_ENV_VALIDATION": "1",
+      "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true"
     }
   },
+  "installCommand": "npm install && npx prisma generate",
   "rewrites": [
     {
       "source": "/uploads/(.*)",

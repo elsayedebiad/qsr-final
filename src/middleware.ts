@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { checkDeveloperActivation } from './lib/check-developer-activation'
 
+// Middleware مبسط لا يستخدم قاعدة البيانات
+// لأن Edge Runtime لا يدعم Prisma Client
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -11,12 +12,11 @@ export async function middleware(request: NextRequest) {
     '/payment-required',
     '/setup-developer',
     '/developer-control',
-    '/api/create-developer',
-    '/api/developer',
-    '/api/auth',
+    '/api/',
     '/_next',
     '/favicon.ico',
-    '/uploads'
+    '/uploads',
+    '/banners'
   ]
 
   // التحقق من أن المسار ليس من المسارات العامة
@@ -26,45 +26,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // التحقق من أن المستخدم ليس المطور
-  const token = request.cookies.get('token')?.value || 
-                request.headers.get('authorization')?.replace('Bearer ', '')
+  // التحقق من وجود token (فحص بسيط)
+  const token = request.cookies.get('token')?.value
   
-  let isDeveloper = false
-  if (token) {
-    try {
-      const jwt = require('jsonwebtoken')
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
-      // التحقق من البريد الإلكتروني للمطور
-      const { db } = await import('./lib/db')
-      const user = await db.user.findUnique({ where: { id: decoded.userId } })
-      isDeveloper = user?.email === 'developer@system.local'
-    } catch (error) {
-      // تجاهل أخطاء التحقق من التوكن
-    }
-  }
-
-  // المطور يمكنه الوصول دائماً
-  if (isDeveloper) {
-    return NextResponse.next()
-  }
-
-  // التحقق من تفعيل حساب المطور (مع معالجة الأخطاء)
-  try {
-    const isDeveloperActive = await checkDeveloperActivation()
-
-    if (!isDeveloperActive && pathname !== '/payment-required') {
-      // إعادة توجيه إلى صفحة الدفع المطلوب
-      return NextResponse.redirect(new URL('/payment-required', request.url))
-    }
-
-    // إذا كان المطور مفعل والمستخدم في صفحة الدفع، إعادة توجيه للداشبورد
-    if (isDeveloperActive && pathname === '/payment-required') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-  } catch (error) {
-    // في حالة الخطأ، السماح بالمرور (لتجنب تعطيل النظام)
-    console.error('Middleware error:', error)
+  // إذا لم يكن هناك token وليس في صفحة login، إعادة توجيه لصفحة login
+  if (!token && pathname !== '/login') {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return NextResponse.next()
