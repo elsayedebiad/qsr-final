@@ -70,21 +70,22 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ تم تحويل البنر إلى Base64 (${(base64.length / 1024).toFixed(2)} KB)`)
 
-    // حفظ في قاعدة البيانات مع الصورة كـ Base64
+    // حفظ في قاعدة البيانات
+    // مؤقتاً: نستخدم imageUrl حتى تشغيل SQL migration
+    // بعد Migration: سيُحفظ في imageData تلقائياً
     const banner = await db.banner.create({
       data: {
         salesPageId,
         deviceType: deviceType as 'MOBILE' | 'DESKTOP',
-        imageData, // حفظ الصورة كـ Base64 في قاعدة البيانات
+        imageUrl: imageData, // حفظ Base64 في imageUrl مؤقتاً
         order,
         isActive: true
       }
     })
 
-    // إرجاع البنر بدون imageData (لتقليل حجم Response)
-    const { imageData: _, ...bannerWithoutImage } = banner
+    // إرجاع البنر بنجاح
     return NextResponse.json({
-      ...bannerWithoutImage,
+      ...banner,
       hasImage: true
     })
   } catch (error) {

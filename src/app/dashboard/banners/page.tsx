@@ -7,8 +7,8 @@ import { Upload, Trash2, Eye, EyeOff, Monitor, Smartphone, Plus, Save } from 'lu
 interface Banner {
   id: number
   salesPageId: string
-  imageUrl?: string // اختياري - للتوافق القديم
-  imageData?: string // Base64 data - محفوظة في قاعدة البيانات
+  imageUrl: string // Base64 data - محفوظة في قاعدة البيانات
+  imageData?: string // للمستقبل
   deviceType: 'MOBILE' | 'DESKTOP'
   order: number
   isActive: boolean
@@ -199,7 +199,7 @@ export default function BannersManagementPage() {
                     }`}
                   >
                     <img
-                      src={banner.imageData || banner.imageUrl}
+                      src={banner.imageUrl || banner.imageData}
                       alt={`Banner ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg mb-3"
                     />
@@ -289,7 +289,7 @@ export default function BannersManagementPage() {
                     }`}
                   >
                     <img
-                      src={banner.imageData || banner.imageUrl}
+                      src={banner.imageUrl || banner.imageData}
                       alt={`Banner ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg mb-3"
                     />
