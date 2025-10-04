@@ -24,12 +24,24 @@ export async function POST(request: NextRequest) {
       // Don't fail the login if activity logging fails
     }
 
-    return NextResponse.json({
+    // Create response with cookie
+    const response = NextResponse.json({
       message: 'تم تسجيل الدخول بنجاح',
       user: loginResult.user,
       token: loginResult.token,
       session: loginResult.session
     })
+
+    // Set token as httpOnly cookie
+    response.cookies.set('token', loginResult.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    })
+
+    return response
 
   } catch (error) {
     console.error('Login error:', error)

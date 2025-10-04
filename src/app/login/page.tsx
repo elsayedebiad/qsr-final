@@ -34,15 +34,11 @@ export default function LoginPage() {
         
         toast.success(`أهلاً وسهلاً ${data.user.name}`)
         
-        // التحقق من حالة تفعيل النظام
-        const isActivated = localStorage.getItem('system_activated')
-        if (isActivated === 'true') {
-          // النظام مفعل، توجيه للداشبورد
+        // توجيه مباشر للداشبورد بعد تسجيل الدخول الناجح
+        setTimeout(() => {
           router.push('/dashboard')
-        } else {
-          // النظام غير مفعل، توجيه لصفحة التفعيل
-          router.push('/activation')
-        }
+          router.refresh()
+        }, 500)
       } else {
         toast.error(data.error || 'فشل في تسجيل الدخول')
       }
