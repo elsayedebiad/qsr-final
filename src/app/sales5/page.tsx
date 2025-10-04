@@ -1034,7 +1034,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   <span className="text-white font-bold text-3xl">
                     {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'UGANDAN')).length}
                   </span>
-                </div>
+              </div>
               </div>
             </div>
 
