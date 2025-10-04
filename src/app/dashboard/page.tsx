@@ -1528,7 +1528,7 @@ export default function CVsPage() {
                               <Play className="h-5 w-5" />
                             </button>
                           )}
-                          {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                          {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                           <>
                             <button
                               onClick={() => openBookingModal(cv)}
