@@ -830,11 +830,6 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
             </div>
           </div>
 
-          {/* نص توجيهي */}
-          <div className="text-center mb-4">
-            <p className="text-xl font-bold text-[#1e3a8a]">اضغط على الجنسية المطلوبة 👇</p>
-          </div>
-
           {/* البانرات الإعلانية */}
           <div className="mb-6 space-y-4">
             {/* بانر 1 - PC */}
@@ -872,6 +867,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                 className="w-full h-auto object-cover"
               />
             </div>
+          </div>
+
+          {/* نص توجيهي */}
+          <div className="text-center mb-4">
+            <p className="text-xl font-bold text-[#1e3a8a]">اضغط على الجنسية المطلوبة 👇</p>
           </div>
 
           {/* مربعات الفلاتر السريعة - بتصميم qsr.sa محسّن */}
