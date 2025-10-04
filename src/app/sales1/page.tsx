@@ -1144,15 +1144,14 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             <select
               className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] transition-all"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as CVStatus | 'ALL')}
+              value={religionFilter}
+              onChange={(e) => setReligionFilter(e.target.value)}
             >
-              <option value="ALL">جميع الحالات</option>
-              <option value={CVStatus.NEW}>جديد</option>
-              <option value={CVStatus.BOOKED}>محجوز</option>
-              <option value={CVStatus.REJECTED}>مرفوض</option>
-              <option value={CVStatus.RETURNED}>معاد</option>
-              <option value={CVStatus.ARCHIVED}>مؤرشف</option>
+              <option value="ALL">اختر الديانة</option>
+              <option value="MUSLIM">مسلم 🕌</option>
+              <option value="CHRISTIAN">مسيحي ✝️</option>
+              <option value="BUDDHIST">بوذي ☸️</option>
+              <option value="HINDU">هندوسي 🕉️</option>
             </select>
 
             <select
