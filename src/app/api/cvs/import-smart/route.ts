@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { processImage } from '@/lib/image-processor'
+import { NotificationService } from '@/lib/notification-service'
 
 // استخدام dynamic imports لتقليل حجم الـbundle
 // import * as XLSX from 'xlsx' - سيتم تحميله عند الحاجة
-// import { processImage } from '@/lib/image-processor' - سيتم تحميله عند الحاجة
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -246,74 +247,52 @@ const checkForDuplicates = async (cv: ProcessedCV, processedPassports: Set<strin
   try {
     // فحص التكرار بناءً على الكود المرجعي (له قيد unique في قاعدة البيانات)
     if (cv.referenceCode && cv.referenceCode.trim()) {
-      const referenceCode = cv.referenceCode.trim()
-      
-      const existingByRefCode = await db.cV.findFirst({
-        where: { referenceCode: referenceCode },
-        select: {
-          id: true,
-          fullName: true,
-          referenceCode: true
+      try {
+        const referenceCode = cv.referenceCode.trim()
+        
+        const existingByRefCode = await db.cV.findFirst({
+          where: { referenceCode: referenceCode },
+          select: {
+            id: true,
+            fullName: true,
+            referenceCode: true
+          }
+        })
+        
+        if (existingByRefCode) {
+          console.log(`✅ تم العثور على تكرار بالكود المرجعي: ${referenceCode} موجود مسبقاً للشخص ${existingByRefCode.fullName} (ID: ${existingByRefCode.id})`)
+          return { 
+            isDuplicate: true, 
+            existingId: existingByRefCode.id,
+            reason: `الكود المرجعي موجود مسبقاً في قاعدة البيانات للشخص: ${existingByRefCode.fullName}` 
+          }
         }
-      })
-      
-      if (existingByRefCode) {
-        console.log(`تم العثور على تكرار بالكود المرجعي: ${referenceCode} موجود مسبقاً للشخص ${existingByRefCode.fullName} (ID: ${existingByRefCode.id})`)
-        return { 
-          isDuplicate: true, 
-          existingId: existingByRefCode.id,
-          reason: `الكود المرجعي موجود مسبقاً في قاعدة البيانات للشخص: ${existingByRefCode.fullName}` 
-        }
+      } catch (refCodeError) {
+        console.error('خطأ في فحص الكود المرجعي:', refCodeError)
+        // Continue with other checks even if reference code check fails
       }
     }
     
     // فحص التكرار بناءً على رقم جواز السفر
     if (cv.passportNumber && cv.passportNumber.trim()) {
-      const passportNumber = cv.passportNumber.trim().toUpperCase() // تحويل إلى أحرف كبيرة للمقارنة
-      
-      // فحص التكرار في نفس الملف المرفوع
-      if (processedPassports.has(passportNumber)) {
-        return { 
-          isDuplicate: true, 
-          existingId: null, 
-          reason: 'رقم جواز السفر مكرر في نفس الملف' 
-        }
-      }
-      
-      // فحص التكرار في قاعدة البيانات باستخدام البحث الغير حساس للحالة
-      const existingByPassport = await db.cV.findFirst({
-        where: { 
-          passportNumber: {
-            equals: passportNumber,
-            mode: 'insensitive'
+      try {
+        const passportNumber = cv.passportNumber.trim().toUpperCase() // تحويل إلى أحرف كبيرة للمقارنة
+        
+        // فحص التكرار في نفس الملف المرفوع
+        if (processedPassports.has(passportNumber)) {
+          console.log(`⚠️ رقم جواز السفر ${passportNumber} مكرر في نفس الملف`)
+          return { 
+            isDuplicate: true, 
+            existingId: null, 
+            reason: 'رقم جواز السفر مكرر في نفس الملف' 
           }
-        },
-        select: {
-          id: true,
-          fullName: true,
-          passportNumber: true
         }
-      })
-      
-      if (existingByPassport) {
-        console.log(`تم العثور على تكرار: ${cv.fullName} (${passportNumber}) موجود مسبقاً باسم ${existingByPassport.fullName} (ID: ${existingByPassport.id})`)
-        return { 
-          isDuplicate: true, 
-          existingId: existingByPassport.id, // This is an Int from schema
-          reason: `رقم جواز السفر موجود مسبقاً في قاعدة البيانات للشخص: ${existingByPassport.fullName}` 
-        }
-      }
-      
-      // إضافة رقم الجواز إلى المعالجة
-      processedPassports.add(passportNumber)
-    } else {
-      // إذا لم يكن هناك رقم جواز، تحقق من الاسم الكامل كحل احتياطي
-      if (cv.fullName && cv.fullName.trim()) {
-        const fullName = cv.fullName.trim()
-        const existingByName = await db.cV.findFirst({
+        
+        // فحص التكرار في قاعدة البيانات باستخدام البحث الغير حساس للحالة
+        const existingByPassport = await db.cV.findFirst({
           where: { 
-            fullName: {
-              equals: fullName,
+            passportNumber: {
+              equals: passportNumber,
               mode: 'insensitive'
             }
           },
@@ -324,13 +303,51 @@ const checkForDuplicates = async (cv: ProcessedCV, processedPassports: Set<strin
           }
         })
         
-        if (existingByName) {
-          console.log(`تم العثور على تكرار بالاسم: ${cv.fullName} موجود مسبقاً (ID: ${existingByName.id})`)
+        if (existingByPassport) {
+          console.log(`✅ تم العثور على تكرار: ${cv.fullName} (${passportNumber}) موجود مسبقاً باسم ${existingByPassport.fullName} (ID: ${existingByPassport.id})`)
           return { 
             isDuplicate: true, 
-            existingId: existingByName.id,
-            reason: `الاسم الكامل موجود مسبقاً في قاعدة البيانات (لا يوجد رقم جواز)` 
+            existingId: existingByPassport.id, // This is an Int from schema
+            reason: `رقم جواز السفر موجود مسبقاً في قاعدة البيانات للشخص: ${existingByPassport.fullName}` 
           }
+        }
+        
+        // إضافة رقم الجواز إلى المعالجة
+        processedPassports.add(passportNumber)
+      } catch (passportError) {
+        console.error('خطأ في فحص رقم جواز السفر:', passportError)
+        // Continue with other checks
+      }
+    } else {
+      // إذا لم يكن هناك رقم جواز، تحقق من الاسم الكامل كحل احتياطي
+      if (cv.fullName && cv.fullName.trim()) {
+        try {
+          const fullName = cv.fullName.trim()
+          const existingByName = await db.cV.findFirst({
+            where: { 
+              fullName: {
+                equals: fullName,
+                mode: 'insensitive'
+              }
+            },
+            select: {
+              id: true,
+              fullName: true,
+              passportNumber: true
+            }
+          })
+          
+          if (existingByName) {
+            console.log(`✅ تم العثور على تكرار بالاسم: ${cv.fullName} موجود مسبقاً (ID: ${existingByName.id})`)
+            return { 
+              isDuplicate: true, 
+              existingId: existingByName.id,
+              reason: `الاسم الكامل موجود مسبقاً في قاعدة البيانات (لا يوجد رقم جواز)` 
+            }
+          }
+        } catch (nameError) {
+          console.error('خطأ في فحص الاسم الكامل:', nameError)
+          // No duplicates found
         }
       }
     }
@@ -338,7 +355,8 @@ const checkForDuplicates = async (cv: ProcessedCV, processedPassports: Set<strin
     // إذا لم يكن هناك تكرار
     return { isDuplicate: false }
   } catch (error) {
-    console.error('Error checking duplicates:', error)
+    console.error('❌ خطأ عام في فحص التكرارات:', error)
+    // في حالة فشل فحص التكرارات، نفترض عدم وجود تكرار لتجنب تعطيل العملية بالكامل
     return { isDuplicate: false }
   }
 }
