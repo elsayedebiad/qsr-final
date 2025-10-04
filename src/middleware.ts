@@ -8,6 +8,15 @@ export async function middleware(request: NextRequest) {
 
   // السماح بالوصول لصفحات معينة دون فحص
   const publicPaths = [
+    '/',
+    '/home',
+    '/gallery',
+    '/cv/',
+    '/sales1',
+    '/sales2',
+    '/sales3',
+    '/sales4',
+    '/sales5',
     '/login',
     '/payment-required',
     '/setup-developer',
