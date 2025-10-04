@@ -4,7 +4,12 @@
   "framework": "nextjs",
   "functions": {
     "src/app/api/**/*.ts": {
-      "maxDuration": 30
+      "maxDuration": 60,
+      "memory": 3008
+    },
+    "api/cvs/import-smart.func": {
+      "maxDuration": 60,
+      "memory": 3008
     }
   },
   "env": {

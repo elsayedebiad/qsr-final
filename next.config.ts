@@ -14,6 +14,16 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
+  experimental: {
+    serverComponentsExternalPackages: ['xlsx', 'sharp', 'puppeteer-core'],
+  },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // تقليل حجم الـbundle للـserver
+      config.externals = [...(config.externals || []), 'puppeteer', 'puppeteer-core', 'chrome-aws-lambda'];
+    }
+    return config;
+  },
   images: {
     remotePatterns: [
       {

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import * as XLSX from 'xlsx'
 import { db } from '@/lib/db'
-import { NotificationService } from '@/lib/notification-service'
-import { processImage } from '@/lib/image-processor'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+
+// استخدام dynamic imports لتقليل حجم الـbundle
+// import * as XLSX from 'xlsx' - سيتم تحميله عند الحاجة
+// import { processImage } from '@/lib/image-processor' - سيتم تحميله عند الحاجة
+
+export const runtime = 'nodejs'
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
 
 // Interface for Excel data
 interface ExcelRow {
@@ -214,6 +216,10 @@ const downloadImage = async (imageUrl: string): Promise<string | null> => {
       return null
     }
 
+    const { mkdir, writeFile } = await import('fs/promises')
+    const { join } = await import('path')
+    const { existsSync } = await import('fs')
+    
     const uploadsDir = join(process.cwd(), 'public', 'uploads', 'images')
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
@@ -582,6 +588,9 @@ export async function POST(request: NextRequest) {
     // Read and parse Excel file
     let jsonData: ExcelRow[]
     try {
+      // Dynamic import لتقليل حجم الـbundle
+      const XLSX = await import('xlsx')
+      
       const buffer = await file.arrayBuffer()
       const workbook = XLSX.read(buffer, { type: 'buffer' })
       const sheetName = workbook.SheetNames[0]

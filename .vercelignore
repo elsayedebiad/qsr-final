@@ -1,0 +1,66 @@
+# Vercel Ignore File - تجاهل ملفات غير ضرورية في البناء
+
+# Development files
+*.log
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+.git
+.gitignore
+README.md
+README-ALQAEID.md
+*.md
+
+# Test files
+__tests__
+test
+tests
+*.test.js
+*.spec.js
+
+# Documentation
+docs
+documentation
+
+# Excel templates (keep in repo but not in function bundle)
+excel_importer
+qso template
+*.xlsx
+
+# Scripts (not needed in production)
+scripts/*.js
+setup-*.js
+test-*.js
+verify-*.js
+fix-*.js
+update-*.js
+
+# Large binary files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+*.mp4
+*.avi
+
+# Node modules will be handled by Vercel
+# node_modules
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Prisma (keep only schema)
+prisma/migrations
+prisma/dev.db
+prisma/prisma/dev.db
+
