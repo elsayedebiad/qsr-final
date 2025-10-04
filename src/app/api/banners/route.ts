@@ -68,30 +68,67 @@ export async function POST(request: NextRequest) {
     const mimeType = file.type || 'image/jpeg'
     const imageData = `data:${mimeType};base64,${base64}`
 
-    console.log(`✅ تم تحويل البنر إلى Base64 (${(base64.length / 1024).toFixed(2)} KB)`)
+    const imageSizeKB = (base64.length / 1024).toFixed(2)
+    console.log(`✅ تم تحويل البنر إلى Base64 (${imageSizeKB} KB)`)
 
-    // حفظ في قاعدة البيانات
-    // مؤقتاً: نستخدم imageUrl حتى تشغيل SQL migration
-    // بعد Migration: سيُحفظ في imageData تلقائياً
-    const banner = await db.banner.create({
-      data: {
-        salesPageId,
-        deviceType: deviceType as 'MOBILE' | 'DESKTOP',
-        imageUrl: imageData, // حفظ Base64 في imageUrl مؤقتاً
-        order,
-        isActive: true
+    // التحقق من حجم الصورة (حد أقصى 10MB)
+    if (base64.length > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'الصورة كبيرة جداً. الحد الأقصى 10 ميجابايت' },
+        { status: 400 }
+      )
+    }
+
+    try {
+      // محاولة حفظ في قاعدة البيانات
+      const banner = await db.banner.create({
+        data: {
+          salesPageId,
+          deviceType: deviceType as 'MOBILE' | 'DESKTOP',
+          imageUrl: imageData, // حفظ Base64 في imageUrl
+          order,
+          isActive: true
+        }
+      })
+
+      console.log(`✅ تم حفظ البنر بنجاح - ID: ${banner.id}`)
+      
+      // إرجاع البنر بنجاح
+      return NextResponse.json({
+        ...banner,
+        hasImage: true
+      })
+    } catch (dbError: any) {
+      console.error('❌ خطأ في حفظ البنر:', dbError)
+      
+      // إذا كان الخطأ بسبب حجم البيانات
+      if (dbError.message?.includes('value too long') || dbError.code === '22001') {
+        return NextResponse.json(
+          { 
+            error: 'الصورة كبيرة جداً لقاعدة البيانات. يرجى تشغيل SQL migration على Neon:\n\nALTER TABLE banners ALTER COLUMN "imageUrl" TYPE TEXT;',
+            details: 'يجب تحويل عمود imageUrl إلى TEXT'
+          },
+          { status: 500 }
+        )
       }
-    })
-
-    // إرجاع البنر بنجاح
-    return NextResponse.json({
-      ...banner,
-      hasImage: true
-    })
-  } catch (error) {
-    console.error('Error creating banner:', error)
+      
+      // خطأ آخر
+      return NextResponse.json(
+        { 
+          error: 'فشل في حفظ البنر',
+          details: dbError.message || 'خطأ غير معروف',
+          hint: 'تحقق من Vercel logs للتفاصيل'
+        },
+        { status: 500 }
+      )
+    }
+  } catch (error: any) {
+    console.error('❌ خطأ عام في رفع البنر:', error)
     return NextResponse.json(
-      { error: 'Failed to create banner' },
+      { 
+        error: 'فشل في معالجة الصورة',
+        details: error.message || 'خطأ غير معروف'
+      },
       { status: 500 }
     )
   }
