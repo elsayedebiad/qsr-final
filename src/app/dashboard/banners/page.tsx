@@ -7,7 +7,8 @@ import { Upload, Trash2, Eye, EyeOff, Monitor, Smartphone, Plus, Save } from 'lu
 interface Banner {
   id: number
   salesPageId: string
-  imageUrl: string
+  imageUrl?: string // اختياري - للتوافق القديم
+  imageData?: string // Base64 data - محفوظة في قاعدة البيانات
   deviceType: 'MOBILE' | 'DESKTOP'
   order: number
   isActive: boolean
@@ -72,7 +73,9 @@ export default function BannersManagementPage() {
         toast.success('تم رفع البنر بنجاح')
         fetchAllBanners()
       } else {
-        toast.error('فشل في رفع البنر')
+        const errorData = await response.json()
+        console.error('Banner upload error:', errorData)
+        toast.error(`فشل في رفع البنر: ${errorData.error || 'خطأ غير معروف'}`)
       }
     } catch (error) {
       console.error('Error uploading banner:', error)
