@@ -19,6 +19,14 @@ export default function BannerCarousel({ salesPageId, className = '' }: BannerCa
     const fetchBanners = async () => {
       try {
         setIsLoading(true)
+        
+        // استخدام البنرات الافتراضية دائماً حتى تشغيل SQL على Neon
+        console.log('📢 استخدام البنرات الافتراضية (يجب تشغيل SQL على Neon لتفعيل البنرات المخصصة)')
+        setDesktopBanners(['/bannar one.png', '/bannar two.png'])
+        setMobileBanners(['/bannar one mobile.png', '/bannar two mobile.png'])
+        
+        /* 
+        // TODO: بعد تشغيل SQL على Neon، احذف الكود أعلاه واستخدم هذا:
         const response = await fetch(`/api/banners?salesPageId=${salesPageId}`)
         if (response.ok) {
           const banners = await response.json()
@@ -28,19 +36,16 @@ export default function BannerCarousel({ salesPageId, className = '' }: BannerCa
           const desktop = activeBanners
             .filter((b: any) => b.deviceType === 'DESKTOP')
             .sort((a: any, b: any) => a.order - b.order)
-            .map((b: any) => b.imageUrl || b.imageData) // استخدام imageUrl أولاً (Base64)، ثم imageData للمستقبل
+            .map((b: any) => b.imageUrl || b.imageData)
           const mobile = activeBanners
             .filter((b: any) => b.deviceType === 'MOBILE')
             .sort((a: any, b: any) => a.order - b.order)
-            .map((b: any) => b.imageUrl || b.imageData) // استخدام imageUrl أولاً (Base64)، ثم imageData للمستقبل
+            .map((b: any) => b.imageUrl || b.imageData)
           
           setDesktopBanners(desktop.length > 0 ? desktop : ['/bannar one.png', '/bannar two.png'])
           setMobileBanners(mobile.length > 0 ? mobile : ['/bannar one mobile.png', '/bannar two mobile.png'])
-        } else {
-          // استخدام البنرات الافتراضية في حال فشل التحميل
-          setDesktopBanners(['/bannar one.png', '/bannar two.png'])
-          setMobileBanners(['/bannar one mobile.png', '/bannar two mobile.png'])
         }
+        */
       } catch (error) {
         console.error('Error fetching banners:', error)
         // استخدام البنرات الافتراضية
