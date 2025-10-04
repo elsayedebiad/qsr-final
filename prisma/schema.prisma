@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -189,6 +189,24 @@ model SalesConfig {
   updatedAt      DateTime @updatedAt
 
   @@map("sales_configs")
+}
+
+model Banner {
+  id          Int         @id @default(autoincrement())
+  salesPageId String      // sales1, sales2, sales3, sales4
+  imageUrl    String      // مسار الصورة
+  deviceType  DeviceType  // mobile أو desktop
+  order       Int         @default(0) // ترتيب البنر
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("banners")
+}
+
+enum DeviceType {
+  MOBILE
+  DESKTOP
 }
 
 enum Role {

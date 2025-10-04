@@ -24,6 +24,7 @@ import {
   ExternalLink,
   ChevronRight,
   ChevronsUpDown,
+  Image,
 } from "lucide-react"
 
 import {
@@ -177,6 +178,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
           label: 'إعدادات المبيعات',
           icon: Settings,
           href: '/dashboard/sales-config',
+          adminOnly: true
+        },
+        {
+          id: 'banners',
+          label: 'إدارة البنرات',
+          icon: Image,
+          href: '/dashboard/banners',
           adminOnly: true
         },
         {
