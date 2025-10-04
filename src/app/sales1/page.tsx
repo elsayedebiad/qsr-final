@@ -830,6 +830,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
             </div>
           </div>
 
+          {/* نص توجيهي */}
+          <div className="text-center mb-4">
+            <p className="text-xl font-bold text-[#1e3a8a]">اضغط على الجنسية المطلوبة 👇</p>
+          </div>
+
           {/* البانرات الإعلانية */}
           <div className="mb-6 space-y-4">
             {/* بانر 1 - PC */}
@@ -899,8 +904,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
               
               {/* المحتوى */}
               <div className="relative p-4 flex flex-col items-center justify-center min-h-[100px] z-10">
-                <h3 className="text-white font-bold text-lg mb-2">فلبينية</h3>
-                <p className="text-slate-300 text-sm mb-3">🕌 مسلم</p>
+                <h3 className="text-white font-bold text-xl mb-3">فلبينية</h3>
                 
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
@@ -933,8 +937,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
               <div className="relative p-4 flex flex-col items-center justify-center min-h-[100px] z-10">
-                <h3 className="text-white font-bold text-lg mb-2">سريلانكية</h3>
-                <p className="text-slate-300 text-sm mb-3">🕌 مسلم</p>
+                <h3 className="text-white font-bold text-xl mb-3">سريلانكية</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
                     {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'SRI_LANKAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length}
@@ -966,8 +969,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
               <div className="relative p-4 flex flex-col items-center justify-center min-h-[100px] z-10">
-                <h3 className="text-white font-bold text-lg mb-2">بنغلاديشية</h3>
-                <p className="text-slate-300 text-sm mb-3">🕌 مسلم</p>
+                <h3 className="text-white font-bold text-xl mb-3">بنغلاديشية</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
                     {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'BANGLADESHI') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length}
@@ -999,8 +1001,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
               <div className="relative p-4 flex flex-col items-center justify-center min-h-[100px] z-10">
-                <h3 className="text-white font-bold text-lg mb-2">اثيوبية</h3>
-                <p className="text-slate-300 text-sm mb-3">🕌 مسلم</p>
+                <h3 className="text-white font-bold text-xl mb-3">اثيوبية</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
                     {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'ETHIOPIAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length}
@@ -1032,8 +1033,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
               <div className="relative p-4 flex flex-col items-center justify-center min-h-[100px] z-10">
-                <h3 className="text-white font-bold text-lg mb-2">كينية</h3>
-                <p className="text-slate-300 text-sm mb-3">🕌 مسلم</p>
+                <h3 className="text-white font-bold text-xl mb-3">كينية</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
                     {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'KENYAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length}
@@ -1065,8 +1065,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
               <div className="relative p-4 flex flex-col items-center justify-center min-h-[100px] z-10">
-                <h3 className="text-white font-bold text-lg mb-2">أوغندية</h3>
-                <p className="text-slate-300 text-sm mb-3">🕌 مسلم</p>
+                <h3 className="text-white font-bold text-xl mb-3">أوغندية</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
                     {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'UGANDAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length}
@@ -1099,9 +1098,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
               
               {/* المحتوى */}
               <div className="relative p-4 flex flex-col items-center justify-center min-h-[100px] z-10">
-                <h3 className="text-white font-bold text-lg mb-2">سائق خاص</h3>
-                <p className="text-emerald-200 text-sm mb-3">🚗 قيادة</p>
-                
+                <h3 className="text-white font-bold text-xl mb-3">سائق خاص</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
                     {cvs.filter(cv => cv.driving === 'YES').length}
@@ -1133,8 +1130,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
               <div className="relative p-4 flex flex-col items-center justify-center min-h-[100px] z-10">
-                <h3 className="text-white font-bold text-lg mb-2">بروندية</h3>
-                <p className="text-slate-300 text-sm mb-3">🕌 مسلم</p>
+                <h3 className="text-white font-bold text-xl mb-3">بروندية</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
                     {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'BURUNDIAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length}
@@ -1167,9 +1163,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
               
               {/* المحتوى */}
               <div className="relative p-4 flex flex-col items-center justify-center min-h-[100px] z-10">
-                <h3 className="text-white font-bold text-lg mb-2">نقل خدمات</h3>
-                <p className="text-amber-200 text-sm mb-3">🔄 معاد</p>
-                
+                <h3 className="text-white font-bold text-xl mb-3">نقل خدمات</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
                     {cvs.filter(cv => cv.status === CVStatus.RETURNED).length}
