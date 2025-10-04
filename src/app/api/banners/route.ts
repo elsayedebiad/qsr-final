@@ -4,6 +4,9 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
+// TODO: استخدام Vercel Blob Storage بدلاً من file system
+// import { put, del } from '@vercel/blob'
+
 // GET - جلب جميع البنرات أو بنرات صفحة معينة
 export async function GET(request: NextRequest) {
   try {
