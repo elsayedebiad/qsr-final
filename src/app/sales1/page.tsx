@@ -831,7 +831,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
           </div>
 
           {/* مربعات الفلاتر السريعة - بتصميم qsr.sa محسّن */}
-          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-4 mb-6">
+          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-9 gap-2 sm:gap-4 mb-6">
             {/* فلتر الجنسية الفلبينية */}
             <div
               onClick={() => {
@@ -878,40 +878,40 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
               </div>
             </div>
 
-            {/* فلتر الجنسية الهندية */}
+            {/* فلتر الجنسية السريلانكية */}
             <div
               onClick={() => {
-                if (nationalityFilter === 'INDIAN' && religionFilter === 'MUSLIM') {
+                if (nationalityFilter === 'SRI_LANKAN' && religionFilter === 'MUSLIM') {
                   setNationalityFilter('ALL');
                   setReligionFilter('ALL');
                 } else {
-                  setNationalityFilter('INDIAN');
+                  setNationalityFilter('SRI_LANKAN');
                   setReligionFilter('MUSLIM');
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                nationalityFilter === 'INDIAN' && religionFilter === 'MUSLIM'
+                nationalityFilter === 'SRI_LANKAN' && religionFilter === 'MUSLIM'
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-[200px] leading-none opacity-90">🇮🇳</div>
+                <div className="text-[200px] leading-none opacity-90">🇱🇰</div>
               </div>
               <div className={`absolute inset-0 transition-all duration-300 ${
-                nationalityFilter === 'INDIAN' && religionFilter === 'MUSLIM'
+                nationalityFilter === 'SRI_LANKAN' && religionFilter === 'MUSLIM'
                   ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
                   : 'bg-black/20 group-hover:bg-black/30'
               }`}></div>
               <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
-                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">هندية</h3>
+                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">سريلانكية</h3>
                 <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
                   <span>🕌</span>
                   <span>مسلم</span>
                 </p>
                 <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
                   <span className="text-[#1e3a8a] font-bold text-sm">
-                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'INDIAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
+                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'SRI_LANKAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
                   </span>
                 </div>
               </div>
@@ -1105,6 +1105,82 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                 <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
                   <span className="text-[#1e3a8a] font-bold text-sm">
                     {cvs.filter(cv => cv.driving === 'YES').length} سيرة
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* فلتر الجنسية البروندية */}
+            <div
+              onClick={() => {
+                if (nationalityFilter === 'BURUNDIAN' && religionFilter === 'MUSLIM') {
+                  setNationalityFilter('ALL');
+                  setReligionFilter('ALL');
+                } else {
+                  setNationalityFilter('BURUNDIAN');
+                  setReligionFilter('MUSLIM');
+                }
+              }}
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+                nationalityFilter === 'BURUNDIAN' && religionFilter === 'MUSLIM'
+                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  : 'shadow-lg hover:shadow-xl hover:scale-102'
+              }`}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-[200px] leading-none opacity-90">🇧🇮</div>
+              </div>
+              <div className={`absolute inset-0 transition-all duration-300 ${
+                nationalityFilter === 'BURUNDIAN' && religionFilter === 'MUSLIM'
+                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
+                  : 'bg-black/20 group-hover:bg-black/30'
+              }`}></div>
+              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
+                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">بروندية</h3>
+                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
+                  <span>🕌</span>
+                  <span>مسلم</span>
+                </p>
+                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <span className="text-[#1e3a8a] font-bold text-sm">
+                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'BURUNDIAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* فلتر نقل خدمات */}
+            <div
+              onClick={() => {
+                if (statusFilter === CVStatus.RETURNED) {
+                  setStatusFilter('ALL');
+                } else {
+                  setStatusFilter(CVStatus.RETURNED);
+                }
+              }}
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+                statusFilter === CVStatus.RETURNED
+                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  : 'shadow-lg hover:shadow-xl hover:scale-102'
+              }`}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-[120px] leading-none opacity-90">🔄</div>
+              </div>
+              <div className={`absolute inset-0 transition-all duration-300 ${
+                statusFilter === CVStatus.RETURNED
+                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
+                  : 'bg-black/20 group-hover:bg-black/30'
+              }`}></div>
+              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
+                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">نقل خدمات</h3>
+                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
+                  <span>📋</span>
+                  <span>معاد</span>
+                </p>
+                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <span className="text-[#1e3a8a] font-bold text-sm">
+                    {cvs.filter(cv => cv.status === CVStatus.RETURNED).length} سيرة
                   </span>
                 </div>
               </div>
