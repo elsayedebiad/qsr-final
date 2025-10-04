@@ -26,6 +26,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // التحقق من أن المستخدم ليس المطور
+  const token = request.cookies.get('token')?.value || 
+                request.headers.get('authorization')?.replace('Bearer ', '')
+  
+  let isDeveloper = false
+  if (token) {
+    try {
+      const jwt = require('jsonwebtoken')
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
+      // التحقق من البريد الإلكتروني للمطور
+      const { db } = await import('./lib/db')
+      const user = await db.user.findUnique({ where: { id: decoded.userId } })
+      isDeveloper = user?.email === 'developer@system.local'
+    } catch (error) {
+      // تجاهل أخطاء التحقق من التوكن
+    }
+  }
+
+  // المطور يمكنه الوصول دائماً
+  if (isDeveloper) {
+    return NextResponse.next()
+  }
+
   // التحقق من تفعيل حساب المطور (مع معالجة الأخطاء)
   try {
     const isDeveloperActive = await checkDeveloperActivation()
