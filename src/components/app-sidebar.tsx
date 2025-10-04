@@ -251,7 +251,8 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
   const getRoleText = (role: string) => {
     switch (role) {
       case 'ADMIN': return 'مدير عام'
-      case 'SUB_ADMIN': return 'مدير فرعي'
+      case 'SUB_ADMIN': return 'Operation'
+      case 'CUSTOMER_SERVICE': return 'Customer Service'
       case 'USER': return 'مستخدم عادي'
       default: return role
     }
@@ -259,8 +260,20 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
 
   const renderNavItem = (item: NavItem) => {
     // Hide admin-only items for non-admin users
-    if (item.adminOnly && user?.role !== 'ADMIN') {
-      return null
+    if (item.adminOnly) {
+      // Allow SUB_ADMIN to see CV-related items only (add, import, smart-import, google-sheets)
+      const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
+      if (user?.role === 'SUB_ADMIN' && !subAdminAllowedItems.includes(item.id)) {
+        return null
+      }
+      // CUSTOMER_SERVICE cannot see any admin-only items
+      if (user?.role === 'CUSTOMER_SERVICE') {
+        return null
+      }
+      // Hide from regular users
+      if (user?.role !== 'ADMIN' && user?.role !== 'SUB_ADMIN') {
+        return null
+      }
     }
 
     const hasChildren = item.children && item.children.length > 0
@@ -280,8 +293,20 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
             <CollapsibleContent>
               <SidebarMenuSub>
                 {item.children?.map((child) => {
-                  if (child.adminOnly && user?.role !== 'ADMIN') {
-                    return null
+                  if (child.adminOnly) {
+                    // Allow SUB_ADMIN to see CV-related items only
+                    const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
+                    if (user?.role === 'SUB_ADMIN' && !subAdminAllowedItems.includes(child.id)) {
+                      return null
+                    }
+                    // CUSTOMER_SERVICE cannot see any admin-only items
+                    if (user?.role === 'CUSTOMER_SERVICE') {
+                      return null
+                    }
+                    // Hide from regular users
+                    if (user?.role !== 'ADMIN' && user?.role !== 'SUB_ADMIN') {
+                      return null
+                    }
                   }
                   const childActive = child.href ? isActive(child.href) : false
                   return (

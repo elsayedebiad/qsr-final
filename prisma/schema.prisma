@@ -192,8 +192,10 @@ model SalesConfig {
 }
 
 enum Role {
+  DEVELOPER
   ADMIN
   SUB_ADMIN
+  CUSTOMER_SERVICE
   USER
 }
 

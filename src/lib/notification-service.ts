@@ -195,7 +195,8 @@ export class NotificationService {
   }) {
     const roleNames = {
       'ADMIN': 'مدير عام',
-      'SUB_ADMIN': 'مدير فرعي',
+      'SUB_ADMIN': 'Operation',
+      'CUSTOMER_SERVICE': 'Customer Service',
       'USER': 'مستخدم عادي'
     }
 

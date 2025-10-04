@@ -270,7 +270,8 @@ export default function SuperAdminPage() {
                                 : 'bg-success/10 text-success'
                             }`}>
                               {userData.role === 'ADMIN' ? 'مدير عام' : 
-                               userData.role === 'SUB_ADMIN' ? 'مدير فرعي' : 'مستخدم'}
+                               userData.role === 'SUB_ADMIN' ? 'Operation' : 
+                               userData.role === 'CUSTOMER_SERVICE' ? 'Customer Service' : 'مستخدم'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -349,7 +350,8 @@ export default function SuperAdminPage() {
                         className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value={Role.USER}>مستخدم عادي</option>
-                        <option value={Role.SUB_ADMIN}>مدير فرعي</option>
+                        <option value={Role.CUSTOMER_SERVICE}>Customer Service</option>
+                        <option value={Role.SUB_ADMIN}>Operation</option>
                         <option value={Role.ADMIN}>مدير عام</option>
                       </select>
                     </div>

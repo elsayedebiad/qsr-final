@@ -154,6 +154,7 @@ export default function Sales1Page() {
   const [weightFilter, setWeightFilter] = useState<string>('ALL')
   const [childrenFilter, setChildrenFilter] = useState<string>('ALL')
   const [locationFilter, setLocationFilter] = useState<string>('ALL')
+  const [drivingFilter, setDrivingFilter] = useState<string>('ALL')
   
   // حالة التحميل والتحديد
   const [selectedCvs, setSelectedCvs] = useState<string[]>([])
@@ -503,17 +504,21 @@ export default function Sales1Page() {
         cv.livingTown?.toLowerCase().includes(locationFilter.toLowerCase()) ||
         cv.placeOfBirth?.toLowerCase().includes(locationFilter.toLowerCase())
 
+      // فلتر السائق الخاص
+      const matchesDriving = drivingFilter === 'ALL' || cv.driving === drivingFilter
+
       return matchesSearch && matchesStatus && matchesNationality && matchesMaritalStatus && 
              matchesAge && matchesSkill && matchesExperience && matchesLanguage && 
              matchesReligion && matchesEducation && matchesSalary && matchesContractPeriod && 
-             matchesPassportStatus && matchesHeight && matchesWeight && matchesChildren && matchesLocation
+             matchesPassportStatus && matchesHeight && matchesWeight && matchesChildren && matchesLocation &&
+             matchesDriving
     })
 
     setFilteredCvs(filtered)
   }, [cvs, searchTerm, statusFilter, nationalityFilter, maritalStatusFilter, ageFilter, 
       skillFilter, experienceFilter, languageFilter, religionFilter, educationFilter, 
       salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, 
-      childrenFilter, locationFilter])
+      childrenFilter, locationFilter, drivingFilter])
 
   // Scroll تلقائي عند تغيير الفلتر
   useEffect(() => {
@@ -826,7 +831,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
           </div>
 
           {/* مربعات الفلاتر السريعة - بتصميم qsr.sa محسّن */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-4 mb-6">
             {/* فلتر الجنسية الفلبينية */}
             <div
               onClick={() => {
@@ -1063,6 +1068,43 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                 <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
                   <span className="text-[#1e3a8a] font-bold text-sm">
                     {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'UGANDAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* فلتر سائق خاص */}
+            <div
+              onClick={() => {
+                if (drivingFilter === 'YES') {
+                  setDrivingFilter('ALL');
+                } else {
+                  setDrivingFilter('YES');
+                }
+              }}
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+                drivingFilter === 'YES'
+                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  : 'shadow-lg hover:shadow-xl hover:scale-102'
+              }`}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-[120px] leading-none opacity-90">🚗</div>
+              </div>
+              <div className={`absolute inset-0 transition-all duration-300 ${
+                drivingFilter === 'YES'
+                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
+                  : 'bg-black/20 group-hover:bg-black/30'
+              }`}></div>
+              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
+                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">سائق خاص</h3>
+                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
+                  <span>🚘</span>
+                  <span>قيادة</span>
+                </p>
+                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <span className="text-[#1e3a8a] font-bold text-sm">
+                    {cvs.filter(cv => cv.driving === 'YES').length} سيرة
                   </span>
                 </div>
               </div>

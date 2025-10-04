@@ -32,7 +32,13 @@ export default function UsersManagementPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserData | null>(null)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    email: string
+    password: string
+    role: Role
+    isActive: boolean
+  }>({
     name: '',
     email: '',
     password: '',
@@ -145,7 +151,9 @@ export default function UsersManagementPage() {
       case Role.ADMIN:
         return 'مدير عام'
       case Role.SUB_ADMIN:
-        return 'مدير فرعي'
+        return 'Operation'
+      case Role.CUSTOMER_SERVICE:
+        return 'Customer Service'
       case Role.USER:
         return 'sales'
       default:
@@ -156,13 +164,15 @@ export default function UsersManagementPage() {
   const getRoleColor = (role: Role) => {
     switch (role) {
       case Role.ADMIN:
-        return 'bg-destructive/10 text-destructive'
+        return 'bg-red-500 text-white'
       case Role.SUB_ADMIN:
-        return 'bg-warning/10 text-warning'
+        return 'bg-yellow-500 text-white'
+      case Role.CUSTOMER_SERVICE:
+        return 'bg-blue-500 text-white'
       case Role.USER:
-        return 'bg-info/10 text-info'
+        return 'bg-green-500 text-white'
       default:
-        return 'bg-muted text-foreground'
+        return 'bg-gray-500 text-white'
     }
   }
 
@@ -334,7 +344,8 @@ export default function UsersManagementPage() {
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as Role })}
                 >
                   <option value={Role.USER}>sales</option>
-                  <option value={Role.SUB_ADMIN}>مدير فرعي</option>
+                  <option value={Role.CUSTOMER_SERVICE}>Customer Service</option>
+                  <option value={Role.SUB_ADMIN}>Operation</option>
                   <option value={Role.ADMIN}>مدير عام</option>
                 </select>
               </div>

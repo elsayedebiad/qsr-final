@@ -227,8 +227,20 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
 
   const renderNavItem = (item: NavItem, level: number = 0) => {
     // Hide admin-only items for non-admin users
-    if (item.adminOnly && user?.role !== 'ADMIN') {
-      return null
+    if (item.adminOnly) {
+      // Allow SUB_ADMIN to see CV-related items only (add, import, smart-import, google-sheets)
+      const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
+      if (user?.role === 'SUB_ADMIN' && !subAdminAllowedItems.includes(item.id)) {
+        return null
+      }
+      // CUSTOMER_SERVICE cannot see any admin-only items
+      if (user?.role === 'CUSTOMER_SERVICE') {
+        return null
+      }
+      // Hide from regular users
+      if (user?.role !== 'ADMIN' && user?.role !== 'SUB_ADMIN') {
+        return null
+      }
     }
 
     const hasChildren = item.children && item.children.length > 0
@@ -308,8 +320,10 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
 
   const getRoleText = (role: string) => {
     switch (role) {
+      case 'DEVELOPER': return 'Developer'
       case 'ADMIN': return 'مدير عام'
-      case 'SUB_ADMIN': return 'مدير فرعي'  
+      case 'SUB_ADMIN': return 'Operation'
+      case 'CUSTOMER_SERVICE': return 'Customer Service'
       case 'USER': return 'مستخدم عادي'
       default: return role
     }
@@ -317,8 +331,10 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
 
   const getRoleColor = (role: string) => {
     switch (role) {
+      case 'DEVELOPER': return 'bg-purple-100 text-purple-800'
       case 'ADMIN': return 'bg-red-100 text-red-800'
       case 'SUB_ADMIN': return 'bg-yellow-100 text-yellow-800'
+      case 'CUSTOMER_SERVICE': return 'bg-blue-100 text-blue-800'
       case 'USER': return 'bg-green-100 text-green-800'
       default: return 'bg-gray-100 text-gray-800'
     }

