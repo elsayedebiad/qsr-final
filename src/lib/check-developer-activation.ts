@@ -5,30 +5,29 @@ import { db } from './db'
  * إذا كان حساب المطور غير مفعل، يتم تعطيل النظام بالكامل
  */
 export async function checkDeveloperActivation(): Promise<boolean> {
-  // مؤقتاً: السماح بالوصول دائماً حتى يتم إنشاء حساب المطور وتشغيل migration
-  return true
-  
-  /* سيتم تفعيل هذا الكود بعد تشغيل migration
   try {
+    // البحث عن حساب المطور بالبريد الإلكتروني
     const developer = await db.user.findFirst({
       where: {
-        role: 'DEVELOPER' as any
+        email: 'developer@system.local'
       },
       select: {
         isActive: true
       }
     })
 
+    // إذا لم يوجد حساب مطور، السماح بالوصول
     if (!developer) {
       return true
     }
 
+    // إرجاع حالة التفعيل
     return developer.isActive
   } catch (error) {
     console.error('Error checking developer activation:', error)
+    // في حالة الخطأ، السماح بالوصول لتجنب تعطيل النظام
     return true
   }
-  */
 }
 
 /**
