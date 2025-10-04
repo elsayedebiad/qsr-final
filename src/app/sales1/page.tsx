@@ -852,27 +852,27 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
               }`}
             >
               {/* خلفية العلم الكبيرة */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-[200px] leading-none opacity-90">🇵🇭</div>
+              <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                <div className="text-[150px] sm:text-[180px] leading-none">🇵🇭</div>
               </div>
               
               {/* تراكب شفاف */}
               <div className={`absolute inset-0 transition-all duration-300 ${
                 nationalityFilter === 'FILIPINO' && religionFilter === 'MUSLIM'
-                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
-                  : 'bg-black/20 group-hover:bg-black/30'
+                  ? 'bg-gradient-to-br from-[#1e3a8a]/95 to-[#1e40af]/95'
+                  : 'bg-gradient-to-br from-gray-900/60 to-gray-800/60 group-hover:from-gray-900/70 group-hover:to-gray-800/70'
               }`}></div>
               
               {/* المحتوى */}
-              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
-                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">فلبينية</h3>
-                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
+              <div className="relative p-4 sm:p-6 flex flex-col items-center justify-center min-h-[120px] sm:min-h-[140px] z-10">
+                <h3 className="text-white font-bold text-base sm:text-lg mb-2 drop-shadow-lg">فلبينية</h3>
+                <p className="text-white/90 text-xs sm:text-sm mb-3 drop-shadow-lg flex items-center gap-1">
                   <span>🕌</span>
                   <span>مسلم</span>
                 </p>
-                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
-                  <span className="text-[#1e3a8a] font-bold text-sm">
-                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'FILIPINO') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
+                <div className="bg-white rounded-full px-5 py-2.5 shadow-lg">
+                  <span className="text-[#1e3a8a] font-bold text-xl sm:text-2xl">
+                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'FILIPINO') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length}
                   </span>
                 </div>
               </div>
