@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
 
-// TODO: استخدام Vercel Blob Storage بدلاً من file system
-// import { put, del } from '@vercel/blob'
+// نحفظ البنرات كـ Base64 في قاعدة البيانات Neon PostgreSQL
+// لا حاجة للـ file system أو Vercel Blob Storage
 
 // GET - جلب جميع البنرات أو بنرات صفحة معينة
 export async function GET(request: NextRequest) {
@@ -62,31 +59,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // إنشاء مجلد البنرات إذا لم يكن موجوداً
-    const bannersDir = join(process.cwd(), 'public', 'banners')
-    if (!existsSync(bannersDir)) {
-      await mkdir(bannersDir, { recursive: true })
-    }
-
-    // حفظ الملف
+    // تحويل الصورة إلى Base64
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    const fileName = `${salesPageId}_${deviceType.toLowerCase()}_${Date.now()}_${file.name}`
-    const filePath = join(bannersDir, fileName)
-    await writeFile(filePath, buffer)
+    const base64 = buffer.toString('base64')
+    
+    // إنشاء data URI كامل مع MIME type
+    const mimeType = file.type || 'image/jpeg'
+    const imageData = `data:${mimeType};base64,${base64}`
 
-    // حفظ في قاعدة البيانات
+    console.log(`✅ تم تحويل البنر إلى Base64 (${(base64.length / 1024).toFixed(2)} KB)`)
+
+    // حفظ في قاعدة البيانات مع الصورة كـ Base64
     const banner = await db.banner.create({
       data: {
         salesPageId,
         deviceType: deviceType as 'MOBILE' | 'DESKTOP',
-        imageUrl: `/banners/${fileName}`,
+        imageData, // حفظ الصورة كـ Base64 في قاعدة البيانات
         order,
         isActive: true
       }
     })
 
-    return NextResponse.json(banner)
+    // إرجاع البنر بدون imageData (لتقليل حجم Response)
+    const { imageData: _, ...bannerWithoutImage } = banner
+    return NextResponse.json({
+      ...bannerWithoutImage,
+      hasImage: true
+    })
   } catch (error) {
     console.error('Error creating banner:', error)
     return NextResponse.json(
