@@ -45,6 +45,10 @@ update-*.js
 *.mp4
 *.avi
 
+# Uploaded files directory (critical - 309 MB!)
+public/uploads/
+public/banners/
+
 # Node modules will be handled by Vercel
 # node_modules
 

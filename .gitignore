@@ -48,3 +48,15 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# SQLite database
+prisma/dev.db
+prisma/dev.db-journal
+prisma/prisma/dev.db
+
+# Uploaded files (to reduce deploy size - 309 MB!)
+public/uploads/images/*
+!public/uploads/images/.gitkeep
+public/uploads/videos/*
+public/banners/*
+!public/banners/.gitkeep
