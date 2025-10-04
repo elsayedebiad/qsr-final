@@ -54,7 +54,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   env: {
-    DATABASE_URL: process.env.DATABASE_URL || "mongodb+srv://engelsayedebaid_db_user:lmhTxMTD4rebSHZw@cluster0.rolmxz8.mongodb.net/cv-management?retryWrites=true&w=majority",
+    DATABASE_URL: process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET || "your-super-secret-jwt-key-change-this-in-production-2024",
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || "your-nextauth-secret-key-2024",
   },
