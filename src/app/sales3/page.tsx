@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { CVStatus, Priority, SkillLevel } from '@prisma/client'
@@ -30,6 +30,57 @@ import {
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
+
+// إضافة أنيميشن CSS مخصص
+const customStyles = `
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  .search-input::placeholder {
+    color: black !important;
+    opacity: 1 !important;
+  }
+`
 
 interface CV {
   id: string
@@ -91,6 +142,7 @@ export default function Sales3Page() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [experienceFilter, setExperienceFilter] = useState<string>('ALL')
   const [languageFilter, setLanguageFilter] = useState<string>('ALL')
+  const cvsContainerRef = useRef<HTMLDivElement>(null)
   
   // فلاتر إضافية شاملة
   const [religionFilter, setReligionFilter] = useState<string>('ALL')
@@ -184,22 +236,149 @@ export default function Sales3Page() {
     fetchCVs()
   }, [])
 
+  // دالة حساب المسافة بين نصين (Levenshtein Distance)
+  const levenshteinDistance = (str1: string, str2: string): number => {
+    const matrix: number[][] = []
+    
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i]
+    }
+    
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1]
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // استبدال
+            matrix[i][j - 1] + 1,     // إضافة
+            matrix[i - 1][j] + 1      // حذف
+          )
+        }
+      }
+    }
+    
+    return matrix[str2.length][str1.length]
+  }
+
+  // دالة البحث الذكي - تتعامل مع الأخطاء الإملائية
+  const smartSearch = (text: string, searchTerm: string): boolean => {
+    if (!text || !searchTerm) return false
+    
+    // تنظيف النصوص
+    const cleanText = text.toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/[ىي]/g, 'ي')
+      .replace(/ة/g, 'ه')
+      .replace(/ؤ/g, 'و')
+      .replace(/ئ/g, 'ي')
+      .replace(/\s+/g, '')
+    
+    const cleanSearch = searchTerm.toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/[ىي]/g, 'ي')
+      .replace(/ة/g, 'ه')
+      .replace(/ؤ/g, 'و')
+      .replace(/ئ/g, 'ي')
+      .replace(/\s+/g, '')
+    
+    // البحث المباشر
+    if (cleanText.includes(cleanSearch)) return true
+    
+    // البحث الضبابي - يسمح بخطأين كحد أقصى
+    const words = cleanText.split(/\s+/)
+    const maxDistance = Math.min(2, Math.floor(cleanSearch.length / 3)) // يسمح بخطأ واحد لكل 3 أحرف
+    
+    for (const word of words) {
+      // إذا كانت الكلمة قريبة جداً من البحث
+      if (word.includes(cleanSearch) || cleanSearch.includes(word)) {
+        return true
+      }
+      
+      // حساب المسافة
+      const distance = levenshteinDistance(word, cleanSearch)
+      if (distance <= maxDistance) {
+        return true
+      }
+      
+      // البحث في جزء من الكلمة
+      for (let i = 0; i <= word.length - cleanSearch.length; i++) {
+        const substring = word.substring(i, i + cleanSearch.length)
+        const substringDistance = levenshteinDistance(substring, cleanSearch)
+        if (substringDistance <= maxDistance) {
+          return true
+        }
+      }
+    }
+    
+    return false
+  }
+
+  // دالة تحويل الجنسية للعربي
+  const getNationalityArabic = (nationality: string | null | undefined): string => {
+    if (!nationality) return 'غير محدد'
+    
+    const nationalityArabicMap: { [key: string]: string } = {
+      'FILIPINO': 'فلبينية',
+      'INDIAN': 'هندية',
+      'BANGLADESHI': 'بنغلاديشية',
+      'ETHIOPIAN': 'اثيوبية',
+      'KENYAN': 'كينية',
+      'UGANDAN': 'اوغندية'
+    }
+    
+    return nationalityArabicMap[nationality] || nationality
+  }
+
+  // دالة مطابقة الجنسية الذكية
+  const matchesNationalityFilter = (cvNationality: string | null | undefined, filter: string): boolean => {
+    if (filter === 'ALL') return true
+    if (!cvNationality) return false
+    
+    // مطابقة مباشرة
+    if (cvNationality === filter) return true
+    
+    // خريطة الجنسيات بالعربي والإنجليزي
+    const nationalityMap: { [key: string]: string[] } = {
+      'FILIPINO': ['فلبينية', 'فلبيني', 'فلبينيه', 'فلبين', 'filipino', 'philippines'],
+      'INDIAN': ['هندية', 'هندي', 'هنديه', 'هند', 'indian', 'india'],
+      'BANGLADESHI': ['بنغلاديشية', 'بنغلاديشي', 'بنغلادش', 'بنقلاديش', 'bangladeshi', 'bangladesh'],
+      'ETHIOPIAN': ['اثيوبية', 'اثيوبي', 'اثيوبيه', 'إثيوبية', 'إثيوبي', 'اثوبيا', 'ethiopian', 'ethiopia'],
+      'KENYAN': ['كينية', 'كيني', 'كينيه', 'كينيا', 'kenyan', 'kenya'],
+      'UGANDAN': ['أوغندية', 'اوغندية', 'أوغندي', 'اوغندي', 'أوغندا', 'اوغندا', 'ugandan', 'uganda']
+    }
+    
+    // البحث في الخريطة
+    const searchTerms = nationalityMap[filter] || []
+    for (const term of searchTerms) {
+      if (smartSearch(cvNationality, term)) {
+        return true
+      }
+    }
+    
+    return false
+  }
+
   // فلترة السير الذاتية - نظام شامل مثل الداشبورد
   useEffect(() => {
-    let filtered = cvs.filter(cv => {
-      // البحث النصي
+    const filtered = cvs.filter(cv => {
+      // البحث النصي الذكي
       const matchesSearch = searchTerm === '' || 
-        cv.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cv.fullNameArabic?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cv.nationality?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cv.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cv.referenceCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cv.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cv.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+        smartSearch(cv.fullName, searchTerm) ||
+        smartSearch(cv.fullNameArabic || '', searchTerm) ||
+        smartSearch(cv.nationality || '', searchTerm) ||
+        smartSearch(cv.position || '', searchTerm) ||
+        smartSearch(cv.referenceCode || '', searchTerm) ||
+        smartSearch(cv.email || '', searchTerm) ||
+        cv.phone?.includes(searchTerm)
 
       // فلاتر أساسية
       const matchesStatus = statusFilter === 'ALL' || cv.status === statusFilter
-      const matchesNationality = nationalityFilter === 'ALL' || cv.nationality === nationalityFilter
+      const matchesNationality = matchesNationalityFilter(cv.nationality, nationalityFilter)
       const matchesMaritalStatus = maritalStatusFilter === 'ALL' || cv.maritalStatus === maritalStatusFilter
       
       // فلتر العمر
@@ -244,7 +423,17 @@ export default function Sales3Page() {
       })()
 
       // فلتر الديانة
-      const matchesReligion = religionFilter === 'ALL' || cv.religion === religionFilter
+      const matchesReligion = religionFilter === 'ALL' || (() => {
+        if (!cv.religion) return false
+        const religion = cv.religion.toUpperCase()
+        switch (religionFilter) {
+          case 'MUSLIM': return religion.includes('MUSLIM') || cv.religion.includes('مسلم')
+          case 'CHRISTIAN': return religion.includes('CHRISTIAN') || cv.religion.includes('مسيحي')
+          case 'BUDDHIST': return religion.includes('BUDDHIST') || cv.religion.includes('بوذي')
+          case 'HINDU': return religion.includes('HINDU') || cv.religion.includes('هندوسي')
+          default: return cv.religion === religionFilter
+        }
+      })()
 
       // فلتر التعليم
       const matchesEducation = educationFilter === 'ALL' || cv.educationLevel === educationFilter
@@ -326,6 +515,15 @@ export default function Sales3Page() {
       salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, 
       childrenFilter, locationFilter])
 
+  // Scroll تلقائي عند تغيير الفلتر
+  useEffect(() => {
+    if (cvsContainerRef.current && (nationalityFilter !== 'ALL' || statusFilter !== 'ALL' || searchTerm)) {
+      setTimeout(() => {
+        cvsContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [nationalityFilter, statusFilter, searchTerm])
+
   // إرسال رسالة واتساب
   const sendWhatsAppMessage = (cv: CV) => {
     const message = `مرحباً، أريد الاستفسار عن السيرة الذاتية:
@@ -335,7 +533,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
 الجنسية: ${cv.nationality || 'غير محدد'}
 الوظيفة: ${cv.position || 'غير محدد'}
 
-من صفحة Sales 1`
+من صفحة Sales 3`
 
     const encodedMessage = encodeURIComponent(message)
     if (!whatsappNumber) {
@@ -377,24 +575,35 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
   const downloadSingleCV = async (cv: CV) => {
     try {
       setCurrentDownloadName(cv.fullName || cv.referenceCode || 'السيرة الذاتية')
-      toast.loading('جاري إنشاء صورة السيرة الذاتية...')
+      const loadingToast = toast.loading('جاري تحميل الصورة...')
       
-      // فتح الصفحة في نافذة مخفية للتحميل
-      const cvUrl = `/cv/${cv.id}?hideUI=true&autoDownload=true`
-      const popup = window.open(cvUrl, '_blank', 'width=1200,height=1600,left=-9999,top=-9999')
+      // استخدام API endpoint مباشر للتحميل
+      const response = await fetch(`/api/cv/${cv.id}/download-image`)
       
-      // إغلاق النافذة بعد 10 ثوان
-      setTimeout(() => {
-        if (popup) {
-          popup.close()
-        }
-        toast.dismiss()
-        toast.success('تم بدء التحميل')
-      }, 10000)
+      if (!response.ok) {
+        throw new Error('فشل تحميل الصورة')
+      }
+      
+      // الحصول على الصورة كـ blob
+      const blob = await response.blob()
+      
+      // إنشاء رابط تحميل
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `CV_${cv.fullName || cv.referenceCode || 'السيرة'}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
+      toast.dismiss(loadingToast)
+      toast.success('تم تحميل الصورة بنجاح!')
       
     } catch (error) {
+      console.error('خطأ في التحميل:', error)
       toast.dismiss()
-      toast.error('حدث خطأ أثناء التحميل')
+      toast.error('حدث خطأ أثناء التحميل. يرجى المحاولة مرة أخرى')
     } finally {
       setCurrentDownloadName('')
     }
@@ -411,20 +620,93 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir="rtl">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري تحميل السير الذاتية...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center" dir="rtl">
+        <style>{customStyles}</style>
+        <div className="text-center animate-scaleIn">
+          <div className="relative w-24 h-24 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full border-4 border-blue-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+            <div className="absolute inset-3 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+              <Grid3X3 className="h-8 w-8 text-white" />
+            </div>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">جاري تحميل السير الذاتية</h3>
+          <p className="text-gray-600">الرجاء الانتظار...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6" dir="rtl">
-      <div className="max-w-7xl mx-auto">
-        {/* Header - يظهر فقط للمستخدمين المسجلين */}
-        {isLoggedIn && (
+    <div className="min-h-screen bg-white flex flex-col" dir="rtl">
+      <style>{customStyles}</style>
+        {/* Header بنفس تصميم qsr.sa */}
+        <header className="bg-white shadow-md sticky top-0 z-50">
+          {/* شريط علوي بمعلومات التواصل */}
+          <div className="bg-[#1e3a8a] text-white py-3">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <span>التواصل مع الدعم</span>
+                {whatsappNumber && (
+                  <strong className="font-bold">{whatsappNumber}</strong>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-white/10 px-3 py-1 rounded-full">
+                  {filteredCvs.length} سيرة متاحة
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* شريط الشعار والقائمة */}
+          <div className="bg-white border-b">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+              <div className="flex items-center justify-between">
+                {/* الشعار */}
+                <div className="flex items-center gap-3">
+                  <img 
+                    src="/logo-2.png" 
+                    alt="الاسناد السريع" 
+                    className="h-16 w-auto object-contain"
+                  />
+                  <div className="hidden md:block">
+                    <h1 className="text-xl font-bold text-[#1e3a8a]">الاسناد السريع</h1>
+                    <p className="text-sm text-gray-600">للاستقدام</p>
+                  </div>
+                </div>
+                
+                {/* أزرار التواصل */}
+                <div className="flex items-center gap-3">
+                  {isLoggedIn && (
+                    <button
+                      onClick={() => router.push('/dashboard')}
+                      className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-all text-sm"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      <span className="hidden sm:inline">الداشبورد</span>
+                    </button>
+                  )}
+                  {whatsappNumber && (
+                    <a 
+                      href={`https://wa.me/${whatsappNumber.replace(/^\+/, '')}`} 
+                      className="bg-[#25d366] hover:bg-[#1fb855] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-md hover:shadow-lg font-bold"
+                    >
+                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
+                      </svg>
+                      <span className="hidden sm:inline">اطلب عاملتك</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 w-full">
+          {/* Header القديم للمستخدمين المسجلين - مخفي الآن */}
+          {false && isLoggedIn && (
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6 mb-6">
           <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div className="flex items-center gap-3 sm:gap-4">
@@ -435,11 +717,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
               >
                 <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
               </button>
-              <div className="bg-gradient-to-r from-purple-100 to-pink-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                <Grid3X3 className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+              <div className="bg-gradient-to-r from-green-100 to-blue-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                <Grid3X3 className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-2xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent truncate">
+                <h1 className="text-lg sm:text-2xl font-semibold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent truncate">
                   Sales 1 - معرض السير الذاتية
                 </h1>
                 <p className="text-gray-600 text-xs sm:text-sm hidden sm:block">صفحة مبيعات مخصصة مع رقم واتساب منفصل</p>
@@ -455,10 +737,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                 </div>
                 
                 <div className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg flex-shrink-0 ${
-                  whatsappNumber ? 'bg-purple-100' : 'bg-red-100'
+                  whatsappNumber ? 'bg-green-100' : 'bg-red-100'
                 }`}>
                   <span className={`text-xs sm:text-sm font-medium ${
-                    whatsappNumber ? 'text-purple-700' : 'text-red-700'
+                    whatsappNumber ? 'text-green-700' : 'text-red-700'
                   }`}>
                     {whatsappNumber ? `واتساب: ${whatsappNumber}` : 'لم يتم تعيين رقم واتساب'}
                   </span>
@@ -468,7 +750,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 shadow-lg hover:shadow-xl text-xs sm:text-sm flex-1 sm:flex-initial justify-center"
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 shadow-lg hover:shadow-xl text-xs sm:text-sm flex-1 sm:flex-initial justify-center"
                 >
                   <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">العودة للداشبورد</span>
@@ -480,7 +762,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                     onClick={() => setViewMode('grid')}
                     className={`p-1.5 sm:p-2 rounded-md transition-colors ${
                       viewMode === 'grid' 
-                        ? 'bg-white text-pink-600 shadow-sm' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
                         : 'text-gray-600 hover:text-gray-800'
                     }`}
                     title="عرض شبكي"
@@ -491,7 +773,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                     onClick={() => setViewMode('list')}
                     className={`p-1.5 sm:p-2 rounded-md transition-colors ${
                       viewMode === 'list' 
-                        ? 'bg-white text-pink-600 shadow-sm' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
                         : 'text-gray-600 hover:text-gray-800'
                     }`}
                     title="عرض قائمة"
@@ -505,79 +787,29 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
           </div>
         )}
 
-        {/* شريط تحكم بسيط للزوار */}
-        {!isLoggedIn && (
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6 mb-6">
-            <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="bg-gradient-to-r from-purple-100 to-pink-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                  <Grid3X3 className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-lg sm:text-2xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent truncate">
-                    معرض السير الذاتية
-                  </h1>
-                  <p className="text-gray-600 text-xs sm:text-sm hidden sm:block">تصفح السير الذاتية المتاحة</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="bg-gray-100 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg flex-shrink-0">
-                  <span className="text-xs sm:text-sm font-medium text-gray-700">
-                    {filteredCvs.length} سيرة
-                  </span>
-                </div>
-                
-                <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1.5 sm:p-2 rounded-md transition-colors ${
-                      viewMode === 'grid' 
-                        ? 'bg-white text-pink-600 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                    title="عرض شبكي"
-                  >
-                    <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-1.5 sm:p-2 rounded-md transition-colors ${
-                      viewMode === 'list' 
-                        ? 'bg-white text-pink-600 shadow-sm' 
-                        : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                    title="عرض قائمة"
-                  >
-                    <List className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* مساحة للفصل */}
+        <div className="h-6"></div>
 
-        {/* البحث والفلاتر */}
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6 mb-6">
-          <div className="flex items-center mb-4 sm:mb-6">
-            <div className="bg-pink-100 p-2 sm:p-3 rounded-lg ml-3 sm:ml-4 flex-shrink-0">
-              <Search className="h-5 w-5 sm:h-6 sm:w-6 text-pink-600" />
+        {/* البحث والفلاتر - بتصميم qsr.sa */}
+        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 sm:p-6 mb-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-[#1e3a8a] p-3 rounded-lg">
+              <Search className="h-6 w-6 text-white" />
             </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 truncate">
-                البحث والتصفية
-              </h3>
-              <p className="text-gray-600 text-xs sm:text-sm mt-1 hidden sm:block">ابحث وصفي السير الذاتية</p>
+            <div>
+              <h3 className="text-xl font-bold text-[#1e3a8a]">البحث والتصفية</h3>
+              <p className="text-sm text-gray-600">ابحث عن السيرة الذاتية المناسبة</p>
             </div>
           </div>
 
-          <div className="mb-6 sm:mb-8">
-            <div className="relative group">
-              <Search className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 sm:h-6 sm:w-6 group-focus-within:text-pink-500 transition-colors" />
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="ابحث بالاسم، الجنسية، الوظيفة..."
-                className="w-full pr-10 sm:pr-14 pl-4 sm:pl-6 py-3 sm:py-5 border-2 border-gray-200 rounded-xl sm:rounded-2xl focus:ring-2 sm:focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 transition-all bg-white text-sm sm:text-lg"
+                placeholder="ابحث بالاسم، الجنسية، الوظيفة، الكود المرجعي..."
+                className="search-input w-full pr-12 pl-12 py-4 bg-white border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] hover:border-gray-400 transition-all text-base font-medium"
+                style={{ color: 'black', backgroundColor: 'white' }}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 dir="rtl"
@@ -585,18 +817,262 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 p-1"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <X className="h-5 w-5" />
                 </button>
               )}
             </div>
           </div>
 
+          {/* مربعات الفلاتر السريعة - بتصميم qsr.sa محسّن */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            {/* فلتر الجنسية الفلبينية */}
+            <div
+              onClick={() => {
+                if (nationalityFilter === 'FILIPINO' && religionFilter === 'MUSLIM') {
+                  // إلغاء التحديد عند الضغط مرة ثانية
+                  setNationalityFilter('ALL');
+                  setReligionFilter('ALL');
+                } else {
+                  // تفعيل الفلتر
+                  setNationalityFilter('FILIPINO');
+                  setReligionFilter('MUSLIM');
+                }
+              }}
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+                nationalityFilter === 'FILIPINO' && religionFilter === 'MUSLIM'
+                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  : 'shadow-lg hover:shadow-xl hover:scale-102'
+              }`}
+            >
+              {/* خلفية العلم الكبيرة */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-[200px] leading-none opacity-90">🇵🇭</div>
+              </div>
+              
+              {/* تراكب شفاف */}
+              <div className={`absolute inset-0 transition-all duration-300 ${
+                nationalityFilter === 'FILIPINO' && religionFilter === 'MUSLIM'
+                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
+                  : 'bg-black/20 group-hover:bg-black/30'
+              }`}></div>
+              
+              {/* المحتوى */}
+              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
+                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">فلبينية</h3>
+                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
+                  <span>🕌</span>
+                  <span>مسلم</span>
+                </p>
+                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <span className="text-[#1e3a8a] font-bold text-sm">
+                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'FILIPINO') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* فلتر الجنسية الهندية */}
+            <div
+              onClick={() => {
+                if (nationalityFilter === 'INDIAN' && religionFilter === 'MUSLIM') {
+                  setNationalityFilter('ALL');
+                  setReligionFilter('ALL');
+                } else {
+                  setNationalityFilter('INDIAN');
+                  setReligionFilter('MUSLIM');
+                }
+              }}
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+                nationalityFilter === 'INDIAN' && religionFilter === 'MUSLIM'
+                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  : 'shadow-lg hover:shadow-xl hover:scale-102'
+              }`}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-[200px] leading-none opacity-90">🇮🇳</div>
+              </div>
+              <div className={`absolute inset-0 transition-all duration-300 ${
+                nationalityFilter === 'INDIAN' && religionFilter === 'MUSLIM'
+                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
+                  : 'bg-black/20 group-hover:bg-black/30'
+              }`}></div>
+              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
+                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">هندية</h3>
+                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
+                  <span>🕌</span>
+                  <span>مسلم</span>
+                </p>
+                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <span className="text-[#1e3a8a] font-bold text-sm">
+                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'INDIAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* فلتر الجنسية البنغلاديشية */}
+            <div
+              onClick={() => {
+                if (nationalityFilter === 'BANGLADESHI' && religionFilter === 'MUSLIM') {
+                  setNationalityFilter('ALL');
+                  setReligionFilter('ALL');
+                } else {
+                  setNationalityFilter('BANGLADESHI');
+                  setReligionFilter('MUSLIM');
+                }
+              }}
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+                nationalityFilter === 'BANGLADESHI' && religionFilter === 'MUSLIM'
+                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  : 'shadow-lg hover:shadow-xl hover:scale-102'
+              }`}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-[200px] leading-none opacity-90">🇧🇩</div>
+              </div>
+              <div className={`absolute inset-0 transition-all duration-300 ${
+                nationalityFilter === 'BANGLADESHI' && religionFilter === 'MUSLIM'
+                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
+                  : 'bg-black/20 group-hover:bg-black/30'
+              }`}></div>
+              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
+                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">بنغلاديشية</h3>
+                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
+                  <span>🕌</span>
+                  <span>مسلم</span>
+                </p>
+                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <span className="text-[#1e3a8a] font-bold text-sm">
+                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'BANGLADESHI') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* فلتر الجنسية الإثيوبية */}
+            <div
+              onClick={() => {
+                if (nationalityFilter === 'ETHIOPIAN' && religionFilter === 'MUSLIM') {
+                  setNationalityFilter('ALL');
+                  setReligionFilter('ALL');
+                } else {
+                  setNationalityFilter('ETHIOPIAN');
+                  setReligionFilter('MUSLIM');
+                }
+              }}
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+                nationalityFilter === 'ETHIOPIAN' && religionFilter === 'MUSLIM'
+                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  : 'shadow-lg hover:shadow-xl hover:scale-102'
+              }`}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-[200px] leading-none opacity-90">🇪🇹</div>
+              </div>
+              <div className={`absolute inset-0 transition-all duration-300 ${
+                nationalityFilter === 'ETHIOPIAN' && religionFilter === 'MUSLIM'
+                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
+                  : 'bg-black/20 group-hover:bg-black/30'
+              }`}></div>
+              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
+                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">اثيوبية</h3>
+                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
+                  <span>🕌</span>
+                  <span>مسلم</span>
+                </p>
+                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <span className="text-[#1e3a8a] font-bold text-sm">
+                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'ETHIOPIAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* فلتر الجنسية الكينية */}
+            <div
+              onClick={() => {
+                if (nationalityFilter === 'KENYAN' && religionFilter === 'MUSLIM') {
+                  setNationalityFilter('ALL');
+                  setReligionFilter('ALL');
+                } else {
+                  setNationalityFilter('KENYAN');
+                  setReligionFilter('MUSLIM');
+                }
+              }}
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+                nationalityFilter === 'KENYAN' && religionFilter === 'MUSLIM'
+                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  : 'shadow-lg hover:shadow-xl hover:scale-102'
+              }`}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-[200px] leading-none opacity-90">🇰🇪</div>
+              </div>
+              <div className={`absolute inset-0 transition-all duration-300 ${
+                nationalityFilter === 'KENYAN' && religionFilter === 'MUSLIM'
+                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
+                  : 'bg-black/20 group-hover:bg-black/30'
+              }`}></div>
+              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
+                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">كينية</h3>
+                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
+                  <span>🕌</span>
+                  <span>مسلم</span>
+                </p>
+                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <span className="text-[#1e3a8a] font-bold text-sm">
+                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'KENYAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* فلتر الجنسية الأوغندية */}
+            <div
+              onClick={() => {
+                if (nationalityFilter === 'UGANDAN' && religionFilter === 'MUSLIM') {
+                  setNationalityFilter('ALL');
+                  setReligionFilter('ALL');
+                } else {
+                  setNationalityFilter('UGANDAN');
+                  setReligionFilter('MUSLIM');
+                }
+              }}
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+                nationalityFilter === 'UGANDAN' && religionFilter === 'MUSLIM'
+                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  : 'shadow-lg hover:shadow-xl hover:scale-102'
+              }`}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-[200px] leading-none opacity-90">🇺🇬</div>
+              </div>
+              <div className={`absolute inset-0 transition-all duration-300 ${
+                nationalityFilter === 'UGANDAN' && religionFilter === 'MUSLIM'
+                  ? 'bg-gradient-to-br from-[#1e3a8a]/90 to-[#1e40af]/90'
+                  : 'bg-black/20 group-hover:bg-black/30'
+              }`}></div>
+              <div className="relative p-6 flex flex-col items-center justify-center min-h-[140px] z-10">
+                <h3 className="text-white font-bold text-lg mb-1 drop-shadow-lg">أوغندية</h3>
+                <p className="text-white/90 text-sm mb-2 drop-shadow-lg flex items-center gap-1">
+                  <span>🕌</span>
+                  <span>مسلم</span>
+                </p>
+                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                  <span className="text-[#1e3a8a] font-bold text-sm">
+                    {cvs.filter(cv => matchesNationalityFilter(cv.nationality, 'UGANDAN') && (cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')))).length} سيرة
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* الفلاتر السريعة */}
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             <select
-              className="px-3 sm:px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg sm:rounded-full text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-100 min-w-0 flex-1 sm:flex-initial"
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] transition-all"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as CVStatus | 'ALL')}
             >
@@ -609,7 +1085,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
             </select>
 
             <select
-              className="px-3 sm:px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg sm:rounded-full text-xs sm:text-sm font-medium text-emerald-700 hover:bg-emerald-100 min-w-0 flex-1 sm:flex-initial"
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] transition-all"
               value={nationalityFilter}
               onChange={(e) => setNationalityFilter(e.target.value)}
             >
@@ -623,43 +1099,38 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
             </select>
 
             <select
-              className="px-3 sm:px-4 py-2 bg-purple-50 border border-purple-200 rounded-lg sm:rounded-full text-xs sm:text-sm font-medium text-purple-700 hover:bg-purple-100 min-w-0 flex-1 sm:flex-initial"
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] transition-all"
               value={ageFilter}
               onChange={(e) => setAgeFilter(e.target.value)}
             >
               <option value="ALL">جميع الأعمار</option>
-              <option value="18-25">18-25</option>
-              <option value="26-35">26-35</option>
-              <option value="36-45">36-45</option>
-              <option value="46+">46+</option>
+              <option value="18-25">18-25 سنة</option>
+              <option value="26-35">26-35 سنة</option>
+              <option value="36-45">36-45 سنة</option>
+              <option value="46+">46+ سنة</option>
             </select>
 
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`px-3 sm:px-4 py-2 rounded-lg sm:rounded-full text-xs sm:text-sm font-medium transition-all border flex items-center gap-2 min-w-0 flex-1 sm:flex-initial justify-center ${
+              className={`w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                 showAdvancedFilters
-                  ? 'bg-pink-600 text-white border-pink-600'
-                  : 'bg-white text-pink-700 border-pink-200 hover:bg-pink-50'
+                  ? 'bg-[#1e3a8a] text-white hover:bg-[#1e40af]'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
               }`}
             >
-              <SlidersHorizontal className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">{showAdvancedFilters ? 'إخفاء الفلاتر' : 'فلاتر متقدمة'}</span>
-              <span className="sm:hidden">فلاتر</span>
+              <SlidersHorizontal className="h-4 w-4" />
+              <span>{showAdvancedFilters ? 'إخفاء الفلاتر' : 'فلاتر متقدمة'}</span>
             </button>
           </div>
 
           {/* الفلاتر المتقدمة */}
           {showAdvancedFilters && (
-            <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-2xl p-4 sm:p-6 border border-indigo-100 mb-4 sm:mb-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                {/* فلتر المهارات */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-indigo-700 flex items-center gap-2">
-                    <Star className="h-4 w-4" />
-                    المهارات
-                  </label>
+            <div className="bg-gray-50 rounded-lg p-4 mt-4 border border-gray-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">المهارات</label>
                   <select
-                    className="w-full px-3 py-2 border border-indigo-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={skillFilter}
                     onChange={(e) => setSkillFilter(e.target.value)}
                   >
@@ -677,14 +1148,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   </select>
                 </div>
 
-                {/* فلتر الحالة الاجتماعية */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-pink-700 flex items-center gap-2">
-                    <Heart className="h-4 w-4" />
-                    الحالة الاجتماعية
-                  </label>
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">الحالة الاجتماعية</label>
                   <select
-                    className="w-full px-3 py-2 border border-pink-200 rounded-lg text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={maritalStatusFilter}
                     onChange={(e) => setMaritalStatusFilter(e.target.value)}
                   >
@@ -696,14 +1163,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   </select>
                 </div>
 
-                {/* فلتر اللغة */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-purple-700 flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    اللغة
-                  </label>
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">اللغة</label>
                   <select
-                    className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={languageFilter}
                     onChange={(e) => setLanguageFilter(e.target.value)}
                   >
@@ -713,14 +1176,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   </select>
                 </div>
 
-                {/* فلتر التعليم */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-orange-700 flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    التعليم
-                  </label>
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">التعليم</label>
                   <select
-                    className="w-full px-3 py-2 border border-orange-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={educationFilter}
                     onChange={(e) => setEducationFilter(e.target.value)}
                   >
@@ -731,14 +1190,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   </select>
                 </div>
 
-                {/* فلتر الخبرة */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-pink-700 flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    الخبرة
-                  </label>
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">الخبرة</label>
                   <select
-                    className="w-full px-3 py-2 border border-pink-200 rounded-lg text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={experienceFilter}
                     onChange={(e) => setExperienceFilter(e.target.value)}
                   >
@@ -749,14 +1204,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   </select>
                 </div>
 
-                {/* فلتر الراتب */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-purple-700 flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    الراتب الشهري
-                  </label>
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">الراتب الشهري</label>
                   <select
-                    className="w-full px-3 py-2 border border-purple-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={salaryFilter}
                     onChange={(e) => setSalaryFilter(e.target.value)}
                   >
@@ -768,14 +1219,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   </select>
                 </div>
 
-                {/* فلتر عدد الأطفال */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-red-700 flex items-center gap-2">
-                    <Heart className="h-4 w-4" />
-                    عدد الأطفال
-                  </label>
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">عدد الأطفال</label>
                   <select
-                    className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={childrenFilter}
                     onChange={(e) => setChildrenFilter(e.target.value)}
                   >
@@ -786,14 +1233,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   </select>
                 </div>
 
-                {/* فلتر الديانة */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-teal-700 flex items-center gap-2">
-                    <Star className="h-4 w-4" />
-                    الديانة
-                  </label>
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">الديانة</label>
                   <select
-                    className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={religionFilter}
                     onChange={(e) => setReligionFilter(e.target.value)}
                   >
@@ -811,8 +1254,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
         </div>
 
         {/* عرض السير الذاتية */}
+        <div ref={cvsContainerRef} className="min-h-[400px]">
         {filteredCvs.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-8 text-center">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-8 text-center min-h-[400px] flex flex-col items-center justify-center">
             <div className="text-gray-400 mb-4">
               <Archive className="h-16 w-16 mx-auto" />
             </div>
@@ -827,108 +1271,156 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
         ) : (
           <div className={
             viewMode === 'grid' 
-              ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6'
+              ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6'
               : 'space-y-4'
           }>
             {filteredCvs.map((cv) => (
               <div
                 key={cv.id}
-                className={`bg-white rounded-lg shadow-lg border ${selectedCvs.includes(cv.id) ? 'border-pink-500 ring-2 ring-pink-500' : 'border-gray-200'} overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer ${
+                className={`group bg-white rounded-lg shadow-md border ${selectedCvs.includes(cv.id) ? 'border-[#1e3a8a] ring-2 ring-[#1e3a8a]/20' : 'border-gray-200'} overflow-hidden hover:shadow-lg transition-all duration-300 ${
                   viewMode === 'list' ? 'flex items-center p-4' : ''
                 }`}
               >
                 {viewMode === 'grid' ? (
                   <>
-                    {/* صورة السيرة الذاتية */}
-                    <div className="aspect-[3/4] relative overflow-hidden bg-gray-200">
+                    {/* صورة السيرة الذاتية - مع معلومات احترافية */}
+                    <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                       {cv.profileImage ? (
-                        <img
-                          src={processImageUrl(cv.profileImage)}
-                          alt={cv.fullName}
-                          className="w-full h-full object-cover"
-                        />
+                        <>
+                          <img
+                            src={processImageUrl(cv.profileImage)}
+                            alt={cv.fullName}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                          
+                          {/* شريط علوي - الكود والعمر والجنسية */}
+                          <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/90 to-transparent p-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="bg-[#1e3a8a] text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded">
+                                  {cv.referenceCode}
+                                </span>
+                                {cv.age && (
+                                  <span className="bg-white/90 text-gray-800 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded">
+                                    {cv.age} سنة
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-2xl sm:text-3xl">
+                                {cv.nationality === 'FILIPINO' && '🇵🇭'}
+                                {cv.nationality === 'INDIAN' && '🇮🇳'}
+                                {cv.nationality === 'BANGLADESHI' && '🇧🇩'}
+                                {cv.nationality === 'ETHIOPIAN' && '🇪🇹'}
+                                {cv.nationality === 'KENYAN' && '🇰🇪'}
+                                {cv.nationality === 'UGANDAN' && '🇺🇬'}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* شريط سفلي بالمعلومات - موسع */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/85 to-transparent p-2 sm:p-3">
+                            <div className="space-y-1.5">
+                              {/* الاسم */}
+                              <div className="flex items-center gap-1.5">
+                                <div className="bg-white/20 backdrop-blur-sm p-1 rounded flex-shrink-0">
+                                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                                <p className="text-white font-bold text-[10px] sm:text-xs truncate flex-1 drop-shadow-lg">
+                                  {cv.fullNameArabic || cv.fullName}
+                                </p>
+                              </div>
+                              
+                              {/* الوظيفة والديانة - في صف واحد */}
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {/* الوظيفة */}
+                                <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded px-1.5 py-1">
+                                  <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
+                                    <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
+                                  </svg>
+                                  <p className="text-white text-[9px] sm:text-[10px] truncate font-medium drop-shadow-md">
+                                    {cv.position || 'غير محدد'}
+                                  </p>
+                                </div>
+                                
+                                {/* الديانة */}
+                                <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded px-1.5 py-1">
+                                  <span className="text-xs flex-shrink-0">
+                                    {cv.religion && (cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم')) ? '🕌' : 
+                                     cv.religion && (cv.religion.toUpperCase().includes('CHRISTIAN') || cv.religion.includes('مسيحي')) ? '✝️' : 
+                                     cv.religion && (cv.religion.toUpperCase().includes('BUDDHIST') || cv.religion.includes('بوذي')) ? '☸️' : 
+                                     cv.religion && (cv.religion.toUpperCase().includes('HINDU') || cv.religion.includes('هندوسي')) ? '🕉️' : '📿'}
+                                  </span>
+                                  <p className="text-white text-[9px] sm:text-[10px] font-semibold truncate drop-shadow-md">
+                                    {cv.religion ? (
+                                      cv.religion.toUpperCase().includes('MUSLIM') || cv.religion.includes('مسلم') ? 'مسلم' : 
+                                      cv.religion.toUpperCase().includes('CHRISTIAN') || cv.religion.includes('مسيحي') ? 'مسيحي' : 
+                                      cv.religion.toUpperCase().includes('BUDDHIST') || cv.religion.includes('بوذي') ? 'بوذي' : 
+                                      cv.religion.toUpperCase().includes('HINDU') || cv.religion.includes('هندوسي') ? 'هندوسي' : 
+                                      cv.religion
+                                    ) : 'غير محدد'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </>
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+                        <div className="w-full h-full bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 flex items-center justify-center">
                           <div className="text-white text-center">
-                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-xl">
+                              <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                               </svg>
                             </div>
-                            <p className="text-sm font-medium">{cv.fullName}</p>
+                            <p className="text-xs sm:text-base font-bold px-2">{cv.fullName}</p>
                           </div>
                         </div>
                       )}
-                      <div className="absolute top-1 sm:top-2 right-1 sm:right-2">
-                        <CountryFlag nationality={cv.nationality || ''} size="sm" />
-                      </div>
-                      <div className="absolute top-1 sm:top-2 left-1 sm:left-2">
-                        <input
-                          type="checkbox"
-                          className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500 bg-white"
-                          checked={selectedCvs.includes(cv.id)}
-                          onChange={() => toggleCvSelection(cv.id)}
-                        />
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 sm:p-4">
-                        <h3 className="text-white font-semibold text-xs sm:text-sm mb-1 truncate">{cv.fullName}</h3>
-                        {cv.fullNameArabic && (
-                          <p className="text-white/80 text-[10px] sm:text-xs mb-1 truncate hidden sm:block">{cv.fullNameArabic}</p>
-                        )}
-                        <p className="text-white/70 text-[10px] sm:text-xs truncate">{cv.position || 'غير محدد'}</p>
-                      </div>
                     </div>
                     
-                    {/* معلومات السيرة */}
-                    <div className="p-2 sm:p-4">
-                      <div className="flex items-center justify-between mb-2 sm:mb-3">
-                        <span className="text-[10px] sm:text-xs font-mono bg-gray-100 text-gray-600 px-1 sm:px-2 py-0.5 sm:py-1 rounded">
-                          {cv.referenceCode}
-                        </span>
-                        {cv.age && (
-                          <span className="text-[10px] sm:text-xs text-gray-500">{cv.age} سنة</span>
-                        )}
-                      </div>
-                      
-                      {/* زر الحجز الرئيسي */}
-                      <div className="mb-2">
+                    {/* أزرار التفاعل - تصميم محسن للموبايل */}
+                    <div className="p-2 sm:p-4 bg-gradient-to-br from-gray-50 to-white">
+                      {/* زر الحجز الرئيسي - محسّن للموبايل */}
+                      <div className="mb-2 sm:mb-2">
                         <button
                           onClick={() => sendWhatsAppMessage(cv)}
-                          className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 sm:py-2.5 px-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
+                          className="w-full bg-gradient-to-r from-[#25d366] to-[#20c158] hover:from-[#1fb855] hover:to-[#1da84a] text-white py-2.5 sm:py-3 px-1 sm:px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all duration-300 shadow-md hover:shadow-lg active:scale-95"
                         >
-                          {/* أيقونة الواتساب */}
-                          <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" viewBox="0 0 24 24">
+                          <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
                           </svg>
-                          <span className="font-bold">للحجز والطلب</span>
+                          <span className="truncate font-extrabold">حجز</span>
                         </button>
                       </div>
                       
-                      {/* باقي الأزرار */}
-                      <div className="flex gap-1">
+                      {/* باقي الأزرار - محسّنة للموبايل */}
+                      <div className="grid grid-cols-4 gap-1 sm:gap-2">
                         <button
                           onClick={() => shareSingleCV(cv)}
-                          className="flex-1 bg-pink-600 hover:bg-pink-700 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded text-[10px] sm:text-xs flex items-center justify-center transition-colors"
+                          className="bg-gradient-to-b from-[#1e3a8a] to-[#1e40af] hover:from-[#1e40af] hover:to-[#1e3a8a] text-white py-2 sm:py-2.5 px-0.5 rounded-md sm:rounded-lg text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] sm:min-h-[60px] shadow-sm sm:shadow-md active:scale-95"
                           title="مشاركة السيرة الذاتية"
                         >
-                          <Share2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          <span className="hidden sm:inline ml-1">مشاركة</span>
+                          <Share2 className="h-4 w-4 sm:h-4 sm:w-4 mb-0.5" />
+                          <span className="font-bold leading-tight">مشاركة</span>
                         </button>
                         <button
                           onClick={() => downloadSingleCV(cv)}
-                          className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded text-[10px] sm:text-xs flex items-center justify-center transition-colors"
+                          className="bg-gradient-to-b from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2 sm:py-2.5 px-0.5 rounded-md sm:rounded-lg text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] sm:min-h-[60px] shadow-sm sm:shadow-md active:scale-95"
                           title="تحميل السيرة الذاتية"
                         >
-                          <Download className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          <span className="hidden sm:inline ml-1">تحميل</span>
+                          <Download className="h-4 w-4 sm:h-4 sm:w-4 mb-0.5" />
+                          <span className="font-bold leading-tight">تحميل</span>
                         </button>
                         <button
                           onClick={() => router.push(`/cv/${cv.id}`)}
-                          className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded text-[10px] sm:text-xs flex items-center justify-center transition-colors"
+                          className="bg-gradient-to-b from-[#1e3a8a] to-[#1e40af] hover:from-[#1e40af] hover:to-[#1e3a8a] text-white py-2 sm:py-2.5 px-0.5 rounded-md sm:rounded-lg text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] sm:min-h-[60px] shadow-sm sm:shadow-md active:scale-95"
                           title="عرض السيرة الكاملة"
                         >
-                          <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          <span className="hidden sm:inline ml-1">عرض</span>
+                          <Eye className="h-4 w-4 sm:h-4 sm:w-4 mb-0.5" />
+                          <span className="font-bold leading-tight">عرض</span>
                         </button>
                         <button
                           onClick={() => {
@@ -938,39 +1430,48 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                               alert('لا يوجد رابط فيديو لهذه السيرة');
                             }
                           }}
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded text-[10px] sm:text-xs flex items-center justify-center transition-colors"
+                          className="bg-gradient-to-b from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-2 sm:py-2.5 px-0.5 rounded-md sm:rounded-lg text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] sm:min-h-[60px] shadow-sm sm:shadow-md active:scale-95"
                           title="مشاهدة الفيديو"
                         >
-                          <Play className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                          <span className="hidden sm:inline ml-1">فيديو</span>
+                          <Play className="h-4 w-4 sm:h-4 sm:w-4 mb-0.5" />
+                          <span className="font-bold leading-tight">فيديو</span>
                         </button>
                       </div>
                     </div>
                   </>
                 ) : (
-                  // عرض القائمة
-                  <div className="flex items-center space-x-4 w-full">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+                  // عرض القائمة - تصميم محسن
+                  <div className="flex items-center gap-4 w-full">
+                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">
                       {cv.profileImage ? (
-                        <img src={processImageUrl(cv.profileImage)} alt={cv.fullName} className="w-full h-full object-cover" />
+                        <img src={processImageUrl(cv.profileImage)} alt={cv.fullName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
-                          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                           </svg>
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">{cv.fullName}</h3>
-                      <p className="text-sm text-gray-600">{cv.nationality} • {cv.position}</p>
-                      <p className="text-xs text-gray-500">{cv.referenceCode}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-bold text-gray-900 truncate">{cv.fullName}</h3>
+                        <CountryFlag nationality={cv.nationality || ''} size="sm" />
+                      </div>
+                      <p className="text-sm text-gray-600 font-medium">{getNationalityArabic(cv.nationality)} • {cv.position}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs font-bold bg-gradient-to-r from-blue-500 to-blue-600 text-white px-2 py-1 rounded-md">{cv.referenceCode}</span>
+                        {cv.age && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{cv.age} سنة</span>}
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => sendWhatsAppMessage(cv)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center gap-2"
                       >
+                        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
+                        </svg>
                         للحجز والطلب
                       </button>
                     </div>
@@ -980,28 +1481,74 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
             ))}
           </div>
         )}
-      </div>
+        </div>
 
-      {/* Video Modal */}
+        {/* Footer - بتصميم qsr.sa */}
+        <footer className="bg-[#1e3a8a] text-white py-8 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img src="/logo-2.png" alt="الاسناد السريع" className="h-12 w-auto object-contain bg-white rounded-lg p-2" />
+            <div>
+              <h3 className="text-lg font-bold">الاسناد السريع للاستقدام</h3>
+              <p className="text-sm text-blue-200">شريكك الأمثل في استقدام العمالة</p>
+            </div>
+          </div>
+          {whatsappNumber && (
+            <div className="mb-4">
+              <a 
+                href={`https://wa.me/${whatsappNumber.replace(/^\+/, '')}`}
+                className="inline-flex items-center gap-2 bg-[#25d366] hover:bg-[#1fb855] px-6 py-3 rounded-lg font-bold transition-all"
+              >
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
+                </svg>
+                <span>تواصل معنا عبر الواتساب</span>
+              </a>
+            </div>
+          )}
+          <div className="border-t border-blue-700 pt-4">
+            <p className="text-sm text-blue-200">© 2025 الاسناد السريع للاستقدام - جميع الحقوق محفوظة</p>
+          </div>
+        </div>
+        </footer>
+      </div>
+      
+      {/* Video Modal - تصميم محسن */}
       {selectedVideo && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">فيديو السيرة الذاتية</h3>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl transform animate-scaleIn">
+            <div className="flex justify-between items-center p-5 sm:p-6 border-b-2 border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-br from-red-500 to-red-600 p-2 rounded-lg">
+                  <Play className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">فيديو السيرة الذاتية</h3>
+              </div>
               <button
                 onClick={() => setSelectedVideo(null)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-gray-500 hover:text-red-600 transition-all duration-300 hover:rotate-90 hover:scale-110 p-2 rounded-lg hover:bg-red-50"
               >
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <div className="p-4">
-              <div className="aspect-video w-full">
+            <div className="p-4 sm:p-6 bg-gray-50">
+              <div className="aspect-video w-full rounded-xl overflow-hidden shadow-xl">
                 {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
                   <iframe
-                    src={selectedVideo.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                    src={(() => {
+                      // تحويل روابط YouTube إلى embed
+                      if (selectedVideo.includes('youtu.be/')) {
+                        const videoId = selectedVideo.split('youtu.be/')[1]?.split('?')[0]
+                        return `https://www.youtube.com/embed/${videoId}`
+                      } else if (selectedVideo.includes('watch?v=')) {
+                        const videoId = selectedVideo.split('watch?v=')[1]?.split('&')[0]
+                        return `https://www.youtube.com/embed/${videoId}`
+                      }
+                      return selectedVideo
+                    })()}
                     className="w-full h-full rounded-lg"
                     frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     title="فيديو السيرة الذاتية"
                   />
@@ -1009,25 +1556,28 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   <iframe
                     src={(() => {
                       // تحويل رابط Google Drive إلى embed
-                      // مثال: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
-                      // إلى: https://drive.google.com/file/d/FILE_ID/preview
-                      const fileIdMatch = selectedVideo.match(/\/file\/d\/([^\/]+)/);
+                      const fileIdMatch = selectedVideo.match(/\/file\/d\/([^\/]+)/)
                       if (fileIdMatch && fileIdMatch[1]) {
-                        return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`;
+                        return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`
                       }
-                      // إذا كان الرابط بصيغة أخرى، حاول استخدامه كما هو
-                      return selectedVideo.replace('/view', '/preview').replace('?usp=sharing', '');
+                      return selectedVideo.replace('/view?usp=sharing', '/preview').replace('/view', '/preview')
                     })()}
                     className="w-full h-full rounded-lg"
                     frameBorder="0"
+                    allow="autoplay"
                     allowFullScreen
                     title="فيديو السيرة الذاتية"
                   />
                 ) : selectedVideo.includes('vimeo.com') ? (
                   <iframe
-                    src={selectedVideo.replace('vimeo.com/', 'player.vimeo.com/video/')}
+                    src={(() => {
+                      // تحويل رابط Vimeo إلى embed
+                      const videoId = selectedVideo.split('vimeo.com/')[1]?.split('?')[0]
+                      return `https://player.vimeo.com/video/${videoId}`
+                    })()}
                     className="w-full h-full rounded-lg"
                     frameBorder="0"
+                    allow="autoplay; fullscreen; picture-in-picture"
                     allowFullScreen
                     title="فيديو السيرة الذاتية"
                   />
@@ -1035,9 +1585,12 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   <video
                     src={selectedVideo}
                     controls
-                    className="w-full h-full rounded-lg"
+                    className="w-full h-full rounded-lg bg-black"
                     preload="metadata"
                   >
+                    <source src={selectedVideo} type="video/mp4" />
+                    <source src={selectedVideo} type="video/webm" />
+                    <source src={selectedVideo} type="video/ogg" />
                     متصفحك لا يدعم تشغيل الفيديو
                   </video>
                 )}
@@ -1049,3 +1602,4 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
     </div>
   )
 }
+

@@ -106,6 +106,15 @@ export default function PublicCVPage() {
     if (params.id) {
       fetchCV(params.id as string)
     }
+    
+    // التحقق من معامل التحميل التلقائي
+    const searchParams = new URLSearchParams(window.location.search)
+    if (searchParams.get('autoDownload') === 'true') {
+      // تأخير بسيط للسماح بتحميل الصفحة
+      setTimeout(() => {
+        handleDownloadImage()
+      }, 2000)
+    }
   }, [params.id])
 
   // دالة لاستخراج FILE_ID من روابط Google Drive المختلفة
@@ -451,140 +460,145 @@ export default function PublicCVPage() {
         />
       </Head>
       <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Header - محسّن للموبايل */}
       <div className="bg-card shadow-sm border-b border-border sticky top-0 z-40 backdrop-blur-sm bg-card/95">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* معلومات السيرة */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">
                 {cv.fullName}
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
                 {cv.position && `${cv.position} • `}
                 {cv.nationality && `${cv.nationality} • `}
                 {cv.referenceCode && `#${cv.referenceCode}`}
               </p>
             </div>
             
-            <div className="flex items-center gap-3">
+            {/* أزرار التحكم */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {/* أزرار التحكم في الزوم - تظهر فقط عند عدم وجود cvImageUrl */}
               {!cv.cvImageUrl && (
-                <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+                <div className="flex items-center gap-1 sm:gap-2 bg-muted rounded-lg p-1">
                   <button
                     onClick={() => setZoomLevel(Math.max(0.2, zoomLevel - 0.1))}
-                    className="bg-background text-foreground px-3 py-2 rounded-md hover:bg-accent transition-colors flex items-center"
+                    className="bg-background text-foreground px-2 sm:px-3 py-1.5 sm:py-2 rounded-md hover:bg-accent transition-colors flex items-center text-sm sm:text-base"
                     title="تصغير"
                   >
-                    <span className="text-lg">-</span>
+                    <span>-</span>
                   </button>
-                  <span className="text-sm font-medium text-foreground px-2">
+                  <span className="text-xs sm:text-sm font-medium text-foreground px-1 sm:px-2">
                     {Math.round(zoomLevel * 100)}%
                   </span>
                   <button
                     onClick={() => setZoomLevel(Math.min(1, zoomLevel + 0.1))}
-                    className="bg-background text-foreground px-3 py-2 rounded-md hover:bg-accent transition-colors flex items-center"
+                    className="bg-background text-foreground px-2 sm:px-3 py-1.5 sm:py-2 rounded-md hover:bg-accent transition-colors flex items-center text-sm sm:text-base"
                     title="تكبير"
                   >
-                    <span className="text-lg">+</span>
+                    <span>+</span>
                   </button>
                 </div>
               )}
               
               <button
                 onClick={handleShare}
-                className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center shadow-sm"
+                className="bg-primary text-primary-foreground px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center shadow-sm text-xs sm:text-sm"
               >
-                <Share2 className="h-4 w-4 ml-2" />
-                مشاركة
+                <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
+                <span className="hidden sm:inline">مشاركة</span>
+                <span className="sm:hidden">📤</span>
               </button>
               
               <button
                 onClick={handleWhatsAppShare}
-                className="bg-success text-white px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center shadow-sm"
+                className="bg-[#25d366] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:opacity-90 transition-colors flex items-center shadow-sm text-xs sm:text-sm"
               >
-                <MessageCircle className="h-4 w-4 ml-2" />
-                واتساب
+                <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
+                <span className="hidden sm:inline">واتساب</span>
+                <span className="sm:hidden">💬</span>
               </button>
               
               <button
                 onClick={handleDownloadImage}
-                className="bg-warning text-white px-4 py-2 rounded-lg hover:opacity-90 transition-colors flex items-center shadow-sm"
+                className="bg-warning text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:opacity-90 transition-colors flex items-center shadow-sm text-xs sm:text-sm"
               >
-                <ImageIcon className="h-4 w-4 ml-2" />
-                تحميل صورة
+                <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
+                <span className="hidden sm:inline">تحميل</span>
+                <span className="sm:hidden">📥</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* CV Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* CV Content - محسّن للموبايل */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-8">
         {cv.cvImageUrl ? (
           /* عرض صورة السيرة المصممة مسبقاً */
           <div className="flex justify-center">
             <div className="relative inline-block w-full max-w-4xl">
-              {/* Loading Skeleton */}
+              {/* Loading Skeleton - محسّن للموبايل */}
               {imageLoading && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-card rounded-lg border border-border shadow-lg">
-                  <div className="text-center p-12">
+                  <div className="text-center p-6 sm:p-12">
                     {/* Animated spinner */}
-                    <div className="relative w-20 h-20 mx-auto mb-6">
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6">
                       <div className="absolute inset-0 rounded-full border-4 border-muted"></div>
                       <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
                     </div>
                     
                     {/* Loading text */}
-                    <h3 className="text-lg font-semibold text-foreground mb-2">جاري تحميل السيرة الذاتية...</h3>
-                    <p className="text-sm text-muted-foreground mb-4">يرجى الانتظار، جاري تحميل الصورة من Google Drive</p>
+                    <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">جاري تحميل السيرة الذاتية...</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-4">يرجى الانتظار، جاري تحميل الصورة من Google Drive</p>
                     
                     {/* Animated progress bar */}
-                    <div className="w-64 h-2 bg-muted rounded-full overflow-hidden mx-auto">
+                    <div className="w-48 sm:w-64 h-2 bg-muted rounded-full overflow-hidden mx-auto">
                       <div className="h-full bg-gradient-to-r from-primary to-primary/60 animate-pulse rounded-full" style={{ width: '60%' }}></div>
                     </div>
                     
                     {/* Loading tips */}
-                    <div className="mt-6 text-xs text-muted-foreground">
+                    <div className="mt-4 sm:mt-6 text-xs text-muted-foreground">
                       <p>💡 قد يستغرق التحميل بضع ثوانٍ حسب سرعة الإنترنت</p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Error State */}
+              {/* Error State - محسّن للموبايل */}
               {imageError && (
                 <div className="max-w-2xl mx-auto">
-                  <div className="p-8 bg-warning/10 border-2 border-warning/30 rounded-lg text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="p-4 sm:p-8 bg-warning/10 border-2 border-warning/30 rounded-lg text-center">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-warning/20 flex items-center justify-center">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <h3 className="text-xl font-bold text-foreground mb-3">📸 صورة السيرة الذاتية</h3>
-                    <p className="text-sm text-muted-foreground mb-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3">📸 صورة السيرة الذاتية</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-6">
                       Google Drive يمنع العرض المباشر للصور. يمكنك فتح الصورة في نافذة جديدة أو تحميلها مباشرة.
                     </p>
                     
-                    <div className="bg-card border border-border rounded-lg p-4 mb-6">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="text-right flex-1">
-                          <p className="text-sm font-semibold text-foreground mb-1">
+                    <div className="bg-card border border-border rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                      <div className="flex items-center justify-between gap-2 sm:gap-4">
+                        <div className="text-right flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm font-semibold text-foreground mb-1 truncate">
                             📄 {cv.fullName}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             مخزنة على Google Drive
                           </p>
                         </div>
-                        <svg className="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12.01 2.011a3.2 3.2 0 011.443.322L22.6 7.06a1.984 1.984 0 011.085 1.778v6.324c0 .75-.418 1.439-1.085 1.778l-9.147 4.727a3.2 3.2 0 01-2.886 0l-9.147-4.727a1.984 1.984 0 01-1.085-1.778V8.838c0-.75.418-1.439 1.085-1.778L10.567 2.333a3.2 3.2 0 011.443-.322z"/>
                         </svg>
                       </div>
                     </div>
                     
-                    <div className="flex gap-3 flex-wrap justify-center">
+                    <div className="flex gap-2 sm:gap-3 flex-wrap justify-center">
                       <button
                         onClick={() => window.open(cv.cvImageUrl, '_blank')}
-                        className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg flex items-center gap-2 font-semibold"
+                        className="px-4 sm:px-8 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg flex items-center gap-2 font-semibold text-sm sm:text-base"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -651,9 +665,9 @@ export default function PublicCVPage() {
                 </div>
               )}
               
-              {/* Badge */}
+              {/* Badge - مخفي على الموبايل */}
               {!imageLoading && !imageError && (
-                <div className="absolute top-4 right-4 bg-primary/90 backdrop-blur px-4 py-2 rounded-full text-sm text-primary-foreground shadow-lg flex items-center gap-2">
+                <div className="hidden sm:flex absolute top-4 right-4 bg-primary/90 backdrop-blur px-4 py-2 rounded-full text-sm text-primary-foreground shadow-lg items-center gap-2">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                   </svg>
