@@ -1189,8 +1189,6 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
               <option value="ALL">اختر الديانة</option>
               <option value="MUSLIM">مسلم 🕌</option>
               <option value="CHRISTIAN">مسيحي ✝️</option>
-              <option value="BUDDHIST">بوذي ☸️</option>
-              <option value="HINDU">هندوسي 🕉️</option>
             </select>
 
             <select
