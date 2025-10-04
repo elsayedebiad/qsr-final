@@ -708,6 +708,15 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
           {/* شريط علوي بمعلومات التواصل */}
           <div className="bg-[#1e3a8a] text-white py-3">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+              {/* اللوغو + النص */}
+              <div className="flex items-center gap-3">
+                <img src="/logo-2.png" alt="الاسناد السريع" className="h-10 w-auto" />
+                <div className="flex flex-col">
+                  <span className="font-bold text-lg">الاسناد السريع</span>
+                  <span className="text-xs text-blue-200">لخدمات العمالة المنزلية</span>
+                </div>
+              </div>
+              
               <div className="flex items-center gap-2 text-sm">
                 <span>التواصل مع الدعم</span>
                 {whatsappNumber && (
