@@ -830,6 +830,45 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
             </div>
           </div>
 
+          {/* البانرات الإعلانية */}
+          <div className="mb-6 space-y-4">
+            {/* بانر 1 - PC */}
+            <div className="hidden md:block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
+              <img 
+                src="/bannar one.png" 
+                alt="Banner 1" 
+                className="w-full h-auto object-cover"
+              />
+            </div>
+            
+            {/* بانر 1 - Mobile */}
+            <div className="block md:hidden rounded-xl overflow-hidden shadow-lg">
+              <img 
+                src="/bannar one mobile.png" 
+                alt="Banner 1 Mobile" 
+                className="w-full h-auto object-cover"
+              />
+            </div>
+
+            {/* بانر 2 - PC */}
+            <div className="hidden md:block rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
+              <img 
+                src="/bannar two.png" 
+                alt="Banner 2" 
+                className="w-full h-auto object-cover"
+              />
+            </div>
+            
+            {/* بانر 2 - Mobile */}
+            <div className="block md:hidden rounded-xl overflow-hidden shadow-lg">
+              <img 
+                src="/bannar two mobile.png" 
+                alt="Banner 2 Mobile" 
+                className="w-full h-auto object-cover"
+              />
+            </div>
+          </div>
+
           {/* مربعات الفلاتر السريعة - بتصميم qsr.sa محسّن */}
           <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-9 gap-2 sm:gap-4 mb-6">
             {/* فلتر الجنسية الفلبينية */}
