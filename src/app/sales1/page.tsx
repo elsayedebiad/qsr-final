@@ -946,7 +946,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
             </div>
           </div>
 
-          {/* الـCarousel للبنرات الإعلانية */}
+          {/* كاروسل الصور الإضافي - الجديد فوق */}
+          {!secondaryBannersLoading && (secondaryDesktopBanners.length > 0 || secondaryMobileBanners.length > 0) && (
+            <div className="mb-6">
+              <SimpleImageCarousel
+                desktopImages={secondaryDesktopBanners}
+                mobileImages={secondaryMobileBanners}
+                autoPlay={true}
+                autoPlayInterval={4000}
+                className=""
+              />
+            </div>
+          )}
+
+          {/* الـCarousel للبنرات الإعلانية - القديم تحت */}
           {!bannersLoading && (desktopBanners.length > 0 || mobileBanners.length > 0) && (
             <div className="mb-6 relative">
               <div className="relative rounded-xl overflow-hidden shadow-lg">
@@ -1019,19 +1032,6 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   </>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* كاروسل الصور الإضافي */}
-          {!secondaryBannersLoading && (secondaryDesktopBanners.length > 0 || secondaryMobileBanners.length > 0) && (
-            <div className="mb-6">
-              <SimpleImageCarousel
-                desktopImages={secondaryDesktopBanners}
-                mobileImages={secondaryMobileBanners}
-                autoPlay={true}
-                autoPlayInterval={4000}
-                className=""
-              />
             </div>
           )}
 
