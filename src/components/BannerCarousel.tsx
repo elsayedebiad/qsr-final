@@ -36,11 +36,11 @@ export default function BannerCarousel({ salesPageId, className = '' }: BannerCa
           const desktop = activeBanners
             .filter((b: any) => b.deviceType === 'DESKTOP')
             .sort((a: any, b: any) => a.order - b.order)
-            .map((b: any) => b.imageUrl || b.imageData)
+            .map((b: any) => b.imageUrl)
           const mobile = activeBanners
             .filter((b: any) => b.deviceType === 'MOBILE')
             .sort((a: any, b: any) => a.order - b.order)
-            .map((b: any) => b.imageUrl || b.imageData)
+            .map((b: any) => b.imageUrl)
           
           setDesktopBanners(desktop.length > 0 ? desktop : ['/bannar one.png', '/bannar two.png'])
           setMobileBanners(mobile.length > 0 ? mobile : ['/bannar one mobile.png', '/bannar two mobile.png'])

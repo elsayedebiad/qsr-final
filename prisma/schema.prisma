@@ -197,7 +197,6 @@ model Banner {
   id          Int         @id @default(autoincrement())
   salesPageId String      // sales1, sales2, sales3, sales4
   imageUrl    String      @db.Text // الصورة كـ Base64 (محفوظة في قاعدة البيانات)
-  imageData   String?     @db.Text // للمستقبل (بعد migration)
   deviceType  DeviceType  // mobile أو desktop
   order       Int         @default(0) // ترتيب البنر
   isActive    Boolean     @default(true)

@@ -8,7 +8,6 @@ interface Banner {
   id: number
   salesPageId: string
   imageUrl: string // Base64 data - محفوظة في قاعدة البيانات
-  imageData?: string // للمستقبل
   deviceType: 'MOBILE' | 'DESKTOP'
   order: number
   isActive: boolean
@@ -260,7 +259,7 @@ export default function BannersManagementPage() {
                     }`}
                   >
                     <img
-                      src={banner.imageUrl || banner.imageData}
+                      src={banner.imageUrl}
                       alt={`Banner ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg mb-3"
                     />
@@ -350,7 +349,7 @@ export default function BannersManagementPage() {
                     }`}
                   >
                     <img
-                      src={banner.imageUrl || banner.imageData}
+                      src={banner.imageUrl}
                       alt={`Banner ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg mb-3"
                     />
