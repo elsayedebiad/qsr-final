@@ -57,6 +57,21 @@ export default function BannersManagementPage() {
   const handleUpload = async (file: File, deviceType: 'MOBILE' | 'DESKTOP', salesPageId: string) => {
     try {
       setUploading(true)
+      
+      // تحقق من حجم الصورة
+      const fileSizeMB = file.size / (1024 * 1024)
+      const fileSizeKB = (file.size / 1024).toFixed(2)
+      console.log(`📊 حجم الصورة: ${fileSizeKB} KB (${fileSizeMB.toFixed(2)} MB)`)
+      console.log(`📝 نوع الصورة: ${file.type}`)
+      console.log(`📍 صفحة: ${salesPageId}, جهاز: ${deviceType}`)
+      
+      // تحذير إذا كانت الصورة كبيرة
+      if (fileSizeMB > 5) {
+        toast.error(`الصورة كبيرة جداً (${fileSizeMB.toFixed(2)} MB). الحد الأقصى 5 MB`)
+        setUploading(false)
+        return
+      }
+      
       const formData = new FormData()
       formData.append('file', file)
       formData.append('salesPageId', salesPageId)
@@ -74,12 +89,37 @@ export default function BannersManagementPage() {
         fetchAllBanners()
       } else {
         const errorData = await response.json()
-        console.error('Banner upload error:', errorData)
-        toast.error(`فشل في رفع البنر: ${errorData.error || 'خطأ غير معروف'}`)
+        console.error('❌ Banner upload error:', errorData)
+        console.error('📊 Response status:', response.status)
+        console.error('📝 Error details:', {
+          error: errorData.error,
+          errorType: errorData.errorType,
+          errorCode: errorData.errorCode,
+          details: errorData.details,
+          hint: errorData.hint,
+          solution: errorData.solution,
+          sql: errorData.sql
+        })
+        
+        // عرض رسالة خطأ مفصلة
+        let errorMessage = errorData.error || 'خطأ غير معروف'
+        if (errorData.details) {
+          errorMessage += `\n\nالتفاصيل: ${errorData.details}`
+        }
+        if (errorData.solution) {
+          errorMessage += `\n\nالحل: ${errorData.solution}`
+        }
+        if (errorData.hint) {
+          errorMessage += `\n\nملاحظة: ${errorData.hint}`
+        }
+        
+        toast.error(`فشل في رفع البنر: ${errorMessage}`)
       }
-    } catch (error) {
-      console.error('Error uploading banner:', error)
-      toast.error('فشل في رفع البنر')
+    } catch (error: any) {
+      console.error('❌ Error uploading banner:', error)
+      console.error('❌ Error type:', error?.constructor?.name)
+      console.error('❌ Error message:', error?.message)
+      toast.error(`فشل في رفع البنر: ${error?.message || 'خطأ في الاتصال'}`)
     } finally {
       setUploading(false)
     }
