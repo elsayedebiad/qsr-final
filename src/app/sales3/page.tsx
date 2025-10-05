@@ -1307,12 +1307,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                     value={religionFilter}
                     onChange={(e) => setReligionFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الديانات</option>
+                    <option value="ALL">اختر الديانة</option>
                     <option value="MUSLIM">مسلم</option>
                     <option value="CHRISTIAN">مسيحي</option>
-                    <option value="BUDDHIST">بوذي</option>
-                    <option value="HINDU">هندوسي</option>
-                    <option value="OTHER">أخرى</option>
                   </select>
                 </div>
               </div>
