@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ar } from 'date-fns/locale'
+import ProfileImage from '@/components/ProfileImage'
 
 interface Contract {
   id: number
@@ -235,19 +236,15 @@ export default function ContractsPage() {
                   <tr key={contract.id}>
                     <td>
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          {contract.cv.profileImage ? (
-                            <img 
-                              className="h-10 w-10 rounded-full object-cover" 
-                              src={contract.cv.profileImage} 
-                              alt={contract.cv.fullName}
-                            />
-                          ) : (
-                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                              <User className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
+                        <ProfileImage
+                          src={contract.cv.profileImage}
+                          alt={contract.cv.fullName}
+                          size="md"
+                          className="flex-shrink-0"
+                          clickable={true}
+                          title={`صورة ${contract.cv.fullName}`}
+                          subtitle={`الكود المرجعي: ${contract.cv.referenceCode || 'غير محدد'}`}
+                        />
                         <div className="mr-4">
                           <div className="text-sm font-medium text-foreground">
                             {contract.cv.fullName}

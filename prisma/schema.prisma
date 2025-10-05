@@ -198,6 +198,7 @@ model Banner {
   salesPageId String      // sales1, sales2, sales3, sales4
   imageUrl    String      @db.Text // الصورة كـ Base64 (محفوظة في قاعدة البيانات)
   deviceType  DeviceType  // mobile أو desktop
+  bannerType  BannerType  @default(MAIN) // نوع البنر: رئيسي أو إضافي
   order       Int         @default(0) // ترتيب البنر
   isActive    Boolean     @default(true)
   createdAt   DateTime    @default(now())
@@ -219,6 +220,11 @@ model SystemSettings {
 enum DeviceType {
   MOBILE
   DESKTOP
+}
+
+enum BannerType {
+  MAIN
+  SECONDARY
 }
 
 enum Role {

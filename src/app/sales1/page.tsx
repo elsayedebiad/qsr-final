@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
+import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 
 // إضافة أنيميشن CSS مخصص
 const customStyles = `
@@ -175,6 +176,12 @@ export default function Sales1Page() {
   const [desktopBanners, setDesktopBanners] = useState<string[]>([])
   const [mobileBanners, setMobileBanners] = useState<string[]>([])
   const [bannersLoading, setBannersLoading] = useState(true)
+  
+  // حالة البنرات الإضافية
+  const [currentSecondaryIndex, setCurrentSecondaryIndex] = useState(0)
+  const [secondaryDesktopBanners, setSecondaryDesktopBanners] = useState<string[]>([])
+  const [secondaryMobileBanners, setSecondaryMobileBanners] = useState<string[]>([])
+  const [secondaryBannersLoading, setSecondaryBannersLoading] = useState(true)
 
   // جلب البنرات من API
   useEffect(() => {
@@ -214,6 +221,46 @@ export default function Sales1Page() {
     }
     
     fetchBanners()
+  }, [])
+
+  // جلب البنرات الإضافية من API
+  useEffect(() => {
+    const fetchSecondaryBanners = async () => {
+      try {
+        setSecondaryBannersLoading(true)
+        const response = await fetch(`/api/secondary-banners?salesPageId=${salesPageId}`)
+        if (response.ok) {
+          const banners = await response.json()
+          
+          // فصل البنرات حسب نوع الجهاز (المفعلة فقط)
+          const activeBanners = banners.filter((b: any) => b.isActive)
+          const desktop = activeBanners
+            .filter((b: any) => b.deviceType === 'DESKTOP')
+            .sort((a: any, b: any) => a.order - b.order)
+            .map((b: any) => b.imageUrl)
+          const mobile = activeBanners
+            .filter((b: any) => b.deviceType === 'MOBILE')
+            .sort((a: any, b: any) => a.order - b.order)
+            .map((b: any) => b.imageUrl)
+          
+          setSecondaryDesktopBanners(desktop.length > 0 ? desktop : ['/bannar one.png', '/bannar two.png'])
+          setSecondaryMobileBanners(mobile.length > 0 ? mobile : ['/bannar one mobile.png', '/bannar two mobile.png'])
+        } else {
+          // استخدام البنرات الافتراضية في حال فشل التحميل
+          setSecondaryDesktopBanners(['/bannar one.png', '/bannar two.png'])
+          setSecondaryMobileBanners(['/bannar one mobile.png', '/bannar two mobile.png'])
+        }
+      } catch (error) {
+        console.error('Error fetching secondary banners:', error)
+        // استخدام البنرات الافتراضية
+        setSecondaryDesktopBanners(['/bannar one.png', '/bannar two.png'])
+        setSecondaryMobileBanners(['/bannar one mobile.png', '/bannar two mobile.png'])
+      } finally {
+        setSecondaryBannersLoading(false)
+      }
+    }
+    
+    fetchSecondaryBanners()
   }, [])
 
   // جلب رقم الواتساب المخصص
@@ -257,7 +304,7 @@ export default function Sales1Page() {
     checkAuthStatus()
   }, [])
 
-  // Auto-play للـCarousel
+  // Auto-play للـCarousel الرئيسي
   useEffect(() => {
     if (desktopBanners.length === 0) return
     
@@ -267,6 +314,17 @@ export default function Sales1Page() {
 
     return () => clearInterval(interval)
   }, [desktopBanners.length])
+
+  // Auto-play للـCarousel الإضافي
+  useEffect(() => {
+    if (secondaryDesktopBanners.length === 0) return
+    
+    const interval = setInterval(() => {
+      setCurrentSecondaryIndex((prev) => (prev + 1) % secondaryDesktopBanners.length)
+    }, 4000) // كل 4 ثواني
+
+    return () => clearInterval(interval)
+  }, [secondaryDesktopBanners.length])
 
   useEffect(() => {
     const fetchCVs = async () => {
@@ -961,6 +1019,19 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                   </>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* كاروسل الصور الإضافي */}
+          {!secondaryBannersLoading && (secondaryDesktopBanners.length > 0 || secondaryMobileBanners.length > 0) && (
+            <div className="mb-6">
+              <SimpleImageCarousel
+                desktopImages={secondaryDesktopBanners}
+                mobileImages={secondaryMobileBanners}
+                autoPlay={true}
+                autoPlayInterval={4000}
+                className=""
+              />
             </div>
           )}
 
