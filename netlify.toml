@@ -1,0 +1,40 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_FLAGS = "--legacy-peer-deps"
+  SKIP_ENV_VALIDATION = "1"
+
+# إعدادات Next.js
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Headers لـ API
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Redirects للصور المرفوعة
+[[redirects]]
+  from = "/uploads/*"
+  to = "/api/uploads/:splat"
+  status = 200
+
+# إعدادات Functions
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["prisma/schema.prisma"]
+
+# إعدادات Context (Production)
+[context.production]
+  command = "npx prisma generate && npm run build"
+
+# إعدادات Context (Preview)
+[context.deploy-preview]
+  command = "npx prisma generate && npm run build"
+
