@@ -71,13 +71,24 @@ export async function POST(request: NextRequest) {
     const imageSizeKB = (base64.length / 1024).toFixed(2)
     console.log(`✅ تم تحويل البنر إلى Base64 (${imageSizeKB} KB)`)
 
-    // التحقق من حجم الصورة (حد أقصى 10MB)
-    if (base64.length > 10 * 1024 * 1024) {
+    // التحقق من حجم الصورة (حد أقصى 5MB للأمان)
+    const maxSizeMB = 5
+    const maxSizeBytes = maxSizeMB * 1024 * 1024
+    
+    if (base64.length > maxSizeBytes) {
       return NextResponse.json(
-        { error: 'الصورة كبيرة جداً. الحد الأقصى 10 ميجابايت' },
+        { 
+          error: `الصورة كبيرة جداً. الحد الأقصى ${maxSizeMB} ميجابايت`,
+          currentSize: `${imageSizeKB} KB`,
+          maxSize: `${maxSizeMB * 1024} KB`
+        },
         { status: 400 }
       )
     }
+
+    console.log(`🔄 محاولة حفظ البنر في قاعدة البيانات...`)
+    console.log(`📊 حجم البيانات: ${imageSizeKB} KB`)
+    console.log(`📍 صفحة: ${salesPageId}, جهاز: ${deviceType}`)
 
     try {
       // محاولة حفظ في قاعدة البيانات
@@ -100,13 +111,30 @@ export async function POST(request: NextRequest) {
       })
     } catch (dbError: any) {
       console.error('❌ خطأ في حفظ البنر:', dbError)
+      console.error('❌ نوع الخطأ:', dbError.constructor.name)
+      console.error('❌ كود الخطأ:', dbError.code)
+      console.error('❌ رسالة الخطأ:', dbError.message)
       
       // إذا كان الخطأ بسبب حجم البيانات
       if (dbError.message?.includes('value too long') || dbError.code === '22001') {
         return NextResponse.json(
           { 
-            error: 'الصورة كبيرة جداً لقاعدة البيانات. يرجى تشغيل SQL migration على Neon:\n\nALTER TABLE banners ALTER COLUMN "imageUrl" TYPE TEXT;',
-            details: 'يجب تحويل عمود imageUrl إلى TEXT'
+            error: '⚠️ الصورة كبيرة جداً لقاعدة البيانات',
+            solution: 'شغّل SQL على Neon Console',
+            sql: 'ALTER TABLE banners ALTER COLUMN "imageUrl" TYPE TEXT;',
+            details: 'عمود imageUrl يجب أن يكون TEXT وليس VARCHAR'
+          },
+          { status: 500 }
+        )
+      }
+      
+      // إذا كان خطأ اتصال
+      if (dbError.code === 'P1001' || dbError.message?.includes('connect')) {
+        return NextResponse.json(
+          { 
+            error: 'فشل الاتصال بقاعدة البيانات',
+            details: 'تحقق من DATABASE_URL في Environment Variables',
+            hint: 'هل قاعدة البيانات شغالة على Neon؟'
           },
           { status: 500 }
         )
@@ -116,8 +144,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'فشل في حفظ البنر',
+          errorType: dbError.constructor.name,
+          errorCode: dbError.code || 'UNKNOWN',
           details: dbError.message || 'خطأ غير معروف',
-          hint: 'تحقق من Vercel logs للتفاصيل'
+          hint: 'راجع Vercel Logs للتفاصيل الكاملة'
         },
         { status: 500 }
       )
