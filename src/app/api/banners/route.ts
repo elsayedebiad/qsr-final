@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
     const salesPageId = searchParams.get('salesPageId')
     const deviceType = searchParams.get('deviceType')
 
+    console.log(`🔍 GET /api/banners - salesPageId: ${salesPageId}, deviceType: ${deviceType}`)
+
     const where: any = {}
     
     if (salesPageId) {
@@ -21,16 +23,31 @@ export async function GET(request: NextRequest) {
       where.deviceType = deviceType
     }
 
+    console.log(`📊 Query filters:`, where)
+
     const banners = await db.banner.findMany({
       where,
       orderBy: { order: 'asc' }
     })
 
+    console.log(`✅ Found ${banners.length} banner(s)`)
+    
+    // Log banner info without full Base64 data
+    banners.forEach(b => {
+      const imageSize = b.imageUrl ? (b.imageUrl.length / 1024).toFixed(2) : '0'
+      console.log(`  - ID: ${b.id}, Page: ${b.salesPageId}, Device: ${b.deviceType}, Size: ${imageSize} KB, Active: ${b.isActive}`)
+    })
+
     return NextResponse.json(banners)
-  } catch (error) {
-    console.error('Error fetching banners:', error)
+  } catch (error: any) {
+    console.error('❌ Error fetching banners:', error)
+    console.error('❌ Error type:', error?.constructor?.name)
+    console.error('❌ Error message:', error?.message)
     return NextResponse.json(
-      { error: 'Failed to fetch banners' },
+      { 
+        error: 'Failed to fetch banners',
+        details: error?.message || 'Unknown error'
+      },
       { status: 500 }
     )
   }

@@ -28,21 +28,30 @@ export default function BannersManagementPage() {
   const fetchAllBanners = async () => {
     try {
       setIsLoading(true)
+      console.log('🔄 جاري جلب البنرات من قاعدة البيانات...')
       const bannersData: Record<string, Banner[]> = {}
       
       for (const page of salesPages) {
+        console.log(`📍 جلب بنرات صفحة: ${page}`)
         const response = await fetch(`/api/banners?salesPageId=${page}`)
+        
         if (response.ok) {
           const data = await response.json()
+          console.log(`✅ تم جلب ${data.length} بنر من صفحة ${page}:`, data)
           bannersData[page] = data
         } else {
+          const errorText = await response.text()
+          console.error(`❌ فشل جلب بنرات ${page}:`, response.status, errorText)
           bannersData[page] = []
         }
       }
       
+      console.log('📊 إجمالي البنرات المجلوبة:', bannersData)
+      console.log('📈 عدد البنرات لكل صفحة:', Object.keys(bannersData).map(k => `${k}: ${bannersData[k].length}`).join(', '))
+      
       setAllBanners(bannersData)
     } catch (error) {
-      console.error('Error fetching banners:', error)
+      console.error('❌ Error fetching banners:', error)
       toast.error('فشل في جلب البنرات')
     } finally {
       setIsLoading(false)
@@ -194,8 +203,20 @@ export default function BannersManagementPage() {
     const mobileBanners = banners.filter(b => b.deviceType === 'MOBILE')
     const desktopBanners = banners.filter(b => b.deviceType === 'DESKTOP')
 
+    console.log(`🎨 Rendering banners for ${salesPageId}:`, {
+      total: banners.length,
+      mobile: mobileBanners.length,
+      desktop: desktopBanners.length
+    })
+
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        {/* عرض عدد البنرات */}
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            📊 إجمالي البنرات: {banners.length} (كمبيوتر: {desktopBanners.length}, موبايل: {mobileBanners.length})
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* بنرات الكمبيوتر */}
