@@ -18,28 +18,27 @@ export async function POST(request: NextRequest) {
       where: { id: decoded.userId }
     })
 
-    if (!user || user.email !== 'developer@system.local') {
+    if (!user || (user.email !== 'developer@system.local' && user.role !== 'DEVELOPER')) {
       return NextResponse.json({ error: 'غير مصرح - فقط المطور يمكنه الوصول' }, { status: 403 })
     }
 
     // الحصول على الحالة الجديدة
     const { isActive } = await request.json()
 
-    // تحديث حالة المطور
-    const updatedUser = await db.user.update({
-      where: { id: user.id },
-      data: { isActive },
-      select: {
-        id: true,
-        email: true,
-        isActive: true
+    // تحديث حالة النظام في جدول SystemSettings (وليس حساب المطور)
+    const systemSetting = await db.systemSettings.upsert({
+      where: { key: 'system_active' },
+      update: { value: isActive.toString() },
+      create: { 
+        key: 'system_active', 
+        value: isActive.toString() 
       }
     })
 
     return NextResponse.json({
       success: true,
       message: isActive ? 'تم تفعيل النظام' : 'تم تعطيل النظام',
-      isActive: updatedUser.isActive
+      isActive: systemSetting.value === 'true'
     })
 
   } catch (error) {

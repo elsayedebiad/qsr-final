@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from './app-sidebar'
@@ -22,10 +22,40 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     checkAuth()
   }, [])
+
+  // التحقق من حالة النظام عند تغيير المسار
+  useEffect(() => {
+    if (user) {
+      checkSystemStatus()
+    }
+  }, [pathname, user])
+
+  const checkSystemStatus = async () => {
+    try {
+      // المطور يمكنه الوصول دائماً - لا يتأثر بتعطيل النظام
+      if (user?.email === 'developer@system.local' || user?.role === 'DEVELOPER') {
+        return
+      }
+
+      // التحقق من حالة النظام
+      const systemStatusResponse = await fetch('/api/system-status')
+      if (systemStatusResponse.ok) {
+        const systemData = await systemStatusResponse.json()
+        if (!systemData.isActive) {
+          // النظام معطل - منع الوصول فوراً
+          router.push('/payment-required')
+          return
+        }
+      }
+    } catch (error) {
+      console.error('Error checking system status:', error)
+    }
+  }
 
   const checkAuth = async () => {
     try {
@@ -51,6 +81,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       if (response.ok) {
         const data = await response.json()
         setUser(data.user)
+
+        // التحقق من حالة النظام (تعطيل المطور)
+        // المطور يمكنه الوصول دائماً
+        if (data.user.email !== 'developer@system.local' && data.user.role !== 'DEVELOPER') {
+          const systemStatusResponse = await fetch('/api/system-status')
+          if (systemStatusResponse.ok) {
+            const systemData = await systemStatusResponse.json()
+            if (!systemData.isActive) {
+              // النظام معطل - توجيه لصفحة الدفع
+              router.push('/payment-required')
+              return
+            }
+          }
+        }
       } else {
         localStorage.removeItem('token')
         localStorage.removeItem('user')

@@ -43,6 +43,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // التحقق من حالة النظام (عبر API)
+  // ملاحظة: هذا الفحص يتم على مستوى الصفحات وليس في middleware
+  // لأن Edge Runtime لا يدعم Prisma
+
   return NextResponse.next()
 }
 

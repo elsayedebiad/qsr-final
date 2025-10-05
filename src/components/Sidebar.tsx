@@ -215,6 +215,13 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
       icon: Crown,
       href: '/dashboard/super-admin',
       adminOnly: true
+    },
+    {
+      id: 'developer-control',
+      label: 'لوحة المطور',
+      icon: Shield,
+      href: '/developer-control',
+      adminOnly: false // سيتم التحكم به بشكل خاص
     }
   ]
 
@@ -226,6 +233,13 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   }
 
   const renderNavItem = (item: NavItem, level: number = 0) => {
+    // إخفاء لوحة المطور من الجميع ما عدا المطور
+    if (item.id === 'developer-control') {
+      if (user?.email !== 'developer@system.local' && user?.role !== 'DEVELOPER') {
+        return null
+      }
+    }
+
     // Hide admin-only items for non-admin users
     if (item.adminOnly) {
       // Allow SUB_ADMIN to see CV-related items only (add, import, smart-import, google-sheets)

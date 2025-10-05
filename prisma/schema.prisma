@@ -206,6 +206,16 @@ model Banner {
   @@map("banners")
 }
 
+model SystemSettings {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique // مفتاح الإعداد (مثل: "system_active")
+  value     String   // قيمة الإعداد
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
 enum DeviceType {
   MOBILE
   DESKTOP

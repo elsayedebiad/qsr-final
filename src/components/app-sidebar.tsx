@@ -25,6 +25,8 @@ import {
   ChevronRight,
   ChevronsUpDown,
   Image,
+  Power,
+  PowerOff,
 } from "lucide-react"
 
 import {
@@ -88,6 +90,51 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { isMobile } = useSidebar()
+  const [systemActive, setSystemActive] = React.useState(true)
+  const [togglingSystem, setTogglingSystem] = React.useState(false)
+
+  // جلب حالة النظام للمطور
+  React.useEffect(() => {
+    if (user?.role === 'DEVELOPER' || user?.email === 'developer@system.local') {
+      fetchSystemStatus()
+    }
+  }, [user])
+
+  const fetchSystemStatus = async () => {
+    try {
+      const response = await fetch('/api/system-status')
+      const data = await response.json()
+      setSystemActive(data.isActive)
+    } catch (error) {
+      console.error('Error fetching system status:', error)
+    }
+  }
+
+  const toggleSystemStatus = async () => {
+    setTogglingSystem(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/developer/toggle-system', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isActive: !systemActive })
+      })
+
+      if (!response.ok) {
+        throw new Error('فشل في تحديث حالة النظام')
+      }
+
+      const data = await response.json()
+      setSystemActive(data.isActive)
+    } catch (error) {
+      console.error('Error toggling system:', error)
+    } finally {
+      setTogglingSystem(false)
+    }
+  }
 
   const navItems: NavItem[] = [
     {
@@ -390,6 +437,26 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
 
       <SidebarFooter>
         <SidebarMenu>
+          {/* زر تحكم النظام للمطور فقط */}
+          {user && (user.role === 'DEVELOPER' || user.email === 'developer@system.local') && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={toggleSystemStatus}
+                disabled={togglingSystem}
+                className={`${
+                  systemActive 
+                    ? 'bg-green-500/10 hover:bg-green-500/20 text-green-700 dark:text-green-400' 
+                    : 'bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-400'
+                } transition-colors`}
+              >
+                {systemActive ? <Power className="size-4" /> : <PowerOff className="size-4" />}
+                <span className="font-semibold">
+                  {togglingSystem ? 'جاري التحديث...' : systemActive ? 'النظام مفعل' : 'النظام معطل'}
+                </span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+          
           {user && (
             <SidebarMenuItem>
               <DropdownMenu>

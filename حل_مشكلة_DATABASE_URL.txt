@@ -1,0 +1,45 @@
+═══════════════════════════════════════════════════════════════
+    حل مشكلة DATABASE_URL عند استخدام Prisma
+═══════════════════════════════════════════════════════════════
+
+⚠️ المشكلة:
+─────────────────────────────────────────────────────────────
+Prisma يقرأ من .env (SQLite) بدلاً من .env.local (PostgreSQL)
+
+═══════════════════════════════════════════════════════════════
+
+✅ الحل السريع:
+─────────────────────────────────────────────────────────────
+
+استخدم هذا الأمر بدلاً من npx prisma db push:
+
+$env:DATABASE_URL=(Get-Content .env.local | Select-String "DATABASE_URL" | ForEach-Object { $_ -replace 'DATABASE_URL=', '' -replace '"', '' }); npx prisma db push
+
+─────────────────────────────────────────────────────────────
+
+✅ للأوامر الأخرى:
+─────────────────────────────────────────────────────────────
+
+# Prisma Studio
+$env:DATABASE_URL=(Get-Content .env.local | Select-String "DATABASE_URL" | ForEach-Object { $_ -replace 'DATABASE_URL=', '' -replace '"', '' }); npx prisma studio
+
+# Prisma Migrate
+$env:DATABASE_URL=(Get-Content .env.local | Select-String "DATABASE_URL" | ForEach-Object { $_ -replace 'DATABASE_URL=', '' -replace '"', '' }); npx prisma migrate dev
+
+# أي Script يستخدم Prisma
+$env:DATABASE_URL=(Get-Content .env.local | Select-String "DATABASE_URL" | ForEach-Object { $_ -replace 'DATABASE_URL=', '' -replace '"', '' }); node scripts/your-script.js
+
+═══════════════════════════════════════════════════════════════
+
+✅ الحل الدائم (اختياري):
+─────────────────────────────────────────────────────────────
+
+1. احذف ملف .env (أو غير اسمه)
+2. أعد تسمية .env.local إلى .env
+3. استخدم الأوامر العادية
+
+أو:
+
+عدل ملف .env واستبدل DATABASE_URL بنفس القيمة من .env.local
+
+═══════════════════════════════════════════════════════════════

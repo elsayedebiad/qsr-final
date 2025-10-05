@@ -38,14 +38,18 @@ export default function DeveloperControlPage() {
       const data = await response.json()
       
       // التحقق من أن المستخدم هو المطور
-      if (data.user.email !== 'developer@system.local') {
+      if (data.user.email !== 'developer@system.local' && data.user.role !== 'DEVELOPER') {
         toast.error('غير مصرح لك بالوصول لهذه الصفحة')
         router.push('/dashboard')
         return
       }
 
       setUser(data.user)
-      setIsActive(data.user.isActive)
+      
+      // جلب حالة النظام من API منفصل
+      const statusResponse = await fetch('/api/system-status')
+      const statusData = await statusResponse.json()
+      setIsActive(statusData.isActive)
     } catch (error) {
       console.error('Error:', error)
       router.push('/login')
