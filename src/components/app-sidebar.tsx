@@ -235,6 +235,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
           adminOnly: true
         },
         {
+          id: 'secondary-banners',
+          label: 'البنرات الإضافية',
+          icon: Grid3X3,
+          href: '/dashboard/secondary-banners',
+          adminOnly: true
+        },
+        {
           id: 'sales1',
           label: 'Sales 1',
           icon: ExternalLink,

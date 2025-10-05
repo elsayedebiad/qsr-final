@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
     if (deviceType) {
       where.deviceType = deviceType
     }
+    
+    // فلترة البنرات الرئيسية فقط
+    where.bannerType = 'MAIN'
 
     console.log(`📊 Query filters:`, where)
 

@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
-import BannerCarousel from '@/components/BannerCarousel'
+import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 
 // إضافة أنيميشن CSS مخصص
 const customStyles = `
@@ -170,10 +170,14 @@ export default function Sales4Page() {
   const salesPageId = 'sales4'
   
   // حالة الـCarousel للبنرات
-  const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
   const [desktopBanners, setDesktopBanners] = useState<string[]>([])
   const [mobileBanners, setMobileBanners] = useState<string[]>([])
   const [bannersLoading, setBannersLoading] = useState(true)
+  
+  // حالة البنرات الإضافية
+  const [secondaryDesktopBanners, setSecondaryDesktopBanners] = useState<string[]>([])
+  const [secondaryMobileBanners, setSecondaryMobileBanners] = useState<string[]>([])
+  const [secondaryBannersLoading, setSecondaryBannersLoading] = useState(true)
 
   // جلب رقم الواتساب المخصص
   useEffect(() => {
@@ -214,6 +218,86 @@ export default function Sales4Page() {
     }
     
     checkAuthStatus()
+  }, [])
+
+  // جلب البنرات من API
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        setBannersLoading(true)
+        const response = await fetch(`/api/banners?salesPageId=${salesPageId}`)
+        if (response.ok) {
+          const banners = await response.json()
+          
+          // فصل البنرات حسب نوع الجهاز (المفعلة فقط)
+          const activeBanners = banners.filter((b: any) => b.isActive)
+          const desktop = activeBanners
+            .filter((b: any) => b.deviceType === 'DESKTOP')
+            .sort((a: any, b: any) => a.order - b.order)
+            .map((b: any) => b.imageUrl)
+          const mobile = activeBanners
+            .filter((b: any) => b.deviceType === 'MOBILE')
+            .sort((a: any, b: any) => a.order - b.order)
+            .map((b: any) => b.imageUrl)
+          
+          setDesktopBanners(desktop.length > 0 ? desktop : [])
+          setMobileBanners(mobile.length > 0 ? mobile : [])
+        } else {
+          // لا توجد بنرات رئيسية
+          setDesktopBanners([])
+          setMobileBanners([])
+        }
+      } catch (error) {
+        console.error('Error fetching banners:', error)
+        // لا توجد بنرات رئيسية
+        setDesktopBanners([])
+        setMobileBanners([])
+      } finally {
+        setBannersLoading(false)
+      }
+    }
+    
+    fetchBanners()
+  }, [])
+
+  // جلب البنرات الإضافية من API
+  useEffect(() => {
+    const fetchSecondaryBanners = async () => {
+      try {
+        setSecondaryBannersLoading(true)
+        const response = await fetch(`/api/secondary-banners?salesPageId=${salesPageId}`)
+        if (response.ok) {
+          const banners = await response.json()
+          
+          // فصل البنرات حسب نوع الجهاز (المفعلة فقط)
+          const activeBanners = banners.filter((b: any) => b.isActive)
+          const desktop = activeBanners
+            .filter((b: any) => b.deviceType === 'DESKTOP')
+            .sort((a: any, b: any) => a.order - b.order)
+            .map((b: any) => b.imageUrl)
+          const mobile = activeBanners
+            .filter((b: any) => b.deviceType === 'MOBILE')
+            .sort((a: any, b: any) => a.order - b.order)
+            .map((b: any) => b.imageUrl)
+          
+          setSecondaryDesktopBanners(desktop.length > 0 ? desktop : [])
+          setSecondaryMobileBanners(mobile.length > 0 ? mobile : [])
+        } else {
+          // لا توجد بنرات ثانوية
+          setSecondaryDesktopBanners([])
+          setSecondaryMobileBanners([])
+        }
+      } catch (error) {
+        console.error('Error fetching secondary banners:', error)
+        // لا توجد بنرات ثانوية
+        setSecondaryDesktopBanners([])
+        setSecondaryMobileBanners([])
+      } finally {
+        setSecondaryBannersLoading(false)
+      }
+    }
+    
+    fetchSecondaryBanners()
   }, [])
 
   useEffect(() => {
@@ -832,10 +916,31 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
             </div>
           </div>
 
-          {/* البنرات الإعلانية */}
-          <div className="mb-6">
-            <BannerCarousel salesPageId="sales4" />
-          </div>
+          {/* كاروسل الصور الإضافي - الجديد فوق */}
+          {!secondaryBannersLoading && (secondaryDesktopBanners.length > 0 || secondaryMobileBanners.length > 0) && (
+            <div className="mb-6 px-4 md:px-6">
+              <SimpleImageCarousel
+                desktopImages={secondaryDesktopBanners}
+                mobileImages={secondaryMobileBanners}
+                autoPlay={true}
+                autoPlayInterval={4000}
+                className=""
+              />
+            </div>
+          )}
+
+          {/* الـCarousel للبنرات الإعلانية الرئيسية */}
+          {!bannersLoading && (desktopBanners.length > 0 || mobileBanners.length > 0) && (
+            <div className="mb-6 px-4 md:px-6">
+              <SimpleImageCarousel
+                desktopImages={desktopBanners}
+                mobileImages={mobileBanners}
+                autoPlay={true}
+                autoPlayInterval={4000}
+                className=""
+              />
+            </div>
+          )}
 
           {/* نص توجيهي */}
           <div className="text-center mb-4">
