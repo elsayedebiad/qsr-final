@@ -26,6 +26,8 @@ interface SalesConfigs {
   sales3: SalesConfig
   sales4: SalesConfig
   sales5: SalesConfig
+  sales6: SalesConfig
+  sales7: SalesConfig
 }
 
 export default function SalesConfigPage() {
@@ -35,7 +37,9 @@ export default function SalesConfigPage() {
     sales2: { whatsappNumber: '' },
     sales3: { whatsappNumber: '' },
     sales4: { whatsappNumber: '' },
-    sales5: { whatsappNumber: '' }
+    sales5: { whatsappNumber: '' },
+    sales6: { whatsappNumber: '' },
+    sales7: { whatsappNumber: '' }
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -137,12 +141,14 @@ export default function SalesConfigPage() {
   }
 
   const salesPages = [
-    { id: 'gallery', name: 'المعرض الرئيسي', color: 'from-blue-500 to-cyan-500', bgColor: 'bg-info/10', borderColor: 'border-info/30' },
-    { id: 'sales1', name: 'Sales 1', color: 'from-green-500 to-blue-500', bgColor: 'bg-success/10', borderColor: 'border-success/30' },
-    { id: 'sales2', name: 'Sales 2', color: 'from-purple-500 to-pink-500', bgColor: 'bg-purple-50', borderColor: 'border-purple-200' },
-    { id: 'sales3', name: 'Sales 3', color: 'from-orange-500 to-red-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
-    { id: 'sales4', name: 'Sales 4', color: 'from-indigo-500 to-blue-500', bgColor: 'bg-primary/10', borderColor: 'border-indigo-200' },
-    { id: 'sales5', name: 'Sales 5', color: 'from-pink-500 to-rose-500', bgColor: 'bg-pink-50', borderColor: 'border-pink-200' }
+    { id: 'gallery', name: 'المعرض الرئيسي', color: 'from-blue-500 to-cyan-500', bgColor: 'bg-blue-100/50 dark:bg-blue-900/20', borderColor: 'border-blue-200 dark:border-blue-700', textColor: 'text-blue-900 dark:text-blue-100' },
+    { id: 'sales1', name: 'Sales 1', color: 'from-green-500 to-blue-500', bgColor: 'bg-green-100/50 dark:bg-green-900/20', borderColor: 'border-green-200 dark:border-green-700', textColor: 'text-green-900 dark:text-green-100' },
+    { id: 'sales2', name: 'Sales 2', color: 'from-purple-500 to-pink-500', bgColor: 'bg-purple-100/50 dark:bg-purple-900/20', borderColor: 'border-purple-200 dark:border-purple-700', textColor: 'text-purple-900 dark:text-purple-100' },
+    { id: 'sales3', name: 'Sales 3', color: 'from-orange-500 to-red-500', bgColor: 'bg-orange-100/50 dark:bg-orange-900/20', borderColor: 'border-orange-200 dark:border-orange-700', textColor: 'text-orange-900 dark:text-orange-100' },
+    { id: 'sales4', name: 'Sales 4', color: 'from-indigo-500 to-blue-500', bgColor: 'bg-indigo-100/50 dark:bg-indigo-900/20', borderColor: 'border-indigo-200 dark:border-indigo-700', textColor: 'text-indigo-900 dark:text-indigo-100' },
+    { id: 'sales5', name: 'Sales 5', color: 'from-pink-500 to-rose-500', bgColor: 'bg-pink-100/50 dark:bg-pink-900/20', borderColor: 'border-pink-200 dark:border-pink-700', textColor: 'text-pink-900 dark:text-pink-100' },
+    { id: 'sales6', name: 'Sales 6', color: 'from-teal-500 to-green-500', bgColor: 'bg-teal-100/50 dark:bg-teal-900/20', borderColor: 'border-teal-200 dark:border-teal-700', textColor: 'text-teal-900 dark:text-teal-100' },
+    { id: 'sales7', name: 'Sales 7', color: 'from-red-500 to-orange-500', bgColor: 'bg-red-100/50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-700', textColor: 'text-red-900 dark:text-red-100' }
   ]
 
   if (isLoading) {
@@ -162,11 +168,11 @@ export default function SalesConfigPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-card rounded-lg shadow-lg border border-border p-6">
+        <div className="bg-background rounded-lg shadow-lg border border-border p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="bg-gradient-to-r from-blue-100 to-purple-100 p-3 rounded-lg">
-                <Settings className="h-6 w-6 text-info" />
+                <Settings className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <h1 className="text-2xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -178,7 +184,7 @@ export default function SalesConfigPage() {
             
             <div className="flex items-center gap-3">
               {lastSaved && (
-                <div className="flex items-center gap-2 text-sm text-success bg-success/10 px-3 py-2 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-100/50 dark:bg-green-900/20 px-3 py-2 rounded-lg">
                   <CheckCircle className="h-4 w-4" />
                   آخر حفظ: {lastSaved.toLocaleTimeString('ar-SA')}
                 </div>
@@ -228,14 +234,14 @@ export default function SalesConfigPage() {
                         <MessageCircle className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-foreground">{page.name}</h3>
-                        <p className="text-sm text-muted-foreground">صفحة معرض السير الذاتية</p>
+                        <h3 className={`text-lg font-semibold ${page.textColor}`}>{page.name}</h3>
+                        <p className={`text-sm ${page.textColor} opacity-80`}>صفحة معرض السير الذاتية</p>
                       </div>
                     </div>
                     
                     <button
                       onClick={() => openSalesPage(page.id)}
-                      className="bg-card hover:bg-background text-foreground p-2 rounded-lg transition-colors border border-border"
+                      className="bg-background hover:bg-muted text-foreground p-2 rounded-lg transition-colors border border-border"
                       title="فتح الصفحة"
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -256,21 +262,21 @@ export default function SalesConfigPage() {
                     />
                     
                     {config.whatsappNumber && isValidNumber && (
-                      <div className="flex items-center gap-2 mt-2 text-sm text-success">
+                      <div className="flex items-center gap-2 mt-2 text-sm text-green-600 dark:text-green-400">
                         <CheckCircle className="h-4 w-4" />
                         رقم صحيح ✓
                       </div>
                     )}
                     
                     {!isValidNumber && config.whatsappNumber && (
-                      <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+                      <div className="flex items-center gap-2 mt-2 text-sm text-red-600 dark:text-red-400">
                         <AlertCircle className="h-4 w-4" />
                         رقم غير صحيح
                       </div>
                     )}
                   </div>
 
-                  <div className="bg-background p-3 rounded-lg">
+                  <div className="bg-muted/50 p-3 rounded-lg border border-border">
                     <h4 className="text-sm font-medium text-foreground mb-2">معلومات الصفحة:</h4>
                     <div className="space-y-1 text-xs text-muted-foreground">
                       <p>• الرابط: /{page.id}</p>
@@ -285,14 +291,14 @@ export default function SalesConfigPage() {
         </div>
 
         {/* Instructions */}
-        <div className="bg-info/10 border border-info/30 rounded-lg p-6">
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-6">
           <div className="flex items-start gap-4">
-            <div className="bg-info/10 p-2 rounded-lg flex-shrink-0">
-              <MessageCircle className="h-5 w-5 text-info" />
+            <div className="bg-primary/10 p-2 rounded-lg flex-shrink-0">
+              <MessageCircle className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-info mb-2">تعليمات الاستخدام</h3>
-              <div className="space-y-2 text-sm text-info">
+              <h3 className="text-lg font-semibold text-primary mb-2">تعليمات الاستخدام</h3>
+              <div className="space-y-2 text-sm text-primary/80">
                 <p>• <strong>رقم الواتساب:</strong> يجب إدخال الرقم مع رمز الدولة (مثال: 966501234567 للسعودية)</p>
                 <p>• <strong>صفحات المبيعات:</strong> كل صفحة تعرض نفس السير الذاتية ولكن برقم واتساب مختلف</p>
                 <p>• <strong>الروابط:</strong> يمكن مشاركة رابط كل صفحة مع فريق مبيعات مختلف</p>

@@ -21,7 +21,7 @@ export default function BannersManagementPage() {
   const [uploading, setUploading] = useState(false)
   const [selectedTab, setSelectedTab] = useState('sales1')
 
-  const salesPages = ['sales1', 'sales2', 'sales3', 'sales4', 'sales5']
+  const salesPages = ['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7']
 
   // جلب جميع البنرات لجميع الصفحات
   const fetchAllBanners = async () => {

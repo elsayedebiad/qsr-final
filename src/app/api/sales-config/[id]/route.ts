@@ -13,7 +13,7 @@ export async function GET(
     const salesId = resolvedParams.id
 
     // التحقق من أن salesId صحيح
-    if (!['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'gallery'].includes(salesId)) {
+    if (!['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7', 'gallery'].includes(salesId)) {
       return NextResponse.json(
         { error: 'صفحة المبيعات غير موجودة' },
         { status: 404 }
@@ -57,7 +57,7 @@ export async function PUT(
     const { whatsappNumber } = body
 
     // التحقق من أن salesId صحيح
-    if (!['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'gallery'].includes(salesId)) {
+    if (!['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7', 'gallery'].includes(salesId)) {
       return NextResponse.json(
         { error: 'صفحة المبيعات غير موجودة' },
         { status: 404 }
