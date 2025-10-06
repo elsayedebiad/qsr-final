@@ -624,25 +624,40 @@ export default function Sales1Page() {
 
   // إرسال رسالة واتساب
   const sendWhatsAppMessage = (cv: CV) => {
-    const message = `مرحباً، أريد الاستفسار عن السيرة الذاتية:
-الاسم: ${cv.fullName}
-${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
-الكود المرجعي: ${cv.referenceCode}
-الجنسية: ${cv.nationality || 'غير محدد'}
-الوظيفة: ${cv.position || 'غير محدد'}
+    try {
+      if (!whatsappNumber) {
+        toast.error('لم يتم تعيين رقم واتساب لهذه الصفحة. يرجى التواصل مع الإدارة.');
+        return;
+      }
 
-من صفحة Sales 1`
+      // تنظيف رقم الهاتف (إزالة أي أحرف غير رقمية)
+      const cleanPhone = whatsappNumber.replace(/\D/g, '');
+      
+      // إنشاء الرسالة مع تنسيق محسن
+      const message = `مرحباً، أريد الاستفسار عن السيرة الذاتية:
+الاسم: ${cv.fullName || 'غير محدد'}
+${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''}${cv.referenceCode ? `الكود المرجعي: ${cv.referenceCode}\n` : ''}${cv.nationality ? `الجنسية: ${cv.nationality}\n` : ''}${cv.position ? `الوظيفة: ${cv.position}\n` : ''}${cv.experience ? `الخبرة: ${cv.experience}\n` : ''}${cv.age ? `العمر: ${cv.age} سنة\n` : ''}${cv.monthlySalary ? `الراتب المطلوب: ${cv.monthlySalary} ريال\n` : ''}
+من صفحة: Sales 1`;
 
-    const encodedMessage = encodeURIComponent(message)
-    if (!whatsappNumber) {
-      toast.error('لم يتم تعيين رقم واتساب لهذه الصفحة. يرجى التواصل مع الإدارة.')
-      return
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+      
+      // فتح الرابط في نافذة جديدة
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      
+      // تتبع الحدث في Google Analytics (اختياري)
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'whatsapp_click', {
+          'event_category': 'engagement',
+          'event_label': `CV: ${cv.fullName || 'Unknown'}`,
+          'page_title': 'Sales 1',
+          'cv_id': cv.id
+        });
+      }
+    } catch (error) {
+      console.error('Error opening WhatsApp:', error);
+      toast.error('حدث خطأ أثناء فتح الواتساب. يرجى المحاولة مرة أخرى.');
     }
-    
-    const phoneNumber = whatsappNumber.replace(/^\+/, '') // إزالة + من بداية الرقم
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`
-    
-    window.open(whatsappUrl, '_blank')
   }
 
   // مشاركة سيرة ذاتية واحدة

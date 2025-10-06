@@ -26,7 +26,9 @@ import {
   Share2,
   Copy,
   ExternalLink,
-  Play
+  Play,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
@@ -128,7 +130,7 @@ interface CV {
   cvImageUrl?: string
 }
 
-export default function Sales4Page() {
+export default function Sales1Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
   const [filteredCvs, setFilteredCvs] = useState<CV[]>([])
@@ -167,7 +169,7 @@ export default function Sales4Page() {
   const [whatsappNumber, setWhatsappNumber] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
-  const salesPageId = 'sales4'
+  const salesPageId = 'sales1'
   
   // حالة الـCarousel للبنرات
   const [desktopBanners, setDesktopBanners] = useState<string[]>([])
@@ -178,47 +180,6 @@ export default function Sales4Page() {
   const [secondaryDesktopBanners, setSecondaryDesktopBanners] = useState<string[]>([])
   const [secondaryMobileBanners, setSecondaryMobileBanners] = useState<string[]>([])
   const [secondaryBannersLoading, setSecondaryBannersLoading] = useState(true)
-
-  // جلب رقم الواتساب المخصص
-  useEffect(() => {
-    const fetchWhatsappNumber = async () => {
-      try {
-        const response = await fetch(`/api/sales-config/${salesPageId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setWhatsappNumber(data.whatsappNumber || '')
-        }
-      } catch (error) {
-        console.error('Error fetching WhatsApp number:', error)
-      }
-    }
-    
-    fetchWhatsappNumber()
-  }, [])
-
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      const token = localStorage.getItem('token')
-      if (token) {
-        try {
-          const response = await fetch('/api/auth/me', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          if (response.ok) {
-            setIsLoggedIn(true)
-          } else {
-            setIsLoggedIn(false)
-          }
-        } catch (error) {
-          setIsLoggedIn(false)
-        }
-      } else {
-        setIsLoggedIn(false)
-      }
-    }
-    
-    checkAuthStatus()
-  }, [])
 
   // جلب البنرات من API
   useEffect(() => {
@@ -299,6 +260,48 @@ export default function Sales4Page() {
     
     fetchSecondaryBanners()
   }, [])
+
+  // جلب رقم الواتساب المخصص
+  useEffect(() => {
+    const fetchWhatsappNumber = async () => {
+      try {
+        const response = await fetch(`/api/sales-config/${salesPageId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setWhatsappNumber(data.whatsappNumber || '')
+        }
+      } catch (error) {
+        console.error('Error fetching WhatsApp number:', error)
+      }
+    }
+    
+    fetchWhatsappNumber()
+  }, [])
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const token = localStorage.getItem('token')
+      if (token) {
+        try {
+          const response = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          if (response.ok) {
+            setIsLoggedIn(true)
+          } else {
+            setIsLoggedIn(false)
+          }
+        } catch (error) {
+          setIsLoggedIn(false)
+        }
+      } else {
+        setIsLoggedIn(false)
+      }
+    }
+    
+    checkAuthStatus()
+  }, [])
+
 
   useEffect(() => {
     const fetchCVs = async () => {
@@ -594,17 +597,21 @@ export default function Sales4Page() {
         cv.livingTown?.toLowerCase().includes(locationFilter.toLowerCase()) ||
         cv.placeOfBirth?.toLowerCase().includes(locationFilter.toLowerCase())
 
+      // فلتر السائق الخاص
+      const matchesDriving = drivingFilter === 'ALL' || cv.driving === drivingFilter
+
       return matchesSearch && matchesStatus && matchesNationality && matchesMaritalStatus && 
              matchesAge && matchesSkill && matchesExperience && matchesLanguage && 
              matchesReligion && matchesEducation && matchesSalary && matchesContractPeriod && 
-             matchesPassportStatus && matchesHeight && matchesWeight && matchesChildren && matchesLocation
+             matchesPassportStatus && matchesHeight && matchesWeight && matchesChildren && matchesLocation &&
+             matchesDriving
     })
 
     setFilteredCvs(filtered)
   }, [cvs, searchTerm, statusFilter, nationalityFilter, maritalStatusFilter, ageFilter, 
       skillFilter, experienceFilter, languageFilter, religionFilter, educationFilter, 
       salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, 
-      childrenFilter, locationFilter])
+      childrenFilter, locationFilter, drivingFilter])
 
   // Scroll تلقائي عند تغيير الفلتر
   useEffect(() => {
@@ -617,25 +624,40 @@ export default function Sales4Page() {
 
   // إرسال رسالة واتساب
   const sendWhatsAppMessage = (cv: CV) => {
-    const message = `مرحباً، أريد الاستفسار عن السيرة الذاتية:
-الاسم: ${cv.fullName}
-${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
-الكود المرجعي: ${cv.referenceCode}
-الجنسية: ${cv.nationality || 'غير محدد'}
-الوظيفة: ${cv.position || 'غير محدد'}
+    try {
+      if (!whatsappNumber) {
+        toast.error('لم يتم تعيين رقم واتساب لهذه الصفحة. يرجى التواصل مع الإدارة.');
+        return;
+      }
 
-من صفحة Sales 4`
+      // تنظيف رقم الهاتف (إزالة أي أحرف غير رقمية)
+      const cleanPhone = whatsappNumber.replace(/\D/g, '');
+      
+      // إنشاء الرسالة مع تنسيق محسن
+      const message = `مرحباً، أريد الاستفسار عن السيرة الذاتية:
+الاسم: ${cv.fullName || 'غير محدد'}
+${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''}${cv.referenceCode ? `الكود المرجعي: ${cv.referenceCode}\n` : ''}${cv.nationality ? `الجنسية: ${cv.nationality}\n` : ''}${cv.position ? `الوظيفة: ${cv.position}\n` : ''}${cv.experience ? `الخبرة: ${cv.experience}\n` : ''}${cv.age ? `العمر: ${cv.age} سنة\n` : ''}${cv.monthlySalary ? `الراتب المطلوب: ${cv.monthlySalary} ريال\n` : ''}
+من صفحة: Sales 1`;
 
-    const encodedMessage = encodeURIComponent(message)
-    if (!whatsappNumber) {
-      toast.error('لم يتم تعيين رقم واتساب لهذه الصفحة. يرجى التواصل مع الإدارة.')
-      return
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+      
+      // فتح الرابط في نافذة جديدة
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      
+      // تتبع الحدث في Google Analytics (اختياري)
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'whatsapp_click', {
+          'event_category': 'engagement',
+          'event_label': `CV: ${cv.fullName || 'Unknown'}`,
+          'page_title': 'Sales 1',
+          'cv_id': cv.id
+        });
+      }
+    } catch (error) {
+      console.error('Error opening WhatsApp:', error);
+      toast.error('حدث خطأ أثناء فتح الواتساب. يرجى المحاولة مرة أخرى.');
     }
-    
-    const phoneNumber = whatsappNumber.replace(/^\+/, '') // إزالة + من بداية الرقم
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`
-    
-    window.open(whatsappUrl, '_blank')
   }
 
   // مشاركة سيرة ذاتية واحدة
@@ -1409,9 +1431,12 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}` : ''}
                     value={religionFilter}
                     onChange={(e) => setReligionFilter(e.target.value)}
                   >
-                    <option value="ALL">اختر الديانة</option>
+                    <option value="ALL">جميع الديانات</option>
                     <option value="MUSLIM">مسلم</option>
                     <option value="CHRISTIAN">مسيحي</option>
+                    <option value="BUDDHIST">بوذي</option>
+                    <option value="HINDU">هندوسي</option>
+                    <option value="OTHER">أخرى</option>
                   </select>
                 </div>
               </div>
