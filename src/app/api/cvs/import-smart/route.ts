@@ -674,6 +674,14 @@ export async function POST(request: NextRequest) {
         col.toLowerCase().includes('ref') || col === 'ID'
       )
       console.log('🔢 أعمدة الأرقام المرجعية المكتشفة:', refCodeColumns)
+      
+      // Check for video-related columns
+      const videoColumns = columns.filter(col => 
+        col.includes('فيديو') || col.includes('رابط الفيديو') ||
+        col.toLowerCase().includes('video') || col.toLowerCase().includes('Video URL') ||
+        col.toLowerCase().includes('Video Link')
+      )
+      console.log('🎬 أعمدة الفيديو المكتشفة:', videoColumns)
     }
 
     // Analyze each row for duplicates
@@ -738,6 +746,7 @@ export async function POST(request: NextRequest) {
     // If action is 'execute', perform the actual import/update
     if (action === 'execute') {
       const errors: string[] = []
+      const importStartTime = Date.now() // Track import start time
       
       console.log(`🚀 بدء تنفيذ الاستيراد: ${results.newRecords} جديد، ${results.updatedRecords} تحديث`)
 
@@ -820,6 +829,28 @@ export async function POST(request: NextRequest) {
                 updatedById: userId
               }
             })
+            
+          // Log individual CV creation activity
+          try {
+            await db.activityLog.create({
+              data: {
+                userId: userId,
+                action: 'CV_CREATED',
+                description: `تم إنشاء سيرة ذاتية جديدة لـ ${cv.fullName} عبر الاستيراد`,
+                targetType: 'CV',
+                targetName: cv.fullName,
+                metadata: JSON.stringify({
+                  source: 'Excel Smart Import',
+                  fileName: file.name,
+                  rowNumber: cv.rowNumber,
+                  referenceCode: cv.referenceCode || null,
+                  hasVideo: !!cv.videoUrl
+                })
+              }
+            })
+          } catch (activityError) {
+            console.error(`خطأ في تسجيل نشاط الإنشاء:`, activityError)
+          }
         } catch (error) {
           console.error(`فشل في إنشاء السيرة الذاتية للصف ${cv.rowNumber}:`, error)
           
@@ -859,6 +890,50 @@ export async function POST(request: NextRequest) {
             const cvImageUrl = cleanStringValue(cv.cvImageUrl)
             if (cvImageUrl) {
               console.log(`📄 رابط صورة السيرة الكاملة: ${cvImageUrl}`)
+            }
+            
+            // Handle video URL processing and validation for updates
+            const updateVideoUrl = cleanStringValue(cv.videoUrl)
+            if (updateVideoUrl) {
+              console.log(`🎬 تحديث رابط الفيديو: ${updateVideoUrl}`)
+              
+              // Validate video URL
+              const isValidVideo = updateVideoUrl.includes('youtube.com') || 
+                                 updateVideoUrl.includes('youtu.be') || 
+                                 updateVideoUrl.includes('vimeo.com') ||
+                                 updateVideoUrl.includes('drive.google.com') ||
+                                 updateVideoUrl.includes('.mp4') ||
+                                 updateVideoUrl.includes('.webm')
+              
+              if (isValidVideo) {
+                console.log(`✅ رابط فيديو صحيح للتحديث: ${updateVideoUrl}`)
+              } else {
+                console.log(`⚠️ رابط فيديو غير مدعوم للتحديث: ${updateVideoUrl}`)
+              }
+            } else {
+              console.log(`❌ لا يوجد رابط فيديو للتحديث في الصف ${cv.rowNumber}`)
+            }
+            
+            // Handle video URL processing and validation
+            const videoUrl = cleanStringValue(cv.videoUrl)
+            if (videoUrl) {
+              console.log(`🎬 رابط الفيديو المكتشف: ${videoUrl}`)
+              
+              // Validate video URL
+              const isValidVideo = videoUrl.includes('youtube.com') || 
+                                 videoUrl.includes('youtu.be') || 
+                                 videoUrl.includes('vimeo.com') ||
+                                 videoUrl.includes('drive.google.com') ||
+                                 videoUrl.includes('.mp4') ||
+                                 videoUrl.includes('.webm')
+              
+              if (isValidVideo) {
+                console.log(`✅ رابط فيديو صحيح: ${videoUrl}`)
+              } else {
+                console.log(`⚠️ رابط فيديو غير مدعوم: ${videoUrl}`)
+              }
+            } else {
+              console.log(`❌ لا يوجد رابط فيديو للصف ${cv.rowNumber}`)
             }
           
             await db.cV.update({
@@ -915,6 +990,30 @@ export async function POST(request: NextRequest) {
                   updatedById: userId
                 }
               })
+              
+            // Log individual CV update activity
+            try {
+              await db.activityLog.create({
+                data: {
+                  userId: userId,
+                  action: 'CV_UPDATED',
+                  description: `تم تحديث السيرة الذاتية لـ ${cv.fullName} عبر الاستيراد`,
+                  targetType: 'CV',
+                  targetId: cv.existingId.toString(),
+                  targetName: cv.fullName,
+                  metadata: JSON.stringify({
+                    source: 'Excel Smart Import',
+                    fileName: file.name,
+                    rowNumber: cv.rowNumber,
+                    referenceCode: cv.referenceCode || null,
+                    hasVideo: !!cv.videoUrl,
+                    updateReason: cv.duplicateReason
+                  })
+                }
+              })
+            } catch (activityError) {
+              console.error(`خطأ في تسجيل نشاط التحديث:`, activityError)
+            }
           } catch (error) {
             console.error(`فشل في تحديث السيرة الذاتية للصف ${cv.rowNumber}:`, error)
             
@@ -950,6 +1049,37 @@ export async function POST(request: NextRequest) {
         }
       } catch (notificationError) {
         console.error('Error sending import notification:', notificationError)
+      }
+
+      // Log import activity to database
+      try {
+        await db.activityLog.create({
+          data: {
+            userId: userId,
+            action: 'EXCEL_IMPORT',
+            description: `تم استيراد ملف Excel "${file.name}" - ${results.totalRows} صف: ${results.newRecords} جديد، ${results.updatedRecords} محدث، ${results.skippedRecords} متخطى، ${results.errorRecords + errors.length} خطأ`,
+            targetType: 'SYSTEM',
+            targetName: file.name,
+            metadata: JSON.stringify({
+              fileName: file.name,
+              totalRows: results.totalRows,
+              newRecords: results.newRecords,
+              updatedRecords: results.updatedRecords,
+              skippedRecords: results.skippedRecords,
+              errorRecords: results.errorRecords + errors.length,
+              importType: 'الاستيراد الذكي',
+              processingTime: Date.now() - importStartTime,
+              referenceCodes: processedReferenceCodes.size,
+              videoLinks: Array.from(referenceCodeStats.keys()).filter(code => 
+                results.details.newCVs.concat(results.details.updatedCVs)
+                  .some(cv => cv.referenceCode === code && cv.videoUrl)
+              ).length
+            })
+          }
+        })
+        console.log('✅ Activity logged to database successfully')
+      } catch (activityError) {
+        console.error('❌ Error logging activity to database:', activityError)
       }
 
       // If there were errors during execution, include them in the response

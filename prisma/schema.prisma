@@ -10,20 +10,22 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  email         String         @unique
-  name          String
-  password      String
-  role          Role           @default(USER)
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  activities    ActivityLog[]
-  bookedCVs     Booking[]      @relation("BookedCVs")
-  createdCVs    CV[]           @relation("CVCreatedBy")
-  updatedCVs    CV[]           @relation("CVUpdatedBy")
-  notifications Notification[]
-  sessions      Session[]
+  id               Int               @id @default(autoincrement())
+  email            String            @unique
+  name             String
+  password         String
+  role             Role              @default(USER)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  activities       ActivityLog[]
+  bookedCVs        Booking[]         @relation("BookedCVs")
+  createdCVs       CV[]              @relation("CVCreatedBy")
+  updatedCVs       CV[]              @relation("CVUpdatedBy")
+  notifications    Notification[]
+  sessions         Session[]
+  loginActivations LoginActivation[]
+  userSessions     UserSession[]     @relation("UserSessions")
 
   @@map("users")
 }
@@ -207,6 +209,18 @@ model Banner {
   @@map("banners")
 }
 
+model LoginActivation {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  activationCode String   @unique
+  isUsed         Boolean  @default(false)
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_activations")
+}
+
 model SystemSettings {
   id        Int      @id @default(autoincrement())
   key       String   @unique // مفتاح الإعداد (مثل: "system_active")
@@ -215,6 +229,24 @@ model SystemSettings {
   updatedAt DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+model UserSession {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  sessionId    String    @unique
+  loginTime    DateTime  @default(now())
+  logoutTime   DateTime?
+  lastActivity DateTime  @default(now())
+  ipAddress    String?
+  userAgent    String?
+  isActive     Boolean   @default(true)
+  duration     Int?      // Session duration in minutes
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
 }
 
 enum DeviceType {

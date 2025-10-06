@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useRouter, usePathname } from 'next/navigation'
+import { LucideIcon } from "lucide-react"
 import {
   FileText,
   Plus,
@@ -27,6 +28,8 @@ import {
   Image,
   Power,
   PowerOff,
+  Archive,
+  Wifi,
 } from "lucide-react"
 
 import {
@@ -68,7 +71,7 @@ import {
 interface NavItem {
   id: string
   label: string
-  icon: any
+  icon: LucideIcon
   href?: string
   onClick?: () => void
   children?: NavItem[]
@@ -206,6 +209,12 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
           label: 'معاد',
           icon: UserX,
           href: '/dashboard/returned'
+        },
+        {
+          id: 'archive',
+          label: 'الأرشيف',
+          icon: Archive,
+          href: '/dashboard/archive'
         }
       ]
     },
@@ -290,6 +299,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       label: 'مركز الإشعارات',
       icon: BellRing,
       href: '/dashboard/notifications',
+      adminOnly: true
+    },
+    {
+      id: 'online-users',
+      label: 'المستخدمون المتصلون',
+      icon: Wifi,
+      href: '/dashboard/online-users',
       adminOnly: true
     },
     {

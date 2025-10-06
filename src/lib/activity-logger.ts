@@ -48,7 +48,7 @@ export async function logActivity(data: ActivityLogData) {
     const token = localStorage.getItem('token')
     if (token) {
       try {
-        await fetch('/api/activity-log', {
+        const response = await fetch('/api/activity', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -56,6 +56,12 @@ export async function logActivity(data: ActivityLogData) {
           },
           body: JSON.stringify(data)
         })
+        
+        if (response.ok) {
+          console.log('Activity logged to server successfully')
+        } else {
+          console.log('Server logging failed, but local logging succeeded')
+        }
       } catch (serverError) {
         console.log('Server logging failed, but local logging succeeded')
       }
@@ -197,6 +203,15 @@ export const BulkActivityLogger = {
     return logActivity({
       action: 'BULK_DOWNLOAD',
       description: `تم تحميل ${count} صورة سيرة ذاتية`,
+      targetType: 'SYSTEM',
+      metadata: { count }
+    })
+  },
+
+  archive: async (count: number) => {
+    return logActivity({
+      action: 'BULK_ARCHIVE',
+      description: `تم أرشفة ${count} سيرة ذاتية`,
       targetType: 'SYSTEM',
       metadata: { count }
     })

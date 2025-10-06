@@ -139,7 +139,7 @@ export default function CVsPage() {
   const [selectedCvs, setSelectedCvs] = useState<string[]>([])
   const [showBulkDownloader, setShowBulkDownloader] = useState(false)
   const [showBulkOperationModal, setShowBulkOperationModal] = useState(false)
-  const [bulkOperationType, setBulkOperationType] = useState<'delete' | 'status' | 'download'>('delete')
+  const [bulkOperationType, setBulkOperationType] = useState<'delete' | 'status' | 'download' | 'archive'>('delete')
   const [bulkProgress, setBulkProgress] = useState(0)
   const [bulkProcessing, setBulkProcessing] = useState(false)
   // شريط تحميل PNG الاحترافي
@@ -210,8 +210,8 @@ export default function CVsPage() {
   }
 
   const filterCVs = () => {
-    // إخفاء السير المتعاقدة فقط، وإظهار السير المعادة
-    let filtered = cvs.filter(cv => cv.status !== CVStatus.HIRED)
+    // إخفاء السير المتعاقدة والمؤرشفة، وإظهار السير المعادة
+    let filtered = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED)
 
     if (searchTerm) {
       const q = searchTerm.toLowerCase()
@@ -230,7 +230,19 @@ export default function CVsPage() {
     if (nationalityFilter !== 'ALL') filtered = filtered.filter((cv) => cv.nationality === nationalityFilter)
     if (skillFilter !== 'ALL') {
       filtered = filtered.filter((cv) => {
-        const val = (cv as any)[skillFilter] as SkillLevel | undefined
+        // Get skill value using bracket notation
+        let val: SkillLevel | undefined
+        if (skillFilter === 'babySitting') val = cv.babySitting
+        else if (skillFilter === 'childrenCare') val = cv.childrenCare
+        else if (skillFilter === 'tutoring') val = cv.tutoring
+        else if (skillFilter === 'disabledCare') val = cv.disabledCare
+        else if (skillFilter === 'cleaning') val = cv.cleaning
+        else if (skillFilter === 'washing') val = cv.washing
+        else if (skillFilter === 'ironing') val = cv.ironing
+        else if (skillFilter === 'arabicCooking') val = cv.arabicCooking
+        else if (skillFilter === 'sewing') val = cv.sewing
+        else if (skillFilter === 'driving') val = cv.driving
+        else val = undefined
         return val === SkillLevel.YES || val === SkillLevel.WILLING
       })
     }
@@ -669,6 +681,16 @@ export default function CVsPage() {
     setShowBulkOperationModal(true)
   }
 
+  // فتح نافذة الأرشفة الجماعية
+  const handleBulkArchive = () => {
+    if (selectedCvs.length === 0) {
+      toast.error('اختر على الأقل سيرة واحدة للأرشفة')
+      return
+    }
+    setBulkOperationType('archive')
+    setShowBulkOperationModal(true)
+  }
+
   // تنفيذ العمليات الجماعية
   const executeBulkOperation = async () => {
     setBulkProcessing(true)
@@ -696,6 +718,32 @@ export default function CVsPage() {
         BulkActivityLogger.delete(selectedCvs.length)
         
         toast.success(`تم حذف ${selectedCvs.length} سيرة ذاتية بنجاح`)
+      } else if (bulkOperationType === 'archive') {
+        for (let i = 0; i < selectedCvs.length; i++) {
+          const cvId = selectedCvs[i]
+          await fetch(`/api/cvs/${cvId}`, {
+            method: 'PATCH',
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'ARCHIVED' })
+          })
+          setBulkProgress(Math.round(((i + 1) / totalItems) * 100))
+          await new Promise(resolve => setTimeout(resolve, 200))
+        }
+        
+        // تحديث القائمة محلياً
+        setCvs(prev => prev.map(cv => 
+          selectedCvs.includes(cv.id) 
+            ? { ...cv, status: CVStatus.ARCHIVED }
+            : cv
+        ))
+        
+        // تسجيل النشاط
+        BulkActivityLogger.archive(selectedCvs.length)
+        
+        toast.success(`تم أرشفة ${selectedCvs.length} سيرة ذاتية بنجاح`)
       }
 
       setSelectedCvs([])
@@ -820,7 +868,7 @@ export default function CVsPage() {
   return (
     <>
     <DashboardLayout>
-      {/* @ts-ignore */}
+      {/* Modal animation component */}
       {(user: User | null) => (
         <div className="space-y-6">
           {/* نافذة منبثقة جميلة لشريط التحميل */}
@@ -923,13 +971,22 @@ export default function CVsPage() {
                     <span className="hidden xs:inline">تحميل PNG</span> ({selectedCvs.length})
                   </button>
                   {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
-                    <button
-                      onClick={handleBulkDelete}
-                      className="btn btn-destructive text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
-                    >
-                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
-                      <span className="hidden xs:inline">حذف</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={handleBulkArchive}
+                        className="btn btn-warning text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
+                      >
+                        <FileText className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
+                        <span className="hidden xs:inline">أرشفة</span>
+                      </button>
+                      <button
+                        onClick={handleBulkDelete}
+                        className="btn btn-destructive text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
+                      >
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
+                        <span className="hidden xs:inline">حذف</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -1521,7 +1578,10 @@ export default function CVsPage() {
                             cv.videoLink.includes('.mp4') ||
                             cv.videoLink.includes('.webm')) && (
                             <button
-                              onClick={() => setSelectedVideo(cv.videoLink || null)}
+                              onClick={() => {
+                                console.log('🎥 Video button clicked for CV:', cv.fullName, 'Video URL:', cv.videoLink)
+                                setSelectedVideo(cv.videoLink || null)
+                              }}
                               className="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg"
                               title="مشاهدة الفيديو"
                             >
@@ -1813,6 +1873,8 @@ export default function CVsPage() {
                         <Trash2 className="h-7 w-7" />
                       ) : bulkOperationType === 'status' ? (
                         <RefreshCw className="h-7 w-7" />
+                      ) : bulkOperationType === 'archive' ? (
+                        <FileText className="h-7 w-7" />
                       ) : (
                         <Download className="h-7 w-7" />
                       )}
@@ -1820,7 +1882,8 @@ export default function CVsPage() {
                     <div>
                       <h3 className="text-2xl font-bold mb-1">
                         {bulkOperationType === 'delete' ? 'حذف السير المحددة' : 
-                         bulkOperationType === 'status' ? 'تغيير الحالة' : 'تحميل الصور'}
+                         bulkOperationType === 'status' ? 'تغيير الحالة' : 
+                         bulkOperationType === 'archive' ? 'أرشفة السير المحددة' : 'تحميل الصور'}
                       </h3>
                       <p className="text-white/90 text-sm">
                         عدد السير المحددة: <span className="font-bold bg-white/20 px-2 py-0.5 rounded">{selectedCvs.length}</span>
@@ -1850,17 +1913,24 @@ export default function CVsPage() {
                               <h4 className="font-bold text-foreground mb-2 text-lg">
                                 {bulkOperationType === 'delete' 
                                   ? 'تحذير: عملية حذف نهائية'
+                                  : bulkOperationType === 'archive'
+                                  ? 'تأكيد: عملية أرشفة'
                                   : 'تأكيد العملية'
                                 }
                               </h4>
                               <p className="text-foreground mb-2">
                                 {bulkOperationType === 'delete' 
                                   ? `سيتم حذف ${selectedCvs.length} سيرة ذاتية نهائياً من النظام`
+                                  : bulkOperationType === 'archive'
+                                  ? `سيتم نقل ${selectedCvs.length} سيرة ذاتية إلى الأرشيف`
                                   : `سيتم تطبيق العملية على ${selectedCvs.length} سيرة ذاتية`
                                 }
                               </p>
                               <p className="text-muted-foreground text-sm">
-                                ⚠️ هذا الإجراء لا يمكن التراجع عنه
+                                {bulkOperationType === 'archive' 
+                                  ? '⚠️ يمكن استعادة السير من صفحة الأرشيف لاحقاً'
+                                  : '⚠️ هذا الإجراء لا يمكن التراجع عنه'
+                                }
                               </p>
                             </div>
                           </div>
@@ -2179,7 +2249,7 @@ export default function CVsPage() {
               </p>
               <ul className="text-xs text-info mt-1 space-y-1 mr-4">
                 <li>• حجز السيرة الذاتية برقم الهوية المحدد</li>
-                <li>• تحويل حالة السيرة إلى "محجوز"</li>
+                <li>• تحويل حالة السيرة إلى &quot;محجوز&quot;</li>
                 <li>• نقل السيرة إلى صفحة المحجوزات</li>
                 <li>• إمكانية التعاقد لاحقاً من صفحة المحجوزات</li>
               </ul>
@@ -2249,38 +2319,48 @@ export default function CVsPage() {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   title="فيديو السيرة الذاتية"
+                  onLoad={() => console.log('✅ YouTube video loaded successfully:', selectedVideo)}
+                  onError={() => console.error('❌ YouTube video failed to load:', selectedVideo)}
                 />
               ) : selectedVideo.includes('drive.google.com') ? (
                 <iframe
                   src={(() => {
                     // تحويل رابط Google Drive إلى embed
-                    // مثال: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
-                    // إلى: https://drive.google.com/file/d/FILE_ID/preview
                     const fileIdMatch = selectedVideo.match(/\/file\/d\/([^\/]+)/)
                     if (fileIdMatch && fileIdMatch[1]) {
-                      return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`
+                      const embedUrl = `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`
+                      console.log('🔗 Google Drive embed URL:', embedUrl)
+                      return embedUrl
                     }
                     // إذا كان الرابط بصيغة أخرى، حاول استخدامه كما هو
-                    return selectedVideo.replace('/view?usp=sharing', '/preview').replace('/view', '/preview')
+                    const fallbackUrl = selectedVideo.replace('/view?usp=sharing', '/preview').replace('/view', '/preview')
+                    console.log('🔗 Google Drive fallback URL:', fallbackUrl)
+                    return fallbackUrl
                   })()}
                   className="w-full h-full rounded-lg"
                   frameBorder="0"
                   allow="autoplay"
                   allowFullScreen
                   title="فيديو السيرة الذاتية"
+                  onLoad={() => console.log('✅ Google Drive video loaded successfully:', selectedVideo)}
+                  onError={() => console.error('❌ Google Drive video failed to load:', selectedVideo)}
                 />
               ) : selectedVideo.includes('vimeo.com') ? (
                 <iframe
                   src={(() => {
                     // تحويل رابط Vimeo إلى embed
                     const videoId = selectedVideo.split('vimeo.com/')[1]?.split('?')[0]
-                    return `https://player.vimeo.com/video/${videoId}`
+                    const embedUrl = `https://player.vimeo.com/video/${videoId}`
+                    console.log('🔗 Vimeo embed URL:', embedUrl)
+                    return embedUrl
                   })()}
                   className="w-full h-full rounded-lg"
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture"
                   allowFullScreen
                   title="فيديو السيرة الذاتية"
+                  onLoad={() => console.log('✅ Vimeo video loaded successfully:', selectedVideo)}
+                  onError={() => console.error('❌ Vimeo video failed to load:', selectedVideo)}
                 />
               ) : (
                 <video
@@ -2288,6 +2368,11 @@ export default function CVsPage() {
                   controls
                   className="w-full h-full rounded-lg bg-black"
                   preload="metadata"
+                  onLoadedData={() => console.log('✅ Direct video loaded successfully:', selectedVideo)}
+                  onError={(e) => {
+                    console.error('❌ Direct video failed to load:', selectedVideo)
+                    console.error('Video error details:', e)
+                  }}
                 >
                   <source src={selectedVideo} type="video/mp4" />
                   <source src={selectedVideo} type="video/webm" />
@@ -2296,6 +2381,21 @@ export default function CVsPage() {
                 </video>
               )}
             </div>
+            
+            {/* Debug Information - Only in development */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-3 p-3 bg-muted rounded-lg">
+                <p className="text-xs font-mono text-muted-foreground">
+                  <strong>🔍 Debug Info:</strong>
+                </p>
+                <p className="text-xs font-mono text-muted-foreground break-all">
+                  <strong>Video URL:</strong> {selectedVideo}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Check browser console for detailed loading information
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

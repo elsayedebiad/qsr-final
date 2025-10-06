@@ -55,7 +55,24 @@ const nextConfig: NextConfig = {
                 https://*.googletagmanager.com
                 https://www.google.com
                 https://google.com
-                https://*.google.com;
+                https://*.google.com
+                https://www.youtube.com 
+                https://youtube.com 
+                https://*.youtube.com 
+                https://player.vimeo.com 
+                https://vimeo.com 
+                https://*.vimeo.com 
+                https://drive.google.com 
+                https://docs.google.com 
+                https://*.googleapis.com 
+                https://*.googleusercontent.com 
+                https://onedrive.live.com 
+                https://*.onedrive.live.com 
+                https://1drv.ms 
+                https://*.sharepoint.com 
+                https://view.officeapps.live.com 
+                https://office.live.com 
+                https://*.office.com;
               img-src 'self' data: blob: https: http: 
                 https://www.google-analytics.com 
                 https://ssl.google-analytics.com 
@@ -79,15 +96,51 @@ const nextConfig: NextConfig = {
               font-src 'self' 
                 https://fonts.gstatic.com 
                 https://fonts.googleapis.com;
+              media-src 'self' data: blob: https: http: 
+                https://www.youtube.com 
+                https://youtube.com 
+                https://*.youtube.com 
+                https://player.vimeo.com 
+                https://vimeo.com 
+                https://*.vimeo.com 
+                https://drive.google.com 
+                https://docs.google.com 
+                https://*.google.com 
+                https://*.googleapis.com 
+                https://*.googleusercontent.com 
+                https://onedrive.live.com 
+                https://*.onedrive.live.com 
+                https://1drv.ms 
+                https://*.sharepoint.com 
+                https://view.officeapps.live.com 
+                https://office.live.com 
+                https://*.office.com;
               frame-src 'self' 
                 https://www.googletagmanager.com 
                 https://tagmanager.google.com 
                 https://analytics.google.com 
-                https://www.google-analytics.com;
+                https://www.google-analytics.com
+                https://www.youtube.com 
+                https://youtube.com 
+                https://player.vimeo.com 
+                https://vimeo.com 
+                https://drive.google.com 
+                https://docs.google.com 
+                https://*.google.com 
+                https://*.googleapis.com 
+                https://*.googleusercontent.com 
+                https://onedrive.live.com 
+                https://*.onedrive.live.com 
+                https://1drv.ms 
+                https://*.sharepoint.com 
+                https://view.officeapps.live.com 
+                https://office.live.com 
+                https://*.office.com 
+                data: blob:;
               object-src 'none';
               base-uri 'self';
               form-action 'self';
-              frame-ancestors 'none';
+              frame-ancestors 'self' https://*.google.com https://*.office.com https://onedrive.live.com;
               upgrade-insecure-requests;
             `.replace(/\s{2,}/g, ' ').trim()
           }

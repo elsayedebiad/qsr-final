@@ -10,7 +10,7 @@ export interface NotificationData {
   message: string
   type: NotificationType
   category: NotificationCategory
-  data?: any
+  data?: Record<string, unknown>
 }
 
 export class NotificationService {
@@ -58,6 +58,28 @@ export class NotificationService {
     } catch (error) {
       console.error('Error creating notification:', error)
     }
+  }
+
+  // إشعار طلب كود تفعيل تسجيل الدخول
+  static async notifyLoginActivation(activationData: {
+    userEmail: string
+    userName: string
+    activationCode: string
+    expiresAt: Date
+  }) {
+    await this.notifyAllAdmins({
+      title: '🔐 طلب كود تفعيل تسجيل دخول',
+      message: `طلب كود تفعيل لتسجيل دخول المستخدم "${activationData.userName}" (${activationData.userEmail})`,
+      type: 'WARNING',
+      category: 'system',
+      data: {
+        activationCode: activationData.activationCode,
+        userEmail: activationData.userEmail,
+        userName: activationData.userName,
+        expiresAt: activationData.expiresAt.toISOString(),
+        requestTime: new Date().toISOString()
+      }
+    })
   }
 
   // إشعار عملية الاستيراد

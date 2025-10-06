@@ -26,8 +26,19 @@ import {
   BarChart3,
   Clock,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Key,
+  Copy,
+  X
 } from 'lucide-react'
+
+interface ActivationData {
+  activationCode: string
+  userEmail: string
+  userName: string
+  expiresAt: string
+  requestTime: string
+}
 
 interface Notification {
   id: number
@@ -70,10 +81,73 @@ export default function NotificationsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedType, setSelectedType] = useState<string>('')
   const [expandedNotification, setExpandedNotification] = useState<number | null>(null)
+  const [activationPopup, setActivationPopup] = useState<{code: string, user: string, email: string} | null>(null)
+  const [lastNotificationId, setLastNotificationId] = useState<number>(0)
+  const [processedCodes, setProcessedCodes] = useState<Set<string>>(new Set())
+  const [isPopupOpen, setIsPopupOpen] = useState(false)
+  const [closedCodes, setClosedCodes] = useState<Set<string>>(() => {
+    // Load permanently closed codes from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('closedActivationCodes')
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    }
+    return new Set()
+  })
 
   useEffect(() => {
     fetchNotifications()
-  }, [pagination.page, selectedCategory, selectedType])
+    // Auto-refresh every 5 seconds to check for new activation codes
+    const interval = setInterval(checkForNewActivationCodes, 5000)
+    return () => clearInterval(interval)
+  }, [pagination.page, selectedCategory, selectedType, closedCodes]) // Add closedCodes dependency
+
+  const checkForNewActivationCodes = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/notifications?limit=5&page=1`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (response.ok) {
+        const data: NotificationData = await response.json()
+        const latestNotifications = data.notifications || []
+        
+        // Check for new activation code notifications
+        const newActivationCodes = latestNotifications.filter(notification => 
+          notification.id > lastNotificationId &&
+          notification.title.includes('كود تفعيل تسجيل دخول')
+        )
+
+        if (newActivationCodes.length > 0) {
+          const latestActivation = newActivationCodes[0]
+          const notificationData = parseNotificationData(latestActivation.data)
+          
+          if (notificationData && notificationData.activationCode && 
+              !processedCodes.has(notificationData.activationCode) && 
+              !closedCodes.has(notificationData.activationCode) && !isPopupOpen) {
+            // Mark code as processed
+            setProcessedCodes(prev => new Set([...prev, notificationData.activationCode]))
+            
+            // Show popup immediately
+            setActivationPopup({
+              code: notificationData.activationCode,
+              user: notificationData.userName,
+              email: notificationData.userEmail
+            })
+            setIsPopupOpen(true)
+            
+            // Update last notification ID
+            setLastNotificationId(Math.max(...latestNotifications.map(n => n.id)))
+            
+            // Refresh notifications list
+            fetchNotifications()
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for new notifications:', error)
+    }
+  }
 
   const fetchNotifications = async () => {
     try {
@@ -82,22 +156,20 @@ export default function NotificationsPage() {
         page: pagination.page.toString(),
         limit: pagination.limit.toString()
       })
-
+      
       if (selectedCategory) params.append('category', selectedCategory)
       if (selectedType) params.append('type', selectedType)
 
       const token = localStorage.getItem('token')
       const response = await fetch(`/api/notifications?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       })
 
       if (response.ok) {
         const data: NotificationData = await response.json()
-        setNotifications(data.notifications)
-        setPagination(data.pagination)
-        setUnreadCount(data.unreadCount)
+        setNotifications(data.notifications || [])
+        setPagination(data.pagination || { page: 1, limit: 20, total: 0, pages: 0 })
+        setUnreadCount(data.unreadCount || 0)
       } else {
         toast.error('فشل في جلب الإشعارات')
       }
@@ -216,69 +288,47 @@ export default function NotificationsPage() {
     }
   }
 
-  const renderNotificationDetails = (notification: Notification) => {
+  const copyActivationCode = (code: string) => {
+    navigator.clipboard.writeText(code)
+    toast.success('تم نسخ كود التفعيل', {
+      style: {
+        background: 'var(--success)',
+        color: 'white',
+        fontSize: '14px',
+        fontWeight: '600'
+      }
+    })
+  }
+
+  const closeActivationPopup = () => {
+    if (activationPopup) {
+      // Mark this code as permanently closed
+      const newClosedCodes = new Set([...closedCodes, activationPopup.code])
+      setClosedCodes(newClosedCodes)
+      
+      // Save to localStorage for persistence across sessions
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('closedActivationCodes', JSON.stringify([...newClosedCodes]))
+      }
+    }
+    setActivationPopup(null)
+    setIsPopupOpen(false)
+  }
+
+  const showActivationCode = (notification: Notification) => {
     const data = parseNotificationData(notification.data)
-    if (!data) return null
-
-    return (
-      <div className="mt-4 p-4 bg-background rounded-lg border">
-        <h4 className="font-medium text-foreground mb-3">تفاصيل إضافية:</h4>
-        
-        {notification.category === 'import' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="bg-success/10 p-3 rounded-lg">
-              <p className="text-success font-medium">جديد</p>
-              <p className="text-2xl font-bold text-green-900">{data.newRecords}</p>
-            </div>
-            <div className="bg-info/10 p-3 rounded-lg">
-              <p className="text-info font-medium">محدث</p>
-              <p className="text-2xl font-bold text-blue-900">{data.updatedRecords}</p>
-            </div>
-            <div className="bg-warning/10 p-3 rounded-lg">
-              <p className="text-warning font-medium">متخطى</p>
-              <p className="text-2xl font-bold text-yellow-900">{data.skippedRecords}</p>
-            </div>
-            <div className="bg-destructive/10 p-3 rounded-lg">
-              <p className="text-destructive font-medium">خطأ</p>
-              <p className="text-2xl font-bold text-red-900">{data.errorRecords}</p>
-            </div>
-            {data.successRate && (
-              <div className="col-span-2 md:col-span-4 bg-primary/10 p-3 rounded-lg">
-                <p className="text-indigo-800 font-medium">معدل النجاح</p>
-                <div className="flex items-center gap-3 mt-2">
-                  <div className="flex-1 bg-indigo-200 rounded-full h-2">
-                    <div 
-                      className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${data.successRate}%` }}
-                    />
-                  </div>
-                  <span className="text-indigo-900 font-bold">{data.successRate}%</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {notification.category === 'cv' && data.cvId && (
-          <div className="bg-info/10 p-3 rounded-lg">
-            <p className="text-sm text-info">
-              <strong>رقم السيرة الذاتية:</strong> {data.cvId}
-            </p>
-            {data.oldStatus && data.newStatus && (
-              <p className="text-sm text-info mt-1">
-                <strong>تغيير الحالة:</strong> {data.oldStatus} ← {data.newStatus}
-              </p>
-            )}
-          </div>
-        )}
-
-        {data.executedBy && (
-          <div className="mt-3 text-sm text-muted-foreground">
-            <strong>تم بواسطة:</strong> {data.executedBy.name}
-          </div>
-        )}
-      </div>
-    )
+    if (data && data.activationCode) {
+      toast(`🔐 كود التفعيل: ${data.activationCode}`, {
+        duration: 15000,
+        style: {
+          background: '#f59e0b',
+          color: 'white',
+          fontSize: '16px',
+          fontWeight: 'bold'
+        }
+      })
+      copyActivationCode(data.activationCode)
+    }
   }
 
   return (
@@ -321,6 +371,25 @@ export default function NotificationsPage() {
                 >
                   <RefreshCw className="w-4 h-4" />
                   تحديث
+                </button>
+                
+                {/* Test Button for Demo */}
+                <button
+                  onClick={() => {
+                    if (!isPopupOpen) {
+                      setActivationPopup({
+                        code: '123456',
+                        user: 'مستخدم تجريبي',
+                        email: 'test@example.com'
+                      })
+                      setIsPopupOpen(true)
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-warning text-white rounded-lg hover:bg-warning/80 transition-colors disabled:opacity-50"
+                  disabled={isPopupOpen}
+                >
+                  <Key className="w-4 h-4" />
+                  اختبار البوب أب
                 </button>
               </div>
             </div>
@@ -378,90 +447,105 @@ export default function NotificationsPage() {
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`p-6 transition-colors ${
-                      !notification.isRead ? 'bg-info/10' : 'hover:bg-background'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`p-2 rounded-lg ${getNotificationColor(notification.type)}`}>
-                        {getNotificationIcon(notification.type, notification.category)}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold text-foreground">
-                                {notification.title}
-                              </h3>
-                              {!notification.isRead && (
-                                <div className="w-2 h-2 bg-blue-600 rounded-full" />
-                              )}
-                            </div>
-                            
-                            <p className="text-foreground mb-3">
-                              {notification.message}
-                            </p>
-                            
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Filter className="w-3 h-3" />
-                                {getCategoryName(notification.category)}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {formatDate(notification.createdAt)}
-                              </span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                notification.type === 'SUCCESS' ? 'bg-success/10 text-success' :
-                                notification.type === 'WARNING' ? 'bg-warning/10 text-warning' :
-                                notification.type === 'ERROR' ? 'bg-destructive/10 text-destructive' :
-                                'bg-info/10 text-info'
-                              }`}>
-                                {getTypeName(notification.type)}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setExpandedNotification(
-                                expandedNotification === notification.id ? null : notification.id
-                              )}
-                              className="p-2 text-muted-foreground hover:text-muted-foreground transition-colors"
-                              title="عرض التفاصيل"
-                            >
-                              <BarChart3 className="w-4 h-4" />
-                            </button>
-                            
-                            {!notification.isRead && (
-                              <button
-                                onClick={() => handleNotificationAction('markAsRead', notification.id)}
-                                className="p-2 text-blue-400 hover:text-info transition-colors"
-                                title="تحديد كمقروء"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            )}
-                            
-                            <button
-                              onClick={() => handleNotificationAction('delete', notification.id)}
-                              className="p-2 text-red-400 hover:text-destructive transition-colors"
-                              title="حذف"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                {notifications.map((notification) => {
+                  const isActivationCode = notification.title.includes('كود تفعيل تسجيل دخول')
+                  return (
+                    <div
+                      key={notification.id}
+                      className={`p-6 transition-colors ${
+                        !notification.isRead ? 'bg-info/10' : 'hover:bg-background'
+                      } ${isActivationCode ? 'border-l-4 border-warning bg-warning/5' : ''}`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className={`p-2 rounded-lg ${
+                          isActivationCode 
+                            ? 'bg-warning/20 text-warning animate-pulse' 
+                            : getNotificationColor(notification.type)
+                        }`}>
+                          {isActivationCode ? (
+                            <Key className="w-5 h-5" />
+                          ) : (
+                            getNotificationIcon(notification.type, notification.category)
+                          )}
                         </div>
                         
-                        {expandedNotification === notification.id && renderNotificationDetails(notification)}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-semibold text-foreground">
+                                  {notification.title}
+                                </h3>
+                                {!notification.isRead && (
+                                  <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                                )}
+                                {isActivationCode && (
+                                  <span className="bg-warning text-white px-2 py-1 rounded-full text-xs font-bold animate-pulse">
+                                    كود تفعيل!
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <p className="text-foreground mb-3">
+                                {notification.message}
+                              </p>
+                              
+                              {/* Activation Code Button */}
+                              {isActivationCode && (
+                                <button
+                                  onClick={() => showActivationCode(notification)}
+                                  className="bg-warning hover:bg-warning/80 text-white px-4 py-2 rounded-lg flex items-center gap-2 mb-3 animate-pulse"
+                                >
+                                  <Key className="w-4 h-4" />
+                                  عرض كود التفعيل
+                                </button>
+                              )}
+                              
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Filter className="w-3 h-3" />
+                                  {getCategoryName(notification.category)}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatDate(notification.createdAt)}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  notification.type === 'SUCCESS' ? 'bg-success/10 text-success' :
+                                  notification.type === 'WARNING' ? 'bg-warning/10 text-warning' :
+                                  notification.type === 'ERROR' ? 'bg-destructive/10 text-destructive' :
+                                  'bg-info/10 text-info'
+                                }`}>
+                                  {getTypeName(notification.type)}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              {!notification.isRead && (
+                                <button
+                                  onClick={() => handleNotificationAction('markAsRead', notification.id)}
+                                  className="p-2 text-blue-400 hover:text-info transition-colors"
+                                  title="تحديد كمقروء"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              )}
+                              
+                              <button
+                                onClick={() => handleNotificationAction('delete', notification.id)}
+                                className="p-2 text-red-400 hover:text-destructive transition-colors"
+                                title="حذف"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
 
@@ -498,6 +582,119 @@ export default function NotificationsPage() {
               </div>
             )}
           </div>
+
+          {/* Professional Theme-Matching Activation Code Popup */}
+          {activationPopup && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn p-4">
+              <div className="bg-card border border-border rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto transform animate-slideUp">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-warning via-warning/90 to-warning/80 text-white p-6 relative overflow-hidden">
+                  <div className="animated-bg-theme absolute inset-0 opacity-30">
+                    <div className="bg-aurora"></div>
+                    <div className="bg-grid"></div>
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-white/20 backdrop-blur-sm rounded-full p-3 animate-pulse">
+                          <Key className="w-8 h-8" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-bold">🔐 كود تفعيل جديد</h2>
+                          <p className="text-warning-foreground/80">طلب تسجيل دخول</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={closeActivationPopup}
+                        className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg p-2 transition-all"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Content */}
+                <div className="p-4 space-y-4">
+                  {/* User Info Card */}
+                  <div className="bg-info/10 border border-info/20 rounded-lg p-3">
+                    <h3 className="font-semibold text-info flex items-center gap-2 mb-2 text-sm">
+                      <User className="w-4 h-4" />
+                      تفاصيل المستخدم
+                    </h3>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">الاسم:</span>
+                        <span className="font-medium text-foreground">{activationPopup.user}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">البريد:</span>
+                        <span className="font-medium text-foreground truncate ml-2">{activationPopup.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Activation Code Card */}
+                  <div className="bg-gradient-to-br from-success/20 to-success/10 border border-success/30 rounded-lg p-4">
+                    <p className="text-success font-semibold text-center mb-3 flex items-center justify-center gap-2 text-sm">
+                      <Key className="w-4 h-4" />
+                      كود التفعيل
+                    </p>
+                    <div className="bg-card border border-border rounded-lg p-3 mb-3">
+                      <div className="text-2xl font-mono font-black text-success tracking-wider text-center animate-pulse">
+                        {activationPopup.code}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => copyActivationCode(activationPopup.code)}
+                      className="w-full bg-success hover:bg-success/90 text-white px-3 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 text-sm"
+                    >
+                      <Copy className="w-3 h-3" />
+                      نسخ الكود
+                    </button>
+                  </div>
+                  
+                  {/* Instructions Card */}
+                  <div className="bg-warning/10 border border-warning/20 rounded-lg p-3">
+                    <h4 className="font-medium text-warning mb-2 flex items-center gap-2 text-sm">
+                      <AlertTriangle className="w-3 h-3" />
+                      تعليمات مهمة
+                    </h4>
+                    <ul className="text-muted-foreground text-xs space-y-1">
+                      <li className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-warning rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>ارسل هذا الكود للمستخدم فوراً</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <div className="w-1 h-1 bg-warning rounded-full mt-1.5 flex-shrink-0"></div>
+                        <span>الكود صالح لمدة 15 دقيقة فقط</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={closeActivationPopup}
+                      className="flex-1 bg-secondary hover:bg-secondary/80 text-secondary-foreground py-2 rounded-lg font-medium transition-all text-sm"
+                    >
+                      إغلاق
+                    </button>
+                    <button
+                      onClick={() => {
+                        copyActivationCode(activationPopup.code)
+                        closeActivationPopup()
+                      }}
+                      className="flex-1 bg-success hover:bg-success/90 text-white py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 text-sm"
+                    >
+                      <Copy className="w-3 h-3" />
+                      نسخ وإغلاق
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </DashboardLayout>
