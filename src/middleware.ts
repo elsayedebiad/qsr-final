@@ -17,6 +17,8 @@ export async function middleware(request: NextRequest) {
     '/sales3',
     '/sales4',
     '/sales5',
+    '/sales6',
+    '/sales7',
     '/login',
     '/payment-required',
     '/setup-developer',
