@@ -40,12 +40,15 @@ export const processImage = async (imageData: string): Promise<string | null> =>
   }
 
   try {
-    // Convert Google Drive URLs to direct links first
-    let processedUrl = imageData
-    if (imageData.includes('drive.google.com')) {
-      processedUrl = convertGoogleDriveUrl(imageData)
-      console.log(`🔄 تحويل رابط Google Drive: ${imageData} → ${processedUrl}`)
+    const processedUrl = imageData.trim()
+    
+    // 🚀 NEW: If it's a Google Drive URL, return it directly without downloading
+    // The frontend will handle conversion using url-utils.ts
+    if (processedUrl.includes('drive.google.com')) {
+      console.log(`✅ رابط Google Drive - سيتم استخدامه مباشرة: ${processedUrl.substring(0, 60)}...`)
+      return processedUrl // Return the original Google Drive URL
     }
+
     const uploadsDir = join(process.cwd(), 'public', 'uploads', 'images')
     if (!existsSync(uploadsDir)) {
       await mkdir(uploadsDir, { recursive: true })
@@ -77,35 +80,45 @@ export const processImage = async (imageData: string): Promise<string | null> =>
       return `/uploads/images/${filename}`
     }
     
-    // Check if it's an HTTP URL
+    // Check if it's an HTTP/HTTPS URL (but NOT Google Drive - already handled above)
     else if (processedUrl.startsWith('http://') || processedUrl.startsWith('https://')) {
       console.log(`🖼️ تحميل صورة من URL: ${processedUrl}`)
       
-      const response = await fetch(processedUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      try {
+        const response = await fetch(processedUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          },
+          signal: AbortSignal.timeout(10000) // 10 second timeout
+        })
+        
+        if (!response.ok) {
+          console.error(`فشل في تحميل الصورة: ${response.statusText}`)
+          console.log(`⚠️ سيتم استخدام الرابط مباشرة بدلاً من التحميل`)
+          return processedUrl // Return original URL as fallback
         }
-      })
-      if (!response.ok) {
-        console.error(`فشل في تحميل الصورة: ${response.statusText}`)
-        return null
+
+        const contentType = response.headers.get('content-type')
+        if (!contentType || !contentType.startsWith('image/')) {
+          console.error('الرابط لا يشير إلى صورة صحيحة')
+          console.log(`⚠️ سيتم استخدام الرابط مباشرة بدلاً من التحميل`)
+          return processedUrl // Return original URL as fallback
+        }
+
+        const extension = contentType.split('/')[1]?.split(';')[0] || 'jpg'
+        const filename = `${timestamp}_${randomId}_url.${extension}`
+        const filepath = join(uploadsDir, filename)
+
+        const buffer = Buffer.from(await response.arrayBuffer())
+        await writeFile(filepath, buffer)
+
+        console.log(`✅ تم تحميل الصورة من URL: ${filename}`)
+        return `/uploads/images/${filename}`
+      } catch (error) {
+        console.error(`خطأ في تحميل الصورة:`, error)
+        console.log(`⚠️ سيتم استخدام الرابط مباشرة: ${processedUrl}`)
+        return processedUrl // Return original URL as fallback
       }
-
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.startsWith('image/')) {
-        console.error('الرابط لا يشير إلى صورة صحيحة')
-        return null
-      }
-
-      const extension = contentType.split('/')[1] || 'jpg'
-      const filename = `${timestamp}_${randomId}_url.${extension}`
-      const filepath = join(uploadsDir, filename)
-
-      const buffer = Buffer.from(await response.arrayBuffer())
-      await writeFile(filepath, buffer)
-
-      console.log(`✅ تم تحميل الصورة من URL: ${filename}`)
-      return `/uploads/images/${filename}`
     }
     
     // If it's neither Base64 nor URL, treat it as a local path

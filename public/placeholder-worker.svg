@@ -1,0 +1,30 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <!-- خلفية متدرجة -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- خلفية -->
+  <rect width="400" height="400" fill="url(#grad1)"/>
+  
+  <!-- دائرة خلفية -->
+  <circle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/>
+  
+  <!-- أيقونة مستخدم -->
+  <g fill="white" opacity="0.9">
+    <!-- رأس -->
+    <circle cx="200" cy="170" r="40"/>
+    <!-- جسم -->
+    <ellipse cx="200" cy="280" rx="70" ry="80"/>
+    <rect x="130" y="260" width="140" height="140" fill="url(#grad1)"/>
+  </g>
+  
+  <!-- نص -->
+  <text x="200" y="350" font-family="Arial, sans-serif" font-size="20" fill="white" text-anchor="middle" opacity="0.8">
+    لا توجد صورة
+  </text>
+</svg>
+

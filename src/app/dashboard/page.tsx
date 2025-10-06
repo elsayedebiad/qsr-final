@@ -1479,22 +1479,17 @@ export default function CVsPage() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center space-x-3">
-                          {cv.profileImage ? (
-                            <img 
-                              className="h-10 w-10 rounded-full object-cover flex-shrink-0" 
-                              src={processImageUrl(cv.profileImage)} 
-                              alt={cv.fullName}
-                              onError={(e) => {
-                                // إذا فشل تحميل الصورة، استبدلها بأيقونة افتراضية
-                                const target = e.target as HTMLImageElement
-                                target.style.display = 'none'
-                              }}
-                            />
-                          ) : (
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
-                              <User className="h-5 w-5 text-primary-foreground" />
-                            </div>
-                          )}
+                          <img 
+                            className="h-10 w-10 rounded-full object-cover flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600" 
+                            src={processImageUrl(cv.profileImage)} 
+                            alt={cv.fullName}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              if (!target.src.startsWith('data:')) {
+                                target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
+                              }
+                            }}
+                          />
                           <div className="min-w-0 flex-1">
                             <div className="font-semibold text-foreground truncate">{cv.fullName}</div>
                             {cv.fullNameArabic && (
@@ -1682,23 +1677,23 @@ export default function CVsPage() {
                 {/* Header */}
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <input
+                    <input 
                       type="checkbox"
                       className="w-4 h-4 text-primary border-2 rounded"
                       checked={selectedCvs.includes(cv.id)}
                       onChange={() => toggleCvSelection(cv.id)}
                     />
-                    {cv.profileImage ? (
-                      <img 
-                        className="h-8 w-8 rounded-full object-cover flex-shrink-0" 
-                        src={processImageUrl(cv.profileImage)} 
-                        alt={cv.fullName}
-                      />
-                    ) : (
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
-                        <User className="h-4 w-4 text-primary-foreground" />
-                      </div>
-                    )}
+                    <img 
+                      className="h-8 w-8 rounded-full object-cover flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600" 
+                      src={processImageUrl(cv.profileImage)} 
+                      alt={cv.fullName}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        if (!target.src.startsWith('data:')) {
+                          target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
+                        }
+                      }}
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-sm text-foreground truncate">{cv.fullName}</div>
                       {cv.fullNameArabic && (

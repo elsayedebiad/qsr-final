@@ -97,7 +97,7 @@ export const isGoogleDriveUrl = (url: string): boolean => {
  */
 export const processImageUrl = (url: string | undefined | null): string => {
   if (!url) {
-    return ''
+    return getPlaceholderImage()
   }
 
   // Convert Google Drive URLs
@@ -105,7 +105,21 @@ export const processImageUrl = (url: string | undefined | null): string => {
     return convertGoogleDriveUrl(url)
   }
 
+  // Handle local uploads - ensure they're accessible
+  if (url.startsWith('/uploads/')) {
+    return url
+  }
+
   // Return other URLs as is
   return url
+}
+
+/**
+ * Get placeholder image URL (SVG for better performance)
+ * @returns Placeholder image URL
+ */
+export const getPlaceholderImage = (): string => {
+  // استخدام SVG inline data URL لضمان العمل دائماً
+  return 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3Ctext x="200" y="350" font-family="Arial, sans-serif" font-size="20" fill="white" text-anchor="middle" opacity="0.8"%3E%D9%84%D8%A7 %D8%AA%D9%88%D8%AC%D8%AF %D8%B5%D9%88%D8%B1%D8%A9%3C/text%3E%3C/svg%3E'
 }
 

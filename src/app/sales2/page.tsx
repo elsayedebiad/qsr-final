@@ -1481,7 +1481,13 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                           <img
                             src={processImageUrl(cv.profileImage)}
                             alt={cv.fullName}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-gradient-to-br from-blue-500 to-purple-600"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              if (!target.src.startsWith('data:')) {
+                                target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
+                              }
+                            }}
                           />
                           
                           {/* شريط علوي - الكود والعمر والجنسية */}
@@ -1635,13 +1641,23 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   <div className="flex items-center gap-4 w-full">
                     <div className="w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">
                       {cv.profileImage ? (
-                        <img src={processImageUrl(cv.profileImage)} alt={cv.fullName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        <img 
+                          src={processImageUrl(cv.profileImage)} 
+                          alt={cv.fullName} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-gradient-to-br from-blue-500 to-purple-600"
+                          onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              if (!target.src.startsWith('data:')) {
+                                target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
+                              }
+                            }}
+                        />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                          <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                          </svg>
-                        </div>
+                        <img 
+                          src="/placeholder-worker.png"
+                          alt={cv.fullName}
+                          className="w-full h-full object-cover"
+                        />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
