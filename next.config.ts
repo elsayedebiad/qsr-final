@@ -29,6 +29,9 @@ const nextConfig: NextConfig = {
                 https://www.google-analytics.com 
                 https://ssl.google-analytics.com 
                 https://analytics.google.com 
+                https://www.google.com
+                https://google.com
+                https://*.google.com
                 https://connect.facebook.net 
                 https://www.facebook.com;
               script-src-elem 'self' 'unsafe-inline' 
@@ -36,7 +39,10 @@ const nextConfig: NextConfig = {
                 https://tagmanager.google.com 
                 https://www.google-analytics.com 
                 https://ssl.google-analytics.com 
-                https://analytics.google.com;
+                https://analytics.google.com
+                https://www.google.com
+                https://google.com
+                https://*.google.com;
               connect-src 'self' 
                 https://www.google-analytics.com 
                 https://analytics.google.com 
@@ -46,7 +52,10 @@ const nextConfig: NextConfig = {
                 https://region1.google-analytics.com 
                 https://region1.analytics.google.com 
                 https://*.analytics.google.com 
-                https://*.googletagmanager.com;
+                https://*.googletagmanager.com
+                https://www.google.com
+                https://google.com
+                https://*.google.com;
               img-src 'self' data: blob: https: http: 
                 https://www.google-analytics.com 
                 https://ssl.google-analytics.com 
