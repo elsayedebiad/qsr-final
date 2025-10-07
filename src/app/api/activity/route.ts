@@ -170,6 +170,25 @@ export async function GET(request: NextRequest) {
       createdAt: activity.createdAt.toISOString()
     }))
 
+    // Calculate CV statistics
+    const cvCreatedCount = await db.activityLog.count({
+      where: { action: 'CV_CREATED' }
+    })
+    
+    const cvUpdatedCount = await db.activityLog.count({
+      where: { action: 'CV_UPDATED' }
+    })
+    
+    // Get total CVs from database
+    const totalCvsInDb = await db.cV.count()
+    
+    const cvStats = {
+      uploaded: cvCreatedCount, // السير المرفوعة
+      created: cvCreatedCount,  // السير المُنشأة
+      updated: cvUpdatedCount,  // السير المحدثة
+      total: totalCvsInDb       // إجمالي السير في قاعدة البيانات
+    }
+
     return NextResponse.json({
       activities: formattedActivities,
       pagination: {
@@ -177,7 +196,8 @@ export async function GET(request: NextRequest) {
         limit,
         total: totalCount,
         pages: Math.ceil(totalCount / limit)
-      }
+      },
+      cvStats
     })
 
   } catch (error) {

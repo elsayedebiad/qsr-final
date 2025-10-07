@@ -348,42 +348,55 @@ function ActivityLogPageContent() {
       </div>
 
       {/* CV Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card rounded-lg p-6 shadow-lg border border-border">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-card rounded-lg p-6 shadow-lg border border-border hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-4">
             <div className="bg-success/10 rounded-lg p-3">
               <Download className="h-6 w-6 text-success" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-foreground">السير المرفوعة</h3>
-              <p className="text-2xl font-bold text-success">{cvStats.uploaded}</p>
+              <p className="text-2xl font-bold text-success">{cvStats.uploaded || 0}</p>
               <p className="text-sm text-muted-foreground">سيرة ذاتية تم رفعها</p>
             </div>
           </div>
         </div>
         
-        <div className="bg-card rounded-lg p-6 shadow-lg border border-border">
+        <div className="bg-card rounded-lg p-6 shadow-lg border border-border hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-4">
             <div className="bg-primary/10 rounded-lg p-3">
               <Plus className="h-6 w-6 text-primary" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-foreground">السير الجديدة</h3>
-              <p className="text-2xl font-bold text-primary">{cvStats.created}</p>
+              <p className="text-2xl font-bold text-primary">{cvStats.created || 0}</p>
               <p className="text-sm text-muted-foreground">سيرة ذاتية تم إنشاؤها</p>
             </div>
           </div>
         </div>
         
-        <div className="bg-card rounded-lg p-6 shadow-lg border border-border">
+        <div className="bg-card rounded-lg p-6 shadow-lg border border-border hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-4">
             <div className="bg-warning/10 rounded-lg p-3">
               <Edit className="h-6 w-6 text-warning" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-foreground">السير المحدثة</h3>
-              <p className="text-2xl font-bold text-warning">{cvStats.updated}</p>
+              <p className="text-2xl font-bold text-warning">{cvStats.updated || 0}</p>
               <p className="text-sm text-muted-foreground">سيرة ذاتية تم تحديثها</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-card rounded-lg p-6 shadow-lg border border-border hover:shadow-xl transition-shadow">
+          <div className="flex items-center gap-4">
+            <div className="bg-info/10 rounded-lg p-3">
+              <FileText className="h-6 w-6 text-info" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">إجمالي السير</h3>
+              <p className="text-2xl font-bold text-info">{cvStats.total || 0}</p>
+              <p className="text-sm text-muted-foreground">في قاعدة البيانات</p>
             </div>
           </div>
         </div>
