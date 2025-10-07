@@ -1105,12 +1105,15 @@ export default function CVsPage() {
                   onChange={(e) => setNationalityFilter(e.target.value)}
                 >
                   <option value="ALL">جميع الجنسيات</option>
-                  <option value="FILIPINO">فلبينية</option>
-                  <option value="INDIAN">هندية</option>
-                  <option value="BANGLADESHI">بنغلاديشية</option>
-                  <option value="ETHIOPIAN">إثيوبية</option>
-                  <option value="KENYAN">كينية</option>
-                  <option value="UGANDAN">أوغندية</option>
+                  <option value="فلبينية">فلبينية</option>
+                  <option value="هندية">هندية</option>
+                  <option value="بنغلاديشية">بنغلاديشية</option>
+                  <option value="إثيوبية">إثيوبية</option>
+                  <option value="كينية">كينية</option>
+                  <option value="أوغندية">أوغندية</option>
+                  <option value="نيبالية">نيبالية</option>
+                  <option value="سريلانكية">سريلانكية</option>
+                  <option value="إندونيسية">إندونيسية</option>
                 </select>
 
                 <select
