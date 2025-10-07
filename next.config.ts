@@ -32,6 +32,12 @@ const nextConfig: NextConfig = {
                 https://www.google.com
                 https://google.com
                 https://*.google.com
+                https://www.clarity.ms
+                https://*.clarity.ms
+                https://www.googleadservices.com
+                https://*.googleadservices.com
+                https://googleads.g.doubleclick.net
+                https://*.doubleclick.net
                 https://connect.facebook.net 
                 https://www.facebook.com;
               script-src-elem 'self' 'unsafe-inline' 
@@ -42,7 +48,13 @@ const nextConfig: NextConfig = {
                 https://analytics.google.com
                 https://www.google.com
                 https://google.com
-                https://*.google.com;
+                https://*.google.com
+                https://www.clarity.ms
+                https://*.clarity.ms
+                https://www.googleadservices.com
+                https://*.googleadservices.com
+                https://googleads.g.doubleclick.net
+                https://*.doubleclick.net;
               connect-src 'self' 
                 https://www.google-analytics.com 
                 https://analytics.google.com 
@@ -56,6 +68,12 @@ const nextConfig: NextConfig = {
                 https://www.google.com
                 https://google.com
                 https://*.google.com
+                https://www.clarity.ms
+                https://*.clarity.ms
+                https://www.googleadservices.com
+                https://*.googleadservices.com
+                https://googleads.g.doubleclick.net
+                https://*.doubleclick.net
                 https://www.youtube.com 
                 https://youtube.com 
                 https://*.youtube.com 
