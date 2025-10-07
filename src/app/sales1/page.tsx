@@ -34,7 +34,6 @@ import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
 import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
-import { CustomHeaderScripts, CustomBodyScripts, CustomFooterScripts } from '@/components/CustomScripts'
 
 // إضافة أنيميشن CSS مخصص
 const customStyles = `
@@ -737,8 +736,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center" dir="rtl">
         <style>{customStyles}</style>
-      <CustomBodyScripts />
-        <div className="text-center animate-scaleIn">
+      <div className="text-center animate-scaleIn">
           <div className="relative w-24 h-24 mx-auto mb-6">
             <div className="absolute inset-0 rounded-full border-4 border-blue-200"></div>
             <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
@@ -757,8 +755,6 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
     <div className="min-h-screen bg-white flex flex-col" dir="rtl">
       {/* Microsoft Clarity Analytics */}
       <ClarityScript />
-      <CustomHeaderScripts />
-      
       <style>{customStyles}</style>
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">
@@ -1812,12 +1808,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             </div>
           </div>
         </div>
-      )}
-    
-
-      {/* Custom Footer Scripts */}
-      <CustomFooterScripts />
-    </div>
+      )}</div>
   )
 }
 
