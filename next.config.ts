@@ -101,6 +101,12 @@ const nextConfig: NextConfig = {
                 https://google.com 
                 https://*.google-analytics.com 
                 https://*.googletagmanager.com 
+                https://www.clarity.ms
+                https://*.clarity.ms
+                https://www.googleadservices.com
+                https://*.googleadservices.com
+                https://googleads.g.doubleclick.net
+                https://*.doubleclick.net
                 https://drive.google.com 
                 https://lh3.googleusercontent.com 
                 https://*.googleusercontent.com 
@@ -138,6 +144,10 @@ const nextConfig: NextConfig = {
                 https://tagmanager.google.com 
                 https://analytics.google.com 
                 https://www.google-analytics.com
+                https://www.googleadservices.com
+                https://*.googleadservices.com
+                https://googleads.g.doubleclick.net
+                https://*.doubleclick.net
                 https://www.youtube.com 
                 https://youtube.com 
                 https://player.vimeo.com 
