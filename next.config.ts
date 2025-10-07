@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' 'unsafe-inline' 'unsafe-eval' 
+              script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:
                 https://www.googletagmanager.com 
                 https://tagmanager.google.com 
                 https://www.google-analytics.com 
@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
                 https://*.doubleclick.net
                 https://connect.facebook.net 
                 https://www.facebook.com;
-              script-src-elem 'self' 'unsafe-inline' 
+              script-src-elem 'self' 'unsafe-inline' blob:
                 https://www.googletagmanager.com 
                 https://tagmanager.google.com 
                 https://www.google-analytics.com 
