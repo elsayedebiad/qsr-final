@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { 
   FileText, 
   ArrowLeft, 
@@ -10,11 +11,47 @@ import {
   Sparkles, 
   Heart,
   Eye,
-  Briefcase
+  Briefcase,
+  LayoutDashboard,
+  LogOut
 } from 'lucide-react'
 
 export default function Home() {
   const router = useRouter()
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    // التحقق من حالة تسجيل الدخول
+    const token = localStorage.getItem('token')
+    const userData = localStorage.getItem('user')
+    
+    if (token && userData) {
+      try {
+        const parsedUser = JSON.parse(userData)
+        setUser(parsedUser)
+        setIsLoggedIn(true)
+      } catch (error) {
+        console.error('Error parsing user data:', error)
+      }
+    }
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setIsLoggedIn(false)
+    setUser(null)
+    router.push('/login')
+  }
+
+  const handleDashboard = () => {
+    if (user?.role === 'DEVELOPER') {
+      router.push('/developer-control')
+    } else {
+      router.push('/dashboard')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background animated-bg-theme relative">
@@ -47,15 +84,35 @@ export default function Home() {
                 className="btn-gradient-success px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 hover-lift text-xs sm:text-sm"
               >
                 <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden xs:inline">الرئيسية</span>
+                <span className="hidden xs:inline">المعرض</span>
               </button>
-              <button
-                onClick={() => router.push('/login')}
-                className="btn-gradient-primary px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 hover-lift text-xs sm:text-sm"
-              >
-                <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden xs:inline">دخول</span>
-              </button>
+              
+              {isLoggedIn ? (
+                <>
+                  <button
+                    onClick={handleDashboard}
+                    className="btn-gradient-primary px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 hover-lift text-xs sm:text-sm"
+                  >
+                    <LayoutDashboard className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden xs:inline">لوحة التحكم</span>
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-red-600 hover:bg-red-700 text-white px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 hover-lift text-xs sm:text-sm"
+                  >
+                    <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden xs:inline">خروج</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => router.push('/login')}
+                  className="btn-gradient-primary px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 hover-lift text-xs sm:text-sm"
+                >
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">دخول</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -88,13 +145,24 @@ export default function Home() {
               <FileText className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
               استعراض المعرض
             </button>
-            <button
-              onClick={() => router.push('/login')}
-              className="bg-card hover:bg-muted text-foreground border-2 border-border hover:border-primary px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base md:text-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl"
-            >
-              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
-              تسجيل الدخول للإدارة
-            </button>
+            
+            {isLoggedIn ? (
+              <button
+                onClick={handleDashboard}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base md:text-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              >
+                <LayoutDashboard className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                لوحة التحكم
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push('/login')}
+                className="bg-card hover:bg-muted text-foreground border-2 border-border hover:border-primary px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base md:text-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl"
+              >
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+                تسجيل الدخول للإدارة
+              </button>
+            )}
           </div>
         </div>
 

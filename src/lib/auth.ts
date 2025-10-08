@@ -78,7 +78,7 @@ export class AuthService {
         role: user.role 
       },
       this.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' } // شهر كامل
     )
 
     // Ensure userId is a number before creating a session
@@ -93,7 +93,7 @@ export class AuthService {
       data: {
         userId: userIdAsNumber,
         token,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 يوم
       }
     })
 

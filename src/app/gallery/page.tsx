@@ -18,7 +18,8 @@ import {
   Copy,
   ExternalLink,
   Play,
-  X
+  X,
+  LayoutDashboard
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
@@ -503,13 +504,22 @@ ${whatsappNumber ? `📱 للحجز عبر واتساب: ${whatsappNumber}` : ''
               </span>
               
               {isLoggedIn && (
-                <button
-                  onClick={() => router.push('/gallery/settings')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                >
-                  <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline">الإعدادات</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span className="hidden sm:inline">لوحة التحكم</span>
+                  </button>
+                  <button
+                    onClick={() => router.push('/gallery/settings')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline">الإعدادات</span>
+                  </button>
+                </>
               )}
             </div>
           </div>

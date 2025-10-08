@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         role: user.role 
       },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' } // شهر كامل
     )
 
     // Create session
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         token,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 يوم
       }
     })
 
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 30, // 30 يوم (شهر كامل)
       path: '/'
     })
 

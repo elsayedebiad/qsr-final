@@ -40,6 +40,9 @@ import {
   Filter,
   Eye,
   ExternalLink,
+  Share2,
+  Grid3X3,
+  List,
 } from 'lucide-react'
 import DashboardLayout from '../../components/DashboardLayout'
 import BulkImageDownloader from '../../components/BulkImageDownloader'
@@ -145,6 +148,8 @@ export default function CVsPage() {
   // شريط تحميل PNG الاحترافي
   const [showDownloadBar, setShowDownloadBar] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState(0)
+  // View mode for SALES accounts
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -399,126 +404,77 @@ export default function CVsPage() {
       .replace(/[\\/:*?"<>|]+/g, '-')
       .replace(/\s+/g, '_')
     
-    setDownloadModalFileName(fileName + '.jpg')
-    setDownloadModalOpen(true)
-    setDownloadModalStatus('preparing')
-    setDownloadModalProgress(0)
-    setDownloadModalError('')
+    const toastId = toast.loading('جاري تحميل الصورة...')
     
     try {
       // التحقق من وجود صورة من Google Drive
       if (!cv.cvImageUrl) {
-        setDownloadModalStatus('error')
-        setDownloadModalError('لا توجد صورة لتحميلها. يرجى إضافة رابط صورة من Google Drive أولاً.')
-        toast.error('لا توجد صورة لتحميلها')
+        toast.error('لا توجد صورة لتحميلها', { id: toastId })
         return
       }
-
-      setDownloadModalStatus('downloading')
-      setDownloadModalProgress(10)
-
-      console.log('🔄 بدء تحميل صورة السيرة من Google Drive:', cv.cvImageUrl)
 
       // استخراج File ID من Google Drive
       const fileId = extractGoogleDriveFileId(cv.cvImageUrl)
       
-      if (fileId) {
-        console.log('🔍 File ID:', fileId)
-        
-        setDownloadModalProgress(50)
-        
-        const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
-        console.log('🔗 رابط التحميل:', downloadUrl)
-        
-        setDownloadModalProgress(70)
-        
-        // استخدام رابط تحميل مباشر
-        try {
-          const link = document.createElement('a')
-          link.href = downloadUrl
-          link.download = fileName + '.jpg'
-          link.style.display = 'none'
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          
-          setDownloadModalProgress(100)
-          setDownloadModalStatus('success')
-          toast.success('تم بدء تحميل الصورة من Google Drive')
-          console.log('✅ تم بدء التحميل')
-          
-          // backup: استخدام iframe للتأكيد
-          setTimeout(() => {
-            const iframe = document.createElement('iframe')
-            iframe.style.display = 'none'
-            iframe.style.position = 'absolute'
-            iframe.style.width = '1px'
-            iframe.style.height = '1px'
-            iframe.src = downloadUrl
-            document.body.appendChild(iframe)
-            
-            setTimeout(() => {
-              if (iframe.parentNode) {
-                document.body.removeChild(iframe)
-              }
-            }, 20000)
-          }, 500)
-          
-          CVActivityLogger.viewed(cvId, cv.fullName) // تسجيل عرض السيرة
-          return
-        } catch (linkError) {
-          console.warn('⚠️ فشل التحميل بالرابط، استخدام iframe:', linkError)
-          
-          // استخدام iframe فقط
-          const iframe = document.createElement('iframe')
-          iframe.style.display = 'none'
-          iframe.style.position = 'absolute'
-          iframe.style.width = '1px'
-          iframe.style.height = '1px'
-          iframe.src = downloadUrl
-          document.body.appendChild(iframe)
-          
-          setDownloadModalProgress(100)
-          setDownloadModalStatus('success')
-          
-          setTimeout(() => {
-            if (iframe.parentNode) {
-              document.body.removeChild(iframe)
-            }
-          }, 20000)
-          
-          toast.success('تم بدء تحميل الصورة من Google Drive')
-          CVActivityLogger.viewed(cvId, cv.fullName)
-          return
-        }
-      } else {
-        // استخدام الرابط الأصلي
-        const iframe = document.createElement('iframe')
-        iframe.style.display = 'none'
-        iframe.style.position = 'absolute'
-        iframe.style.width = '1px'
-        iframe.style.height = '1px'
-        iframe.src = cv.cvImageUrl
-        document.body.appendChild(iframe)
-        
-        setDownloadModalProgress(100)
-        setDownloadModalStatus('success')
-        
-        setTimeout(() => {
-          if (iframe.parentNode) {
-            document.body.removeChild(iframe)
-          }
-        }, 15000)
-        
-        toast.success('تم بدء تحميل الصورة')
-        CVActivityLogger.viewed(cvId, cv.fullName)
+      if (!fileId) {
+        toast.error('رابط الصورة غير صالح', { id: toastId })
         return
+      }
+
+      // استخدام proxy لتحميل الصورة
+      const imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+      const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&w=2000&output=jpg`
+      
+      try {
+        // تحميل الصورة
+        const response = await fetch(proxyUrl)
+        if (!response.ok) throw new Error('فشل تحميل الصورة')
+        
+        const blob = await response.blob()
+        
+        // إنشاء رابط تحميل
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileName + '.jpg'
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        
+        // بدء التحميل
+        link.click()
+        
+        // تنظيف
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url)
+          if (link.parentNode) {
+            document.body.removeChild(link)
+          }
+        }, 100)
+        
+        toast.success('تم تحميل الصورة بنجاح', { id: toastId })
+        CVActivityLogger.viewed(cvId, cv.fullName)
+      } catch (fetchError) {
+        // إذا فشل proxy، جرب الطريقة المباشرة
+        console.warn('Proxy failed, trying direct download:', fetchError)
+        const link = document.createElement('a')
+        link.href = `https://drive.google.com/uc?export=download&id=${fileId}`
+        link.download = fileName + '.jpg'
+        link.target = '_blank'
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        setTimeout(() => {
+          if (link.parentNode) {
+            document.body.removeChild(link)
+          }
+        }, 100)
+        toast.success('تم بدء التحميل', { id: toastId })
+        CVActivityLogger.viewed(cvId, cv.fullName)
       }
       
     } catch (error) {
       console.error('❌ خطأ في تحميل الصورة:', error)
-      setDownloadModalStatus('error')
-      setDownloadModalError(error instanceof Error ? error.message : 'حدث خطأ غير متوقع أثناء التحميل')
+      toast.error('حدث خطأ أثناء التحميل', { id: toastId })
     }
   }
 
@@ -536,13 +492,15 @@ export default function CVsPage() {
   }
 
   // تنزيل مباشر من Google Drive
-  const downloadBulkImagesDirect = async () => {
-    if (selectedCvs.length === 0) {
+  const downloadBulkImagesDirect = async (cvIds?: string[]) => {
+    const idsToDownload = cvIds || selectedCvs
+    
+    if (idsToDownload.length === 0) {
       toast('اختر على الأقل سيرة واحدة')
       return
     }
     
-    const toastId = toast.loading(`بدء تحميل ${selectedCvs.length} صورة من Google Drive...`)
+    const toastId = toast.loading(`بدء تحميل ${idsToDownload.length} صورة من Google Drive...`)
     setShowDownloadBar(true)
     setDownloadProgress(0)
     
@@ -552,8 +510,8 @@ export default function CVsPage() {
       let failedCount = 0
       let skippedCount = 0
       
-      for (let i = 0; i < selectedCvs.length; i++) {
-        const cvId = selectedCvs[i]
+      for (let i = 0; i < idsToDownload.length; i++) {
+        const cvId = idsToDownload[i]
         const cv = cvs.find(c => c.id === cvId)
         
         if (!cv) {
@@ -567,10 +525,10 @@ export default function CVsPage() {
             console.warn(`لا توجد صورة لـ: ${cv.fullName}`)
             skippedCount++
             toast.loading(
-              `⏭️ تخطي: ${cv.fullName} (لا توجد صورة) (${i + 1}/${selectedCvs.length})`, 
+              `⏭️ تخطي: ${cv.fullName} (لا توجد صورة) (${i + 1}/${idsToDownload.length})`, 
               { id: toastId }
             )
-            const progress = Math.round(((i + 1) / selectedCvs.length) * 100)
+            const progress = Math.round(((i + 1) / idsToDownload.length) * 100)
             setDownloadProgress(progress)
             await new Promise(r => setTimeout(r, 300))
             continue
@@ -583,44 +541,73 @@ export default function CVsPage() {
             console.warn(`فشل استخراج File ID لـ: ${cv.fullName}`)
             failedCount++
             toast.loading(
-              `❌ فشل: ${cv.fullName} (رابط غير صالح) (${i + 1}/${selectedCvs.length})`, 
+              `❌ فشل: ${cv.fullName} (رابط غير صالح) (${i + 1}/${idsToDownload.length})`, 
               { id: toastId }
             )
-            const progress = Math.round(((i + 1) / selectedCvs.length) * 100)
+            const progress = Math.round(((i + 1) / idsToDownload.length) * 100)
             setDownloadProgress(progress)
             await new Promise(r => setTimeout(r, 300))
             continue
           }
 
-          // إنشاء رابط التحميل المباشر
-          const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
+          // إنشاء اسم الملف
           const filename = `${cv.fullName}_${cv.referenceCode || cvId}.jpg`
             .replace(/[\\/:*?"<>|]+/g, '-')
             .replace(/\s+/g, '_')
 
-          // تحميل الصورة عبر iframe مخفي
-          const iframe = document.createElement('iframe')
-          iframe.style.display = 'none'
-          iframe.style.position = 'absolute'
-          iframe.style.width = '1px'
-          iframe.style.height = '1px'
-          iframe.src = downloadUrl
-          document.body.appendChild(iframe)
+          // استخدام proxy لتحميل الصورة
+          const imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+          const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&w=2000&output=jpg`
           
-          // حذف iframe بعد فترة
-          setTimeout(() => {
-            if (iframe.parentNode) {
-              document.body.removeChild(iframe)
-            }
-          }, 5000)
+          try {
+            // تحميل الصورة
+            const response = await fetch(proxyUrl)
+            if (!response.ok) throw new Error('فشل تحميل الصورة')
+            
+            const blob = await response.blob()
+            
+            // إنشاء رابط تحميل
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = filename
+            link.style.display = 'none'
+            document.body.appendChild(link)
+            
+            // بدء التحميل
+            link.click()
+            
+            // تنظيف
+            setTimeout(() => {
+              window.URL.revokeObjectURL(url)
+              if (link.parentNode) {
+                document.body.removeChild(link)
+              }
+            }, 100)
+          } catch (fetchError) {
+            // إذا فشل proxy، جرب الطريقة المباشرة
+            console.warn('Proxy failed, trying direct download:', fetchError)
+            const link = document.createElement('a')
+            link.href = `https://drive.google.com/uc?export=download&id=${fileId}`
+            link.download = filename
+            link.target = '_blank'
+            link.style.display = 'none'
+            document.body.appendChild(link)
+            link.click()
+            setTimeout(() => {
+              if (link.parentNode) {
+                document.body.removeChild(link)
+              }
+            }, 100)
+          }
 
           successCount++
-          const progress = Math.round(((i + 1) / selectedCvs.length) * 100)
+          const progress = Math.round(((i + 1) / idsToDownload.length) * 100)
           setDownloadProgress(progress)
           
           // رسالة تحديث مع اسم السيرة
           toast.loading(
-            `✅ تم تحميل: ${cv.fullName} (${i + 1}/${selectedCvs.length})`, 
+            `✅ تم تحميل: ${cv.fullName} (${i + 1}/${idsToDownload.length})`, 
             { id: toastId }
           )
 
@@ -630,7 +617,7 @@ export default function CVsPage() {
           console.error(`Error downloading CV ${cvId}:`, error)
           failedCount++
           toast.loading(
-            `❌ خطأ: ${cv?.fullName || 'سيرة ذاتية'} (${i + 1}/${selectedCvs.length})`, 
+            `❌ خطأ: ${cv?.fullName || 'سيرة ذاتية'} (${i + 1}/${idsToDownload.length})`, 
             { id: toastId }
           )
           await new Promise(r => setTimeout(r, 500))
@@ -638,14 +625,14 @@ export default function CVsPage() {
       }
       
       // رسالة النتيجة النهائية
-      if (successCount === selectedCvs.length) {
+      if (successCount === idsToDownload.length) {
         toast.success(
           `🎉 تم تحميل جميع الصور بنجاح من Google Drive!\n✅ نجح: ${successCount}`, 
           { id: toastId, duration: 4000 }
         )
       } else if (successCount > 0) {
         toast.success(
-          `تم تحميل ${successCount} من ${selectedCvs.length} صورة\n${skippedCount > 0 ? `⏭️ تخطي: ${skippedCount} | ` : ''}${failedCount > 0 ? `❌ فشل: ${failedCount}` : ''}`, 
+          `تم تحميل ${successCount} من ${idsToDownload.length} صورة\n${skippedCount > 0 ? `⏭️ تخطي: ${skippedCount} | ` : ''}${failedCount > 0 ? `❌ فشل: ${failedCount}` : ''}`, 
           { id: toastId, duration: 4000 }
         )
       } else {
@@ -926,73 +913,6 @@ export default function CVsPage() {
               </div>
             </div>
           )}
-          {/* رسالة توضيحية للمستخدم العادي */}
-          {user?.role === 'USER' && (
-            <div className="card p-3 sm:p-4 mb-4 sm:mb-6 bg-primary/5 border-primary/20">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="bg-primary/10 rounded-lg p-1.5 sm:p-2">
-                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-medium text-primary mb-0.5 sm:mb-1">مرحباً بك كمستخدم عادي</h3>
-                  <p className="text-muted-foreground text-[10px] sm:text-xs">يمكنك مشاهدة وتحميل السير الذاتية فقط. للحصول على صلاحيات إضافية، تواصل مع المدير.</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* بنر التحديد الجماعي */}
-          {selectedCvs.length > 0 && (
-            <div className="card p-3 sm:p-6 mb-4 sm:mb-6 bg-primary/5 border-primary/20">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="bg-primary/10 rounded-lg p-2 sm:p-3">
-                    <User className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-lg font-semibold text-primary mb-0.5 sm:mb-1">تم تحديد {selectedCvs.length} سيرة</h3>
-                    <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">يمكنك الآن تطبيق العمليات الجماعية على السير المحددة</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                  <button
-                    onClick={() => setSelectedCvs([])}
-                    className="btn btn-secondary text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
-                  >
-                    <X className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
-                    إلغاء
-                  </button>
-                  <button
-                    onClick={downloadBulkImagesDirect}
-                    className="btn btn-primary text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 flex-1 sm:flex-initial"
-                    title="تحميل PNG لكل سيرة من المحدد"
-                  >
-                    <Download className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
-                    <span className="hidden xs:inline">تحميل PNG</span> ({selectedCvs.length})
-                  </button>
-                  {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
-                    <>
-                      <button
-                        onClick={handleBulkArchive}
-                        className="btn btn-warning text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
-                      >
-                        <FileText className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
-                        <span className="hidden xs:inline">أرشفة</span>
-                      </button>
-                      <button
-                        onClick={handleBulkDelete}
-                        className="btn btn-destructive text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
-                      >
-                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
-                        <span className="hidden xs:inline">حذف</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* إشعار للسير المعادة */}
           {filteredCvs.some(cv => cv.status === 'RETURNED') && (
             <div className="card p-6 mb-6 bg-warning/10 border-warning/20">
@@ -1391,6 +1311,58 @@ export default function CVsPage() {
             </div>
           </div>
 
+          {/* بنر التحديد الجماعي - يظهر فوق السير مباشرة */}
+          {selectedCvs.length > 0 && (
+            <div className="card p-3 sm:p-6 mb-4 bg-primary/5 border-primary/20">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="bg-primary/10 rounded-lg p-2 sm:p-3">
+                    <User className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-lg font-semibold text-primary mb-0.5 sm:mb-1">تم تحديد {selectedCvs.length} سيرة</h3>
+                    <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">يمكنك الآن تطبيق العمليات الجماعية على السير المحددة</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => setSelectedCvs([])}
+                    className="btn btn-secondary text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
+                  >
+                    <X className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={downloadBulkImagesDirect}
+                    className="btn btn-primary text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 flex-1 sm:flex-initial"
+                    title="تحميل PNG لكل سيرة من المحدد"
+                  >
+                    <Download className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
+                    <span className="hidden xs:inline">تحميل PNG</span> ({selectedCvs.length})
+                  </button>
+                  {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                    <>
+                      <button
+                        onClick={handleBulkArchive}
+                        className="btn btn-warning text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
+                      >
+                        <FileText className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
+                        <span className="hidden xs:inline">أرشفة</span>
+                      </button>
+                      <button
+                        onClick={handleBulkDelete}
+                        className="btn btn-destructive text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
+                      >
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
+                        <span className="hidden xs:inline">حذف</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* سطر أدوات سريع */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-3">
             <div className="flex items-center card p-2 sm:p-3 hover:shadow-md transition-shadow w-full sm:w-auto">
@@ -1413,6 +1385,152 @@ export default function CVsPage() {
             </div>
           </div>
 
+          {/* عرض Grid للمستخدمين من نوع USER - مشابه لصفحات السلز */}
+          {user?.role === 'USER' ? (
+            <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6' : 'space-y-4'}>
+              {paginatedCvs.map((cv) => (
+                <div
+                  key={cv.id}
+                  className={`group bg-white rounded-lg shadow-md border ${selectedCvs.includes(cv.id) ? 'border-primary ring-2 ring-primary/20' : 'border-gray-200'} overflow-hidden hover:shadow-lg transition-all duration-300`}
+                >
+                  {/* صورة السيرة الذاتية */}
+                  <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                    {cv.profileImage ? (
+                      <>
+                        <div className="w-full h-full relative">
+                          <input
+                            type="checkbox"
+                            className="absolute top-2 left-2 w-5 h-5 text-primary bg-white border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-primary z-10 cursor-pointer"
+                            checked={selectedCvs.includes(cv.id)}
+                            onChange={() => toggleCvSelection(cv.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <button
+                            onClick={() => {
+                              setViewingCv(cv)
+                              setShowImageModal(true)
+                            }}
+                            className="w-full h-full focus:outline-none cursor-pointer"
+                            title="اضغط لعرض صورة السيرة الكاملة"
+                          >
+                            <img
+                              src={processImageUrl(cv.profileImage)}
+                              alt={cv.fullName}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                if (!target.src.startsWith('data:')) {
+                                  target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
+                                }
+                              }}
+                            />
+                          </button>
+                        </div>
+                        
+                        {/* شريط علوي */}
+                        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/90 to-transparent p-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="bg-primary text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded">
+                                {cv.referenceCode}
+                              </span>
+                              {cv.age && (
+                                <span className="bg-white/90 text-gray-800 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded">
+                                  {cv.age} سنة
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-2xl sm:text-3xl">
+                              {cv.nationality === 'FILIPINO' && '🇵🇭'}
+                              {cv.nationality === 'INDIAN' && '🇮🇳'}
+                              {cv.nationality === 'BANGLADESHI' && '🇧🇩'}
+                              {cv.nationality === 'ETHIOPIAN' && '🇪🇹'}
+                              {cv.nationality === 'KENYAN' && '🇰🇪'}
+                              {cv.nationality === 'UGANDAN' && '🇺🇬'}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* شريط سفلي */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/85 to-transparent p-2 sm:p-3">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <div className="bg-white/20 backdrop-blur-sm p-1 rounded flex-shrink-0">
+                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                              <p className="text-white font-bold text-[10px] sm:text-xs truncate flex-1">
+                                {cv.fullNameArabic || cv.fullName}
+                              </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded px-1.5 py-1">
+                                <svg className="w-2.5 h-2.5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
+                                </svg>
+                                <p className="text-white text-[9px] sm:text-[10px] truncate font-medium">
+                                  {cv.position || 'غير محدد'}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded px-1.5 py-1">
+                                <span className="text-xs">
+                                  {cv.religion && cv.religion.includes('Muslim') ? '🕌' : '✝️'}
+                                </span>
+                                <p className="text-white text-[9px] sm:text-[10px] font-semibold truncate">
+                                  {cv.religion || 'غير محدد'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                        <p className="text-white text-sm font-bold">{cv.fullName}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* أزرار التفاعل */}
+                  <div className="p-2 sm:p-4 bg-gradient-to-br from-gray-50 to-white">
+                    <div className="grid grid-cols-3 gap-1 sm:gap-2">
+                      <button
+                        onClick={() => {
+                          setViewingCv(cv)
+                          setShowImageModal(true)
+                        }}
+                        className="bg-gradient-to-b from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white py-2 px-1 rounded-md text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] shadow-sm active:scale-95"
+                      >
+                        <Eye className="h-4 w-4 mb-0.5" />
+                        <span className="font-bold">عرض</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          // تحميل مفرد
+                          downloadBulkImagesDirect([cv.id])
+                        }}
+                        className="bg-gradient-to-b from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2 px-1 rounded-md text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] shadow-sm active:scale-95"
+                      >
+                        <Download className="h-4 w-4 mb-0.5" />
+                        <span className="font-bold">تحميل</span>
+                      </button>
+                      {cv.videoLink && (
+                        <button
+                          onClick={() => setSelectedVideo(cv.videoLink!)}
+                          className="bg-gradient-to-b from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-2 px-1 rounded-md text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] shadow-sm active:scale-95"
+                        >
+                          <Play className="h-4 w-4 mb-0.5" />
+                          <span className="font-bold">فيديو</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
           {/* الجدول - عرض مخفي على الموبايل */}
           <div className="overflow-hidden card hidden md:block">
             {/* رسالة توضيحية للتمرير الأفقي */}
@@ -1785,6 +1903,8 @@ export default function CVsPage() {
               </div>
             ))}
           </div>
+            </>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -2425,14 +2545,42 @@ export default function CVsPage() {
 
             {/* Image */}
             <div className="flex-1 overflow-auto bg-muted rounded-b-lg">
-              {viewingCv.cvImageUrl ? (
+              {(viewingCv.cvImageUrl || viewingCv.profileImage) ? (
                 <img
-                  src={`https://images.weserv.nl/?url=${encodeURIComponent(`https://drive.google.com/uc?export=view&id=${viewingCv.cvImageUrl.match(/[-\w]{25,}/)?.[0] || ''}`)}&w=2000&output=webp`}
+                  src={(() => {
+                    // إذا كان هناك cvImageUrl، استخدمها
+                    if (viewingCv.cvImageUrl) {
+                      const fileId = viewingCv.cvImageUrl.match(/[-\w]{25,}/)?.[0]
+                      if (fileId) {
+                        return `https://images.weserv.nl/?url=${encodeURIComponent(`https://drive.google.com/uc?export=view&id=${fileId}`)}&w=2000&output=webp`
+                      }
+                      return viewingCv.cvImageUrl
+                    }
+                    // وإلا استخدم profileImage
+                    return processImageUrl(viewingCv.profileImage)
+                  })()}
                   alt={viewingCv.fullName}
                   className="w-full h-auto object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement
-                    target.src = viewingCv.cvImageUrl || ''
+                    // في حالة فشل التحميل، جرب الرابط الأصلي
+                    if (viewingCv.cvImageUrl && !target.src.includes(viewingCv.cvImageUrl)) {
+                      target.src = viewingCv.cvImageUrl
+                    } else if (viewingCv.profileImage && !target.src.includes(viewingCv.profileImage)) {
+                      target.src = processImageUrl(viewingCv.profileImage)
+                    } else {
+                      target.style.display = 'none'
+                      target.parentElement!.innerHTML = `
+                        <div class="flex items-center justify-center h-96 text-muted-foreground">
+                          <div class="text-center">
+                            <svg class="h-16 w-16 mx-auto mb-4 opacity-50" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                            </svg>
+                            <p>فشل تحميل الصورة</p>
+                          </div>
+                        </div>
+                      `
+                    }
                   }}
                 />
               ) : (
@@ -2448,7 +2596,7 @@ export default function CVsPage() {
             {/* Action Buttons */}
             <div className="bg-background rounded-b-lg p-4 flex gap-2 border-t border-border">
               <button
-                onClick={() => downloadSingleImage(viewingCv.id)}
+                onClick={() => downloadBulkImagesDirect([viewingCv.id])}
                 className="flex-1 btn btn-primary text-sm py-2"
               >
                 <Download className="h-4 w-4 ml-2 inline" />
@@ -2456,12 +2604,13 @@ export default function CVsPage() {
               </button>
               <button
                 onClick={() => {
-                  window.open(`/cv/${viewingCv.id}`, '_blank')
+                  router.push(`/dashboard/cv/${viewingCv.id}`)
+                  setShowImageModal(false)
                 }}
                 className="flex-1 btn btn-secondary text-sm py-2"
               >
                 <ExternalLink className="h-4 w-4 ml-2 inline" />
-                فتح في صفحة جديدة
+                عرض التفاصيل
               </button>
             </div>
           </div>
