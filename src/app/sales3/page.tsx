@@ -1488,17 +1488,26 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                       {cv.profileImage ? (
                         <>
-                          <img
-                            src={processImageUrl(cv.profileImage)}
-                            alt={cv.fullName}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-gradient-to-br from-blue-500 to-purple-600"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement
-                              if (!target.src.startsWith('data:')) {
-                                target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
-                              }
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/cv/${cv.id}`);
                             }}
-                          />
+                            className="w-full h-full focus:outline-none cursor-pointer"
+                            title="اضغط لعرض السيرة الكاملة"
+                          >
+                            <img
+                              src={processImageUrl(cv.profileImage)}
+                              alt={cv.fullName}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-gradient-to-br from-blue-500 to-purple-600"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                if (!target.src.startsWith('data:')) {
+                                  target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
+                                }
+                              }}
+                            />
+                          </button>
                           
                           {/* شريط علوي - الكود والعمر والجنسية */}
                           <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/90 to-transparent p-2">
