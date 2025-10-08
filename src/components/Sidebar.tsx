@@ -261,17 +261,23 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
 
     // Hide admin-only items for non-admin users
     if (item.adminOnly) {
+      // DEVELOPER has full access to everything
+      if (user?.role === 'DEVELOPER' || user?.email === 'developer@system.local') {
+        // Developer sees everything - no restrictions
+      }
       // Allow SUB_ADMIN to see CV-related items only (add, import, smart-import, google-sheets)
-      const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
-      if (user?.role === 'SUB_ADMIN' && !subAdminAllowedItems.includes(item.id)) {
-        return null
+      else if (user?.role === 'SUB_ADMIN') {
+        const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
+        if (!subAdminAllowedItems.includes(item.id)) {
+          return null
+        }
       }
       // CUSTOMER_SERVICE cannot see any admin-only items
-      if (user?.role === 'CUSTOMER_SERVICE') {
+      else if (user?.role === 'CUSTOMER_SERVICE') {
         return null
       }
       // Hide from regular users
-      if (user?.role !== 'ADMIN' && user?.role !== 'SUB_ADMIN') {
+      else if (user?.role !== 'ADMIN') {
         return null
       }
     }

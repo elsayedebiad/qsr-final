@@ -52,7 +52,7 @@
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.544.0",
     "next": "15.5.4",
-    "next-auth": "^1.12.1",
+    "next-auth": "^4.24.11",
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.10.1",
     "puppeteer": "^24.22.2",

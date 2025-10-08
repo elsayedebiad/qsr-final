@@ -86,6 +86,13 @@ const customStyles = `
   }
 `
 
+interface Banner {
+  isActive: boolean
+  deviceType: string
+  order: number
+  imageUrl: string
+}
+
 interface CV {
   id: string
   fullName: string
@@ -131,7 +138,7 @@ interface CV {
   cvImageUrl?: string
 }
 
-export default function Sales1Page() {
+export default function Sales3Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
   const [filteredCvs, setFilteredCvs] = useState<CV[]>([])
@@ -170,7 +177,7 @@ export default function Sales1Page() {
   const [whatsappNumber, setWhatsappNumber] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
-  const salesPageId = 'sales1'
+  const salesPageId = 'sales3'
   
   // حالة الـCarousel للبنرات
   const [desktopBanners, setDesktopBanners] = useState<string[]>([])
@@ -192,15 +199,15 @@ export default function Sales1Page() {
           const banners = await response.json()
           
           // فصل البنرات حسب نوع الجهاز (المفعلة فقط)
-          const activeBanners = banners.filter((b: any) => b.isActive)
+          const activeBanners = banners.filter((b: Banner) => b.isActive)
           const desktop = activeBanners
-            .filter((b: any) => b.deviceType === 'DESKTOP')
-            .sort((a: any, b: any) => a.order - b.order)
-            .map((b: any) => b.imageUrl)
+            .filter((b: Banner) => b.deviceType === 'DESKTOP')
+            .sort((a: Banner, b: Banner) => a.order - b.order)
+            .map((b: Banner) => b.imageUrl)
           const mobile = activeBanners
-            .filter((b: any) => b.deviceType === 'MOBILE')
-            .sort((a: any, b: any) => a.order - b.order)
-            .map((b: any) => b.imageUrl)
+            .filter((b: Banner) => b.deviceType === 'MOBILE')
+            .sort((a: Banner, b: Banner) => a.order - b.order)
+            .map((b: Banner) => b.imageUrl)
           
           setDesktopBanners(desktop.length > 0 ? desktop : [])
           setMobileBanners(mobile.length > 0 ? mobile : [])
@@ -232,15 +239,15 @@ export default function Sales1Page() {
           const banners = await response.json()
           
           // فصل البنرات حسب نوع الجهاز (المفعلة فقط)
-          const activeBanners = banners.filter((b: any) => b.isActive)
+          const activeBanners = banners.filter((b: Banner) => b.isActive)
           const desktop = activeBanners
-            .filter((b: any) => b.deviceType === 'DESKTOP')
-            .sort((a: any, b: any) => a.order - b.order)
-            .map((b: any) => b.imageUrl)
+            .filter((b: Banner) => b.deviceType === 'DESKTOP')
+            .sort((a: Banner, b: Banner) => a.order - b.order)
+            .map((b: Banner) => b.imageUrl)
           const mobile = activeBanners
-            .filter((b: any) => b.deviceType === 'MOBILE')
-            .sort((a: any, b: any) => a.order - b.order)
-            .map((b: any) => b.imageUrl)
+            .filter((b: Banner) => b.deviceType === 'MOBILE')
+            .sort((a: Banner, b: Banner) => a.order - b.order)
+            .map((b: Banner) => b.imageUrl)
           
           setSecondaryDesktopBanners(desktop.length > 0 ? desktop : [])
           setSecondaryMobileBanners(mobile.length > 0 ? mobile : [])
@@ -538,10 +545,9 @@ export default function Sales1Page() {
         if (!cv.monthlySalary) return false
         const salary = parseInt(cv.monthlySalary.replace(/[^0-9]/g, ''))
         switch (salaryFilter) {
-          case '0-500': return salary >= 0 && salary <= 500
-          case '501-1000': return salary >= 501 && salary <= 1000
-          case '1001-1500': return salary >= 1001 && salary <= 1500
-          case '1501+': return salary >= 1501
+          case 'LOW': return salary < 1000
+          case 'MEDIUM': return salary >= 1000 && salary < 2000
+          case 'HIGH': return salary >= 2000
           default: return true
         }
       })()
@@ -552,9 +558,9 @@ export default function Sales1Page() {
       // فلتر حالة الجواز
       const matchesPassportStatus = passportStatusFilter === 'ALL' || (() => {
         switch (passportStatusFilter) {
-          case 'valid': return cv.passportNumber && cv.passportExpiryDate
-          case 'expired': return cv.passportNumber && !cv.passportExpiryDate
-          case 'none': return !cv.passportNumber
+          case 'VALID': return cv.passportNumber && cv.passportExpiryDate
+          case 'EXPIRED': return cv.passportExpiryDate && new Date(cv.passportExpiryDate) < new Date()
+          case 'MISSING': return !cv.passportNumber
           default: return true
         }
       })()
@@ -564,9 +570,9 @@ export default function Sales1Page() {
         if (!cv.height) return false
         const height = parseInt(cv.height)
         switch (heightFilter) {
-          case 'short': return height < 160
-          case 'medium': return height >= 160 && height <= 170
-          case 'tall': return height > 170
+          case 'SHORT': return height < 160
+          case 'MEDIUM': return height >= 160 && height < 170
+          case 'TALL': return height >= 170
           default: return true
         }
       })()
@@ -576,19 +582,20 @@ export default function Sales1Page() {
         if (!cv.weight) return false
         const weight = parseInt(cv.weight)
         switch (weightFilter) {
-          case 'light': return weight < 60
-          case 'medium': return weight >= 60 && weight <= 80
-          case 'heavy': return weight > 80
+          case 'LIGHT': return weight < 60
+          case 'MEDIUM': return weight >= 60 && weight < 80
+          case 'HEAVY': return weight >= 80
           default: return true
         }
       })()
 
       // فلتر عدد الأطفال
       const matchesChildren = childrenFilter === 'ALL' || (() => {
+        const children = cv.numberOfChildren || 0
         switch (childrenFilter) {
-          case '0': return cv.numberOfChildren === 0
-          case '1-2': return cv.numberOfChildren && cv.numberOfChildren >= 1 && cv.numberOfChildren <= 2
-          case '3+': return cv.numberOfChildren && cv.numberOfChildren >= 3
+          case 'NONE': return children === 0
+          case 'FEW': return children > 0 && children <= 2
+          case 'MANY': return children > 2
           default: return true
         }
       })()
@@ -647,11 +654,12 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
       window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
       
       // تتبع الحدث في Google Analytics (اختياري)
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', 'whatsapp_click', {
+      if (typeof window !== 'undefined' && 'gtag' in window) {
+        const gtag = (window as typeof window & { gtag: (command: string, ...args: unknown[]) => void }).gtag;
+        gtag('event', 'whatsapp_click', {
           'event_category': 'engagement',
           'event_label': `CV: ${cv.fullName || 'Unknown'}`,
-          'page_title': 'Sales 1',
+          'page_title': 'Sales 3',
           'cv_id': cv.id
         });
       }
@@ -1406,10 +1414,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     onChange={(e) => setSalaryFilter(e.target.value)}
                   >
                     <option value="ALL">جميع الرواتب</option>
-                    <option value="0-500">0-500 ريال</option>
-                    <option value="501-1000">501-1000 ريال</option>
-                    <option value="1001-1500">1001-1500 ريال</option>
-                    <option value="1501+">1501+ ريال</option>
+                    <option value="LOW">أقل من 1000 ريال</option>
+                    <option value="MEDIUM">1000-2000 ريال</option>
+                    <option value="HIGH">أكثر من 2000 ريال</option>
                   </select>
                 </div>
 
@@ -1421,9 +1428,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     onChange={(e) => setChildrenFilter(e.target.value)}
                   >
                     <option value="ALL">جميع الحالات</option>
-                    <option value="0">بدون أطفال</option>
-                    <option value="1-2">1-2 أطفال</option>
-                    <option value="3+">3+ أطفال</option>
+                    <option value="NONE">بدون أطفال</option>
+                    <option value="FEW">1-2 أطفال</option>
+                    <option value="MANY">أكثر من 2</option>
                   </select>
                 </div>
 
@@ -1808,7 +1815,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             </div>
           </div>
         </div>
-      )}</div>
+      )}
+</div>
   )
 }
 

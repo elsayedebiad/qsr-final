@@ -341,6 +341,7 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
   const getRoleText = (role: string) => {
     switch (role) {
       case 'ADMIN': return 'مدير عام'
+      case 'DEVELOPER': return 'مطور النظام 👨‍💻'
       case 'SUB_ADMIN': return 'Operation'
       case 'CUSTOMER_SERVICE': return 'Customer Service'
       case 'USER': return 'مستخدم عادي'
@@ -351,17 +352,23 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
   const renderNavItem = (item: NavItem) => {
     // Hide admin-only items for non-admin users
     if (item.adminOnly) {
+      // DEVELOPER has full access to everything
+      if (user?.role === 'DEVELOPER' || user?.email === 'developer@system.local') {
+        // Developer sees everything - no restrictions
+      }
       // Allow SUB_ADMIN to see CV-related items only (add, import, smart-import, google-sheets)
-      const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
-      if (user?.role === 'SUB_ADMIN' && !subAdminAllowedItems.includes(item.id)) {
-        return null
+      else if (user?.role === 'SUB_ADMIN') {
+        const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
+        if (!subAdminAllowedItems.includes(item.id)) {
+          return null
+        }
       }
       // CUSTOMER_SERVICE cannot see any admin-only items
-      if (user?.role === 'CUSTOMER_SERVICE') {
+      else if (user?.role === 'CUSTOMER_SERVICE') {
         return null
       }
       // Hide from regular users
-      if (user?.role !== 'ADMIN' && user?.role !== 'SUB_ADMIN') {
+      else if (user?.role !== 'ADMIN') {
         return null
       }
     }
@@ -384,17 +391,23 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
               <SidebarMenuSub>
                 {item.children?.map((child) => {
                   if (child.adminOnly) {
+                    // DEVELOPER has full access to everything
+                    if (user?.role === 'DEVELOPER' || user?.email === 'developer@system.local') {
+                      // Developer sees everything - no restrictions
+                    }
                     // Allow SUB_ADMIN to see CV-related items only
-                    const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
-                    if (user?.role === 'SUB_ADMIN' && !subAdminAllowedItems.includes(child.id)) {
-                      return null
+                    else if (user?.role === 'SUB_ADMIN') {
+                      const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
+                      if (!subAdminAllowedItems.includes(child.id)) {
+                        return null
+                      }
                     }
                     // CUSTOMER_SERVICE cannot see any admin-only items
-                    if (user?.role === 'CUSTOMER_SERVICE') {
+                    else if (user?.role === 'CUSTOMER_SERVICE') {
                       return null
                     }
                     // Hide from regular users
-                    if (user?.role !== 'ADMIN' && user?.role !== 'SUB_ADMIN') {
+                    else if (user?.role !== 'ADMIN') {
                       return null
                     }
                   }

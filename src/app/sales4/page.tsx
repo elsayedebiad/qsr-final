@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -131,7 +131,7 @@ interface CV {
   cvImageUrl?: string
 }
 
-export default function Sales1Page() {
+export default function Sales4Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
   const [filteredCvs, setFilteredCvs] = useState<CV[]>([])
@@ -170,7 +170,7 @@ export default function Sales1Page() {
   const [whatsappNumber, setWhatsappNumber] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
-  const salesPageId = 'sales1'
+  const salesPageId = 'sales4'
   
   // حالة الـCarousel للبنرات
   const [desktopBanners, setDesktopBanners] = useState<string[]>([])
@@ -538,9 +538,9 @@ export default function Sales1Page() {
         if (!cv.monthlySalary) return false
         const salary = parseInt(cv.monthlySalary.replace(/[^0-9]/g, ''))
         switch (salaryFilter) {
-          case '0-500': return salary >= 0 && salary <= 500
-          case '501-1000': return salary >= 501 && salary <= 1000
-          case '1001-1500': return salary >= 1001 && salary <= 1500
+          case 'LOW': return salary >= 0 && salary <= 500
+          case 'MEDIUM': return salary >= 501 && salary <= 1000
+          case 'MEDIUM': return salary >= 1001 && salary <= 1500
           case '1501+': return salary >= 1501
           default: return true
         }
@@ -552,9 +552,9 @@ export default function Sales1Page() {
       // فلتر حالة الجواز
       const matchesPassportStatus = passportStatusFilter === 'ALL' || (() => {
         switch (passportStatusFilter) {
-          case 'valid': return cv.passportNumber && cv.passportExpiryDate
-          case 'expired': return cv.passportNumber && !cv.passportExpiryDate
-          case 'none': return !cv.passportNumber
+          case 'VALID': return cv.passportNumber && cv.passportExpiryDate
+          case 'EXPIRED': return cv.passportNumber && !cv.passportExpiryDate
+          case 'MISSING': return !cv.passportNumber
           default: return true
         }
       })()
@@ -564,9 +564,9 @@ export default function Sales1Page() {
         if (!cv.height) return false
         const height = parseInt(cv.height)
         switch (heightFilter) {
-          case 'short': return height < 160
-          case 'medium': return height >= 160 && height <= 170
-          case 'tall': return height > 170
+          case 'SHORT': return height < 160
+          case 'MEDIUM': return height >= 160 && height <= 170
+          case 'TALL': return height > 170
           default: return true
         }
       })()
@@ -576,9 +576,9 @@ export default function Sales1Page() {
         if (!cv.weight) return false
         const weight = parseInt(cv.weight)
         switch (weightFilter) {
-          case 'light': return weight < 60
-          case 'medium': return weight >= 60 && weight <= 80
-          case 'heavy': return weight > 80
+          case 'LIGHT': return weight < 60
+          case 'MEDIUM': return weight >= 60 && weight <= 80
+          case 'HEAVY': return weight > 80
           default: return true
         }
       })()
@@ -586,8 +586,8 @@ export default function Sales1Page() {
       // فلتر عدد الأطفال
       const matchesChildren = childrenFilter === 'ALL' || (() => {
         switch (childrenFilter) {
-          case '0': return cv.numberOfChildren === 0
-          case '1-2': return cv.numberOfChildren && cv.numberOfChildren >= 1 && cv.numberOfChildren <= 2
+          case 'NONE': return children === 0
+          case 'FEW': return children && cv.numberOfChildren >= 1 && cv.numberOfChildren <= 2
           case '3+': return cv.numberOfChildren && cv.numberOfChildren >= 3
           default: return true
         }
@@ -1808,7 +1808,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             </div>
           </div>
         </div>
-      )}</div>
+      )}
+</div>
   )
 }
 
