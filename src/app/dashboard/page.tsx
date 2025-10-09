@@ -400,7 +400,7 @@ export default function CVsPage() {
       return
     }
     
-    const fileName = `السيرة_الذاتية_${cv.fullName}_${cv.referenceCode}`
+    const fileName = `${cv.fullName}_${cv.referenceCode || cvId}`
       .replace(/[\\/:*?"<>|]+/g, '-')
       .replace(/\s+/g, '_')
     
@@ -421,53 +421,55 @@ export default function CVsPage() {
         return
       }
 
-      // استخدام proxy لتحميل الصورة
-      const imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
-      const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&w=2000&output=jpg`
+      // استخدام Google Drive direct link with usercontent domain
+      const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=t`
       
       try {
-        // تحميل الصورة
-        const response = await fetch(proxyUrl)
-        if (!response.ok) throw new Error('فشل تحميل الصورة')
+        // محاولة التحميل بـ fetch أولاً
+        const response = await fetch(directUrl, {
+          method: 'GET',
+          mode: 'cors',
+        })
         
-        const blob = await response.blob()
-        
-        // إنشاء رابط تحميل
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = fileName + '.jpg'
-        link.style.display = 'none'
-        document.body.appendChild(link)
-        
-        // بدء التحميل
-        link.click()
-        
-        // تنظيف
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url)
-          if (link.parentNode) {
+        if (response.ok) {
+          const blob = await response.blob()
+          
+          // إنشاء رابط تحميل
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = fileName + '.jpg'
+          document.body.appendChild(link)
+          link.click()
+          
+          // تنظيف
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url)
             document.body.removeChild(link)
-          }
-        }, 100)
+          }, 100)
+          
+          toast.success('تم تحميل الصورة بنجاح', { id: toastId })
+          CVActivityLogger.viewed(cvId, cv.fullName)
+          return
+        }
         
-        toast.success('تم تحميل الصورة بنجاح', { id: toastId })
-        CVActivityLogger.viewed(cvId, cv.fullName)
+        throw new Error('Response not ok')
       } catch (fetchError) {
-        // إذا فشل proxy، جرب الطريقة المباشرة
-        console.warn('Proxy failed, trying direct download:', fetchError)
-        const link = document.createElement('a')
-        link.href = `https://drive.google.com/uc?export=download&id=${fileId}`
-        link.download = fileName + '.jpg'
-        link.target = '_blank'
-        link.style.display = 'none'
-        document.body.appendChild(link)
-        link.click()
+        // Fallback: استخدام iframe مخفي (لا يفتح تاب)
+        console.warn('Direct fetch failed, using iframe method:', fetchError)
+        
+        const iframe = document.createElement('iframe')
+        iframe.style.display = 'none'
+        iframe.src = directUrl
+        document.body.appendChild(iframe)
+        
+        // إزالة الـ iframe بعد 30 ثانية
         setTimeout(() => {
-          if (link.parentNode) {
-            document.body.removeChild(link)
+          if (iframe.parentNode) {
+            document.body.removeChild(iframe)
           }
-        }, 100)
+        }, 30000)
+        
         toast.success('تم بدء التحميل', { id: toastId })
         CVActivityLogger.viewed(cvId, cv.fullName)
       }
@@ -555,50 +557,52 @@ export default function CVsPage() {
             .replace(/[\\/:*?"<>|]+/g, '-')
             .replace(/\s+/g, '_')
 
-          // استخدام proxy لتحميل الصورة
-          const imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
-          const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&w=2000&output=jpg`
+          // استخدام Google Drive direct link with usercontent domain
+          const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=t`
           
           try {
-            // تحميل الصورة
-            const response = await fetch(proxyUrl)
-            if (!response.ok) throw new Error('فشل تحميل الصورة')
+            // محاولة التحميل بـ fetch
+            const response = await fetch(directUrl, {
+              method: 'GET',
+              mode: 'cors',
+            })
             
-            const blob = await response.blob()
-            
-            // إنشاء رابط تحميل
-            const url = window.URL.createObjectURL(blob)
-            const link = document.createElement('a')
-            link.href = url
-            link.download = filename
-            link.style.display = 'none'
-            document.body.appendChild(link)
-            
-            // بدء التحميل
-            link.click()
-            
-            // تنظيف
-            setTimeout(() => {
-              window.URL.revokeObjectURL(url)
-              if (link.parentNode) {
-                document.body.removeChild(link)
-              }
-            }, 100)
+            if (response.ok) {
+              const blob = await response.blob()
+              
+              // إنشاء رابط تحميل
+              const url = window.URL.createObjectURL(blob)
+              const link = document.createElement('a')
+              link.href = url
+              link.download = filename
+              document.body.appendChild(link)
+              link.click()
+              
+              // تنظيف
+              setTimeout(() => {
+                window.URL.revokeObjectURL(url)
+                if (link.parentNode) {
+                  document.body.removeChild(link)
+                }
+              }, 100)
+            } else {
+              throw new Error('Response not ok')
+            }
           } catch (fetchError) {
-            // إذا فشل proxy، جرب الطريقة المباشرة
-            console.warn('Proxy failed, trying direct download:', fetchError)
-            const link = document.createElement('a')
-            link.href = `https://drive.google.com/uc?export=download&id=${fileId}`
-            link.download = filename
-            link.target = '_blank'
-            link.style.display = 'none'
-            document.body.appendChild(link)
-            link.click()
+            // Fallback: استخدام iframe مخفي (لا يفتح تاب)
+            console.warn('Direct fetch failed, using iframe method:', fetchError)
+            
+            const iframe = document.createElement('iframe')
+            iframe.style.display = 'none'
+            iframe.src = directUrl
+            document.body.appendChild(iframe)
+            
+            // إزالة الـ iframe بعد 30 ثانية
             setTimeout(() => {
-              if (link.parentNode) {
-                document.body.removeChild(link)
+              if (iframe.parentNode) {
+                document.body.removeChild(iframe)
               }
-            }, 100)
+            }, 30000)
           }
 
           successCount++
