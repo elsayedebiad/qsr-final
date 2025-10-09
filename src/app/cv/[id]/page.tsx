@@ -293,123 +293,136 @@ export default function PublicCVPage() {
     setDownloadError('')
 
     try {
+      // Import mobile download utilities
+      const { downloadFromUrl, isMobileApp, showMobileDownloadInstructions } = await import('@/lib/mobile-download-utils')
+      
       // إذا كانت هناك صورة سيرة مصممة مسبقاً (من Google Drive)
       if (cv.cvImageUrl) {
         setDownloadStatus('downloading')
         setDownloadProgress(10)
         
         console.log('🔄 بدء تحميل صورة السيرة من:', cv.cvImageUrl)
+        console.log('📱 هل هو تطبيق موبايل؟', isMobileApp())
 
         // استخراج File ID من Google Drive
         const fileId = extractGoogleDriveFileId(cv.cvImageUrl)
         
         if (fileId) {
           console.log('🔍 File ID:', fileId)
+          setDownloadProgress(30)
           
           // استخدام رابط التحميل المباشر من Google Drive
-          console.log('📥 استخدام رابط التحميل المباشر من Google Drive')
-          setDownloadProgress(50)
-          
           const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
           console.log('🔗 رابط التحميل:', downloadUrl)
           
-          // محاولة التحميل بطريقتين
-          setDownloadProgress(70)
+          setDownloadProgress(50)
           
-          // الطريقة 1: استخدام رابط تحميل مباشر
-          try {
-            const link = document.createElement('a')
-            link.href = downloadUrl
-            link.download = fileName + '.jpg'
-            link.style.display = 'none'
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
-            
+          // استخدام الطريقة المحسنة للموبايل
+          const downloadSuccess = await downloadFromUrl(downloadUrl, {
+            fileName: fileName + '.jpg',
+            fallbackToNewWindow: true
+          })
+          
+          setDownloadProgress(90)
+          
+          if (downloadSuccess) {
             setDownloadProgress(100)
             setDownloadStatus('success')
             toast.success('تم بدء تحميل الصورة من Google Drive')
-            console.log('✅ تم بدء التحميل باستخدام رابط مباشر')
+            console.log('✅ تم تحميل الصورة بنجاح')
             
-            // backup: استخدام iframe للتأكيد
-            setTimeout(() => {
-              const iframe = document.createElement('iframe')
-              iframe.style.display = 'none'
-              iframe.style.position = 'absolute'
-              iframe.style.width = '1px'
-              iframe.style.height = '1px'
-              iframe.src = downloadUrl
-              document.body.appendChild(iframe)
-              
+            // Show mobile instructions if needed
+            if (isMobileApp()) {
               setTimeout(() => {
-                if (iframe.parentNode) {
-                  document.body.removeChild(iframe)
-                }
-              }, 20000)
-            }, 500)
-            
-            return
-          } catch (linkError) {
-            console.warn('⚠️ فشل التحميل بالرابط، استخدام iframe:', linkError)
-            
-            // الطريقة 2: استخدام iframe فقط
-            const iframe = document.createElement('iframe')
-            iframe.style.display = 'none'
-            iframe.style.position = 'absolute'
-            iframe.style.width = '1px'
-            iframe.style.height = '1px'
-            iframe.src = downloadUrl
-            document.body.appendChild(iframe)
-            
-            setDownloadProgress(100)
-            setDownloadStatus('success')
-            
-            setTimeout(() => {
-              if (iframe.parentNode) {
-                document.body.removeChild(iframe)
-              }
-            }, 20000)
-            
-            toast.success('تم بدء تحميل الصورة من Google Drive')
-            console.log('✅ تم بدء التحميل باستخدام iframe')
-            return
+                showMobileDownloadInstructions(fileName + '.jpg')
+              }, 1500)
+            }
+          } else {
+            throw new Error('فشل في تحميل الصورة')
           }
+          
         } else {
           // إذا لم نستطع استخراج File ID، استخدم الرابط الأصلي
           console.warn('⚠️ لم نتمكن من استخراج File ID، استخدام الرابط الأصلي')
-          const iframe = document.createElement('iframe')
-          iframe.style.display = 'none'
-          iframe.style.position = 'absolute'
-          iframe.style.width = '0'
-          iframe.style.height = '0'
-          iframe.src = cv.cvImageUrl
-          document.body.appendChild(iframe)
+          setDownloadProgress(50)
           
-          setDownloadProgress(100)
-          setDownloadStatus('success')
+          const downloadSuccess = await downloadFromUrl(cv.cvImageUrl, {
+            fileName: fileName + '.jpg',
+            fallbackToNewWindow: true
+          })
           
-          setTimeout(() => {
-            if (iframe.parentNode) {
-              document.body.removeChild(iframe)
+          setDownloadProgress(90)
+          
+          if (downloadSuccess) {
+            setDownloadProgress(100)
+            setDownloadStatus('success')
+            toast.success('تم بدء تحميل الصورة')
+            
+            if (isMobileApp()) {
+              setTimeout(() => {
+                showMobileDownloadInstructions(fileName + '.jpg')
+              }, 1500)
             }
-          }, 15000)
-          
-          toast.success('تم بدء تحميل الصورة')
-          return
+          } else {
+            throw new Error('فشل في تحميل الصورة')
+          }
         }
       } else {
-        // لا توجد صورة من Google Drive
-        setDownloadProgress(100)
-        setDownloadStatus('error')
-        setDownloadError('لا توجد صورة لتحميلها. يرجى إضافة رابط صورة من Google Drive أولاً.')
-        toast.error('لا توجد صورة لتحميلها')
-        return
+        // Try to generate image using API
+        setDownloadProgress(20)
+        
+        const token = localStorage.getItem('token')
+        if (!token) {
+          throw new Error('يجب تسجيل الدخول أولاً')
+        }
+        
+        setDownloadProgress(40)
+        console.log('🔄 استخدام API لتوليد صورة السيرة')
+        
+        const response = await fetch(`/api/cv/${cv.id}/alqaeid-image`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        setDownloadProgress(70)
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || `فشل في إنشاء الصورة (${response.status})`)
+        }
+        
+        const blob = await response.blob()
+        setDownloadProgress(85)
+        
+        // استخدام الطريقة المحسنة للتحميل
+        const { downloadFile } = await import('@/lib/mobile-download-utils')
+        
+        const downloadSuccess = await downloadFile(blob, {
+          fileName: fileName + '.png',
+          fallbackToNewWindow: true
+        })
+        
+        if (downloadSuccess) {
+          setDownloadProgress(100)
+          setDownloadStatus('success')
+          toast.success('تم إنشاء وتحميل صورة السيرة')
+          
+          if (isMobileApp()) {
+            setTimeout(() => {
+              showMobileDownloadInstructions(fileName + '.png')
+            }, 1500)
+          }
+        } else {
+          throw new Error('فشل في تحميل الصورة المولدة')
+        }
       }
       
     } catch (error) {
       console.error('❌ خطأ في تنزيل الصورة:', error)
       setDownloadStatus('error')
       setDownloadError(error instanceof Error ? error.message : 'حدث خطأ أثناء التحميل')
+      toast.error('فشل في تحميل الصورة: ' + (error instanceof Error ? error.message : 'خطأ غير معروف'))
     }
   }
 

@@ -45,7 +45,7 @@ export default function BulkImageDownloader({ cvIds, cvNameById, onClose, onComp
         cleanupIframe(iframe);
 
         const nameHint = (cvNameById?.(id) || id).replace(/[\\/:*?"<>|]+/g, '-');
-        triggerDownload(dataUrl, `${nameHint}.png`);
+        await triggerDownload(dataUrl, `${nameHint}.png`);
         await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between downloads
       } catch (e) {
         console.warn('Failed to download image for a CV, continuing...', e);
@@ -113,13 +113,56 @@ export default function BulkImageDownloader({ cvIds, cvNameById, onClose, onComp
     try { iframe.remove() } catch {}
   }
 
-  const triggerDownload = (urlOrDataUrl: string, filename: string, isObjectUrl = false) => {
-    const a = document.createElement('a')
-    a.href = urlOrDataUrl
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
+  const triggerDownload = async (urlOrDataUrl: string, filename: string, isObjectUrl = false) => {
+    // Import mobile download utilities
+    const { isMobileApp, downloadFile } = await import('@/lib/mobile-download-utils')
+    
+    console.log('🔄 تحميل ملف:', filename)
+    console.log('📱 هل هو تطبيق موبايل؟', isMobileApp())
+    
+    if (isMobileApp()) {
+      // For mobile apps, convert data URL to blob and use enhanced download
+      try {
+        const response = await fetch(urlOrDataUrl)
+        const blob = await response.blob()
+        
+        const downloadSuccess = await downloadFile(blob, {
+          fileName: filename,
+          fallbackToNewWindow: true
+        })
+        
+        if (!downloadSuccess) {
+          console.warn('⚠️ فشل التحميل المحسن، استخدام الطريقة التقليدية')
+          // Fallback to traditional method
+          const a = document.createElement('a')
+          a.href = urlOrDataUrl
+          a.download = filename
+          a.target = '_blank'
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+        }
+      } catch (error) {
+        console.error('❌ خطأ في تحويل data URL إلى blob:', error)
+        // Fallback to traditional method
+        const a = document.createElement('a')
+        a.href = urlOrDataUrl
+        a.download = filename
+        a.target = '_blank'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+      }
+    } else {
+      // Traditional method for desktop browsers
+      const a = document.createElement('a')
+      a.href = urlOrDataUrl
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    }
+    
     if (isObjectUrl) URL.revokeObjectURL(urlOrDataUrl)
   }
 

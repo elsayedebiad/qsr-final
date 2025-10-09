@@ -379,9 +379,57 @@ export default function CVsPage() {
     const toastId = toast.loading('جاري تحميل الصورة...')
     
     try {
+      // Import mobile download utilities
+      const { downloadFromUrl, isMobileApp, showMobileDownloadInstructions } = await import('@/lib/mobile-download-utils')
+      
+      console.log('🔄 بدء تحميل صورة السيرة للـ:', cv.fullName)
+      console.log('📱 هل هو تطبيق موبايل؟', isMobileApp())
+      
       // التحقق من وجود صورة من Google Drive
       if (!cv.cvImageUrl) {
-        toast.error('لا توجد صورة لتحميلها', { id: toastId })
+        // Try to generate image using API
+        const token = localStorage.getItem('token')
+        if (!token) {
+          toast.error('يجب تسجيل الدخول أولاً', { id: toastId })
+          return
+        }
+        
+        console.log('🔄 استخدام API لتوليد صورة السيرة')
+        
+        const response = await fetch(`/api/cv/${cvId}/alqaeid-image`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || `فشل في إنشاء الصورة (${response.status})`)
+        }
+        
+        const blob = await response.blob()
+        
+        // استخدام الطريقة المحسنة للتحميل
+        const { downloadFile } = await import('@/lib/mobile-download-utils')
+        
+        const downloadSuccess = await downloadFile(blob, {
+          fileName: fileName + '.png',
+          fallbackToNewWindow: true
+        })
+        
+        if (downloadSuccess) {
+          toast.success('تم إنشاء وتحميل صورة السيرة', { id: toastId })
+          
+          if (isMobileApp()) {
+            setTimeout(() => {
+              showMobileDownloadInstructions(fileName + '.png')
+            }, 1500)
+          }
+        } else {
+          throw new Error('فشل في تحميل الصورة المولدة')
+        }
+        
+        CVActivityLogger.viewed(cvId, cv.fullName)
         return
       }
 
@@ -389,23 +437,57 @@ export default function CVsPage() {
       const fileId = extractGoogleDriveFileId(cv.cvImageUrl)
       
       if (!fileId) {
-        toast.error('رابط الصورة غير صالح', { id: toastId })
+        // If no file ID, try with original URL
+        console.warn('⚠️ لم نتمكن من استخراج File ID، استخدام الرابط الأصلي')
+        
+        const downloadSuccess = await downloadFromUrl(cv.cvImageUrl, {
+          fileName: fileName + '.jpg',
+          fallbackToNewWindow: true
+        })
+        
+        if (downloadSuccess) {
+          toast.success('تم بدء تحميل الصورة', { id: toastId })
+          
+          if (isMobileApp()) {
+            setTimeout(() => {
+              showMobileDownloadInstructions(fileName + '.jpg')
+            }, 1500)
+          }
+        } else {
+          throw new Error('رابط الصورة غير صالح')
+        }
+        
+        CVActivityLogger.viewed(cvId, cv.fullName)
         return
       }
 
       // استخدام Google Drive direct download link
       const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
+      console.log('🔗 رابط التحميل:', downloadUrl)
       
-      // فتح الرابط في نافذة جديدة (يعمل في WebView)
-      // المتصفح أو التطبيق سيتعامل مع التحميل تلقائياً
-      window.open(downloadUrl, '_blank')
+      // استخدام الطريقة المحسنة للتحميل
+      const downloadSuccess = await downloadFromUrl(downloadUrl, {
+        fileName: fileName + '.jpg',
+        fallbackToNewWindow: true
+      })
       
-      toast.success('تم فتح رابط التحميل', { id: toastId })
+      if (downloadSuccess) {
+        toast.success('تم بدء تحميل الصورة من Google Drive', { id: toastId })
+        
+        if (isMobileApp()) {
+          setTimeout(() => {
+            showMobileDownloadInstructions(fileName + '.jpg')
+          }, 1500)
+        }
+      } else {
+        throw new Error('فشل في تحميل الصورة من Google Drive')
+      }
+      
       CVActivityLogger.viewed(cvId, cv.fullName)
       
     } catch (error) {
       console.error('❌ خطأ في تحميل الصورة:', error)
-      toast.error('حدث خطأ أثناء التحميل', { id: toastId })
+      toast.error('حدث خطأ أثناء التحميل: ' + (error instanceof Error ? error.message : 'خطأ غير معروف'), { id: toastId })
     }
   }
 
