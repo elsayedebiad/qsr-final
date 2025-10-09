@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { X, Download, CheckCircle2, AlertTriangle, SlidersHorizontal } from 'lucide-react'
-import JSZip from 'jszip'
 import { toPng } from 'html-to-image'
 
 type Props = {
@@ -28,15 +27,13 @@ export default function BulkImageDownloader({ cvIds, cvNameById, onClose, onComp
   }, [])
 
   const run = async () => {
-    if (!cvIds?.length) return
-    setBusy(true)
+    if (!cvIds?.length) return;
+    setBusy(true);
 
-    const zip = new JSZip()
-    let index = 0
-
+    let index = 0;
     for (const id of cvIds) {
       try {
-        const { iframe, node } = await loadIframeAndNode(id)
+        const { iframe, node } = await loadIframeAndNode(id);
         const dataUrl = await toPng(node, {
           cacheBust: true,
           backgroundColor: '#ffffff',
@@ -44,28 +41,25 @@ export default function BulkImageDownloader({ cvIds, cvNameById, onClose, onComp
           width: node.scrollWidth,
           height: node.scrollHeight,
           filter: (n) => !(n instanceof HTMLElement && n.classList?.contains('print:hidden')),
-        })
-        cleanupIframe(iframe)
+        });
+        cleanupIframe(iframe);
 
-        const base64 = dataUrl.split(',')[1]
-        const nameHint = (cvNameById?.(id) || id).replace(/[\\/:*?"<>|]+/g, '-')
-        zip.file(`${nameHint}.png`, base64, { base64: true })
+        const nameHint = (cvNameById?.(id) || id).replace(/[\\/:*?"<>|]+/g, '-');
+        triggerDownload(dataUrl, `${nameHint}.png`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between downloads
       } catch (e) {
-        console.warn('فشل تنزيل صورة لسيرة، متابعة...', e)
-        setErrorCount((c) => c + 1)
+        console.warn('Failed to download image for a CV, continuing...', e);
+        setErrorCount((c) => c + 1);
       } finally {
-        index++
-        setProgress(Math.round((index / cvIds.length) * 100))
+        index++;
+        setProgress(Math.round((index / cvIds.length) * 100));
       }
     }
 
-    const blob = await zip.generateAsync({ type: 'blob' })
-    const url = URL.createObjectURL(blob)
-    triggerDownload(url, `CVs-${new Date().toISOString().slice(0,10)}.zip`, true)
-    setDone(true)
-    setBusy(false)
-    onComplete()
-  }
+    setDone(true);
+    setBusy(false);
+    onComplete();
+  };
 
   const loadIframeAndNode = (id: string): Promise<{ iframe: HTMLIFrameElement; node: HTMLElement }> =>
     new Promise((resolve, reject) => {

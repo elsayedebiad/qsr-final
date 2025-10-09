@@ -78,3 +78,35 @@ export function getOptimizedImageUrl(profileImage: string | null | undefined): s
   
   return null
 }
+
+/**
+ * Extracts the Google Drive file ID from various URL formats.
+ * @param url The Google Drive URL.
+ * @returns The file ID or null if not found.
+ */
+export const extractGoogleDriveFileId = (url: string): string | null => {
+  if (!url) return null;
+
+  const patterns = [
+    /\/file\/d\/([^\/]+)/, // /file/d/FILE_ID/view
+    /[?&]id=([^&]+)/, // /open?id=FILE_ID
+    /\/thumbnail\?id=([^&]+)/, // /thumbnail?id=FILE_ID
+    /\/uc\?.*id=([^&]+)/, // /uc?id=FILE_ID or /uc?export=view&id=FILE_ID
+    /lh3\.googleusercontent\.com\/d\/([^=?&]+)/, // lh3.googleusercontent.com/d/FILE_ID
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+
+  // Fallback for direct file ID-like strings
+  const fallbackMatch = url.match(/[-\w]{25,}/);
+  if (fallbackMatch) {
+    return fallbackMatch[0];
+  }
+
+  return null;
+};

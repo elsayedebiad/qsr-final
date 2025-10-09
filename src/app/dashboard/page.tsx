@@ -48,7 +48,8 @@ import DashboardLayout from '../../components/DashboardLayout'
 import BulkImageDownloader from '../../components/BulkImageDownloader'
 import CountryFlag from '../../components/CountryFlag'
 import { BulkActivityLogger, CVActivityLogger, ContractActivityLogger } from '../../lib/activity-logger'
-import { getCountryInfo } from '../../lib/country-utils'
+import { getCountryInfo } from '../../lib/country-utils';
+import { extractGoogleDriveFileId } from '../../lib/google-drive-utils';
 import LottieIcon from '../../components/LottieIcon'
 import { processImageUrl } from '../../lib/url-utils'
 import DownloadProgressModal from '@/components/DownloadProgressModal'
@@ -362,35 +363,6 @@ export default function CVsPage() {
   const goToPrevPage = () => goToPage(currentPage - 1)
 
   // دالة لاستخراج FILE_ID من روابط Google Drive المختلفة
-  const extractGoogleDriveFileId = (url: string): string | null => {
-    if (!url) return null
-    
-    // Pattern 1: /file/d/FILE_ID/view
-    const match1 = url.match(/\/file\/d\/([^\/]+)/)
-    if (match1) return match1[1]
-    
-    // Pattern 2: /open?id=FILE_ID
-    const match2 = url.match(/[?&]id=([^&]+)/)
-    if (match2) return match2[1]
-    
-    // Pattern 3: /thumbnail?id=FILE_ID
-    const match3 = url.match(/\/thumbnail\?id=([^&]+)/)
-    if (match3) return match3[1]
-    
-    // Pattern 4: /uc?id=FILE_ID or /uc?export=view&id=FILE_ID
-    const match4 = url.match(/\/uc\?.*id=([^&]+)/)
-    if (match4) return match4[1]
-    
-    // Pattern 5: lh3.googleusercontent.com/d/FILE_ID
-    const match5 = url.match(/lh3\.googleusercontent\.com\/d\/([^=?&]+)/)
-    if (match5) return match5[1]
-    
-    // Pattern 6: رابط مباشر للـ FILE_ID (25+ حرف/رقم)
-    const match6 = url.match(/[-\w]{25,}/)
-    if (match6) return match6[0]
-    
-    return null
-  }
 
   // تنزيل صورة واحدة: تحميل صورة Google Drive مباشرة
   const downloadSingleImage = async (cvId: string) => {
@@ -437,145 +409,130 @@ export default function CVsPage() {
     }
   }
 
-  // تنزيل صور المحدد (يستدعي نافذة المجمّع الجديدة)
-  const downloadBulkImages = () => {
+  // تنزيل صور المحدد (تحميل الصور الفعلية من Google Drive)
+  const downloadBulkImages = async () => {
     if (selectedCvs.length === 0) {
-      toast('اختر على الأقل سيرة واحدة')
-      return
+      toast('اختر على الأقل سيرة واحدة');
+      return;
     }
-    
-    // تسجيل النشاط
-    BulkActivityLogger.download(selectedCvs.length)
-    
-    setShowBulkDownloader(true)
-  }
 
-  // تنزيل مباشر من Google Drive
-  const downloadBulkImagesDirect = async (cvIds?: string[]) => {
-    const idsToDownload = cvIds || selectedCvs
-    
-    if (idsToDownload.length === 0) {
-      toast('اختر على الأقل سيرة واحدة')
-      return
-    }
-    
-    const toastId = toast.loading(`جاري فتح روابط التحميل لـ ${idsToDownload.length} صورة...`)
-    setShowDownloadBar(true)
-    setDownloadProgress(0)
-    
+    const toastId = toast.loading(`جاري فتح روابط التحميل لـ ${selectedCvs.length} صورة...`);
+    setShowDownloadBar(true);
+    setDownloadProgress(0);
+
     try {
-      // تحميل الصور بشكل تسلسلي
-      let successCount = 0
-      let failedCount = 0
-      let skippedCount = 0
-      
-      for (let i = 0; i < idsToDownload.length; i++) {
-        const cvId = idsToDownload[i]
-        const cv = cvs.find(c => c.id === cvId)
-        
+      let successCount = 0;
+      let failedCount = 0;
+      let skippedCount = 0;
+
+      for (let i = 0; i < selectedCvs.length; i++) {
+        const cvId = selectedCvs[i];
+        const cv = cvs.find(c => c.id === cvId);
+
         if (!cv) {
-          failedCount++
-          continue
+          failedCount++;
+          continue;
         }
-        
+
         try {
           // التحقق من وجود صورة من Google Drive
           if (!cv.cvImageUrl) {
-            console.warn(`لا توجد صورة لـ: ${cv.fullName}`)
-            skippedCount++
+            console.warn(`لا توجد صورة لـ: ${cv.fullName}`);
+            skippedCount++;
+            setDownloadProgress(Math.round(((i + 1) / selectedCvs.length) * 100));
             toast.loading(
-              `⏭️ تخطي: ${cv.fullName} (لا توجد صورة) (${i + 1}/${idsToDownload.length})`, 
+              `⏭️ تخطي: ${cv.fullName} (لا توجد صورة) (${i + 1}/${selectedCvs.length})`,
               { id: toastId }
-            )
-            const progress = Math.round(((i + 1) / idsToDownload.length) * 100)
-            setDownloadProgress(progress)
-            await new Promise(r => setTimeout(r, 300))
-            continue
+            );
+            await new Promise(r => setTimeout(r, 300));
+            continue;
           }
 
           // استخراج File ID من Google Drive
-          const fileId = extractGoogleDriveFileId(cv.cvImageUrl)
-          
+          const fileId = extractGoogleDriveFileId(cv.cvImageUrl);
+
           if (!fileId) {
-            console.warn(`فشل استخراج File ID لـ: ${cv.fullName}`)
-            failedCount++
+            console.warn(`فشل استخراج File ID لـ: ${cv.fullName}`);
+            failedCount++;
+            setDownloadProgress(Math.round(((i + 1) / selectedCvs.length) * 100));
             toast.loading(
-              `❌ فشل: ${cv.fullName} (رابط غير صالح) (${i + 1}/${idsToDownload.length})`, 
+              `❌ فشل: ${cv.fullName} (رابط غير صالح) (${i + 1}/${selectedCvs.length})`,
               { id: toastId }
-            )
-            const progress = Math.round(((i + 1) / idsToDownload.length) * 100)
-            setDownloadProgress(progress)
-            await new Promise(r => setTimeout(r, 300))
-            continue
+            );
+            await new Promise(r => setTimeout(r, 300));
+            continue;
           }
 
-          // إنشاء اسم الملف
-          const filename = `${cv.fullName}_${cv.referenceCode || cvId}.jpg`
-            .replace(/[\\/:*?"<>|]+/g, '-')
-            .replace(/\s+/g, '_')
-
           // استخدام Google Drive direct download link
-          const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
+          const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
           
-          // فتح رابط التحميل (يعمل في WebView)
-          window.open(downloadUrl, '_blank')
+          // إنشاء iframe مخفي للتحميل
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = downloadUrl;
+          document.body.appendChild(iframe);
+          
+          // إزالة iframe بعد 5 ثواني
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+          }, 5000);
 
-          successCount++
-          const progress = Math.round(((i + 1) / idsToDownload.length) * 100)
-          setDownloadProgress(progress)
-          
+          successCount++;
+          setDownloadProgress(Math.round(((i + 1) / selectedCvs.length) * 100));
+
           // رسالة تحديث مع اسم السيرة
           toast.loading(
-            `✅ تم فتح رابط: ${cv.fullName} (${i + 1}/${idsToDownload.length})`, 
+            `✅ جاري تحميل: ${cv.fullName} (${i + 1}/${selectedCvs.length})`,
             { id: toastId }
-          )
+          );
 
-          // مهلة للسماح بفتح كل رابط على حدة (مهم في WebView/Mobile Apps)
-          await new Promise(r => setTimeout(r, 2000))
+          // مهلة بين التحميلات (مهم لتجنب حظر المتصفح)
+          await new Promise(r => setTimeout(r, 2000));
         } catch (error) {
-          console.error(`Error downloading CV ${cvId}:`, error)
-          failedCount++
+          console.error(`Error downloading CV ${cvId}:`, error);
+          failedCount++;
           toast.loading(
-            `❌ خطأ: ${cv?.fullName || 'سيرة ذاتية'} (${i + 1}/${idsToDownload.length})`, 
+            `❌ خطأ: ${cv?.fullName || 'سيرة ذاتية'} (${i + 1}/${selectedCvs.length})`,
             { id: toastId }
-          )
-          await new Promise(r => setTimeout(r, 500))
+          );
+          await new Promise(r => setTimeout(r, 500));
         }
       }
-      
+
       // رسالة النتيجة النهائية
-      if (successCount === idsToDownload.length) {
+      if (successCount === selectedCvs.length) {
         toast.success(
-          `🎉 تم فتح روابط التحميل بنجاح!\n✅ ${successCount} صورة`, 
+          `🎉 تم فتح روابط التحميل بنجاح!\n✅ ${successCount} صورة`,
           { id: toastId, duration: 4000 }
-        )
+        );
       } else if (successCount > 0) {
         toast.success(
-          `تم فتح ${successCount} من ${idsToDownload.length} رابط\n${skippedCount > 0 ? `⏭️ تخطي: ${skippedCount} | ` : ''}${failedCount > 0 ? `❌ فشل: ${failedCount}` : ''}`, 
+          `تم فتح ${successCount} من ${selectedCvs.length} رابط\n${skippedCount > 0 ? `⏭️ تخطي: ${skippedCount} | ` : ''}${failedCount > 0 ? `❌ فشل: ${failedCount}` : ''}`,
           { id: toastId, duration: 4000 }
-        )
+        );
       } else {
-        toast.error(`فشل فتح روابط التحميل`, { id: toastId })
+        toast.error(`فشل فتح روابط التحميل`, { id: toastId });
       }
 
-      // إخفاء شريط التحميل بعد لحظة
+      // إخفاء شريط التحميل
       setTimeout(() => {
-        setShowDownloadBar(false)
-        setDownloadProgress(0)
-      }, 1000)
-      
+        setShowDownloadBar(false);
+        setDownloadProgress(0);
+      }, 1000);
+
       // تسجيل النشاط
       if (successCount > 0) {
-        BulkActivityLogger.download(successCount)
+        BulkActivityLogger.download(successCount);
       }
-      
+
     } catch (error) {
-      console.error('Bulk download error:', error)
-      toast.error('حدث خطأ أثناء التحميل الجماعي', { id: toastId })
-      setShowDownloadBar(false)
-      setDownloadProgress(0)
+      console.error('Bulk download error:', error);
+      toast.error('حدث خطأ أثناء التحميل الجماعي', { id: toastId });
+      setShowDownloadBar(false);
+      setDownloadProgress(0);
     }
-  }
+  };
+
 
   // فتح نافذة العمليات الجماعية
   const handleBulkDelete = () => {
@@ -1252,7 +1209,7 @@ export default function CVsPage() {
                     إلغاء
                   </button>
                   <button
-                    onClick={downloadBulkImagesDirect}
+                    onClick={downloadBulkImages}
                     className="btn btn-primary text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 flex-1 sm:flex-initial"
                     title="تحميل PNG لكل سيرة من المحدد"
                   >
@@ -1427,7 +1384,7 @@ export default function CVsPage() {
                       <button
                         onClick={() => {
                           // تحميل مفرد
-                          downloadBulkImagesDirect([cv.id])
+                          downloadSingleImage(cv.id)
                         }}
                         className="bg-gradient-to-b from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2 px-1 rounded-md text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] shadow-sm active:scale-95"
                       >
@@ -2515,7 +2472,7 @@ export default function CVsPage() {
             {/* Action Buttons */}
             <div className="bg-background rounded-b-lg p-4 flex gap-2 border-t border-border">
               <button
-                onClick={() => downloadBulkImagesDirect([viewingCv.id])}
+                onClick={() => downloadSingleImage(viewingCv.id)}
                 className="flex-1 btn btn-primary text-sm py-2"
               >
                 <Download className="h-4 w-4 ml-2 inline" />
