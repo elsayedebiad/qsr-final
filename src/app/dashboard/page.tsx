@@ -421,58 +421,15 @@ export default function CVsPage() {
         return
       }
 
-      // استخدام Google Drive direct link with usercontent domain
-      const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=t`
+      // استخدام Google Drive direct download link
+      const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
       
-      try {
-        // محاولة التحميل بـ fetch أولاً
-        const response = await fetch(directUrl, {
-          method: 'GET',
-          mode: 'cors',
-        })
-        
-        if (response.ok) {
-          const blob = await response.blob()
-          
-          // إنشاء رابط تحميل
-          const url = window.URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = fileName + '.jpg'
-          document.body.appendChild(link)
-          link.click()
-          
-          // تنظيف
-          setTimeout(() => {
-            window.URL.revokeObjectURL(url)
-            document.body.removeChild(link)
-          }, 100)
-          
-          toast.success('تم تحميل الصورة بنجاح', { id: toastId })
-          CVActivityLogger.viewed(cvId, cv.fullName)
-          return
-        }
-        
-        throw new Error('Response not ok')
-      } catch (fetchError) {
-        // Fallback: استخدام iframe مخفي (لا يفتح تاب)
-        console.warn('Direct fetch failed, using iframe method:', fetchError)
-        
-        const iframe = document.createElement('iframe')
-        iframe.style.display = 'none'
-        iframe.src = directUrl
-        document.body.appendChild(iframe)
-        
-        // إزالة الـ iframe بعد 30 ثانية
-        setTimeout(() => {
-          if (iframe.parentNode) {
-            document.body.removeChild(iframe)
-          }
-        }, 30000)
-        
-        toast.success('تم بدء التحميل', { id: toastId })
-        CVActivityLogger.viewed(cvId, cv.fullName)
-      }
+      // فتح الرابط في نافذة جديدة (يعمل في WebView)
+      // المتصفح أو التطبيق سيتعامل مع التحميل تلقائياً
+      window.open(downloadUrl, '_blank')
+      
+      toast.success('تم فتح رابط التحميل', { id: toastId })
+      CVActivityLogger.viewed(cvId, cv.fullName)
       
     } catch (error) {
       console.error('❌ خطأ في تحميل الصورة:', error)
@@ -502,7 +459,7 @@ export default function CVsPage() {
       return
     }
     
-    const toastId = toast.loading(`بدء تحميل ${idsToDownload.length} صورة من Google Drive...`)
+    const toastId = toast.loading(`جاري فتح روابط التحميل لـ ${idsToDownload.length} صورة...`)
     setShowDownloadBar(true)
     setDownloadProgress(0)
     
@@ -557,53 +514,11 @@ export default function CVsPage() {
             .replace(/[\\/:*?"<>|]+/g, '-')
             .replace(/\s+/g, '_')
 
-          // استخدام Google Drive direct link with usercontent domain
-          const directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=t`
+          // استخدام Google Drive direct download link
+          const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
           
-          try {
-            // محاولة التحميل بـ fetch
-            const response = await fetch(directUrl, {
-              method: 'GET',
-              mode: 'cors',
-            })
-            
-            if (response.ok) {
-              const blob = await response.blob()
-              
-              // إنشاء رابط تحميل
-              const url = window.URL.createObjectURL(blob)
-              const link = document.createElement('a')
-              link.href = url
-              link.download = filename
-              document.body.appendChild(link)
-              link.click()
-              
-              // تنظيف
-              setTimeout(() => {
-                window.URL.revokeObjectURL(url)
-                if (link.parentNode) {
-                  document.body.removeChild(link)
-                }
-              }, 100)
-            } else {
-              throw new Error('Response not ok')
-            }
-          } catch (fetchError) {
-            // Fallback: استخدام iframe مخفي (لا يفتح تاب)
-            console.warn('Direct fetch failed, using iframe method:', fetchError)
-            
-            const iframe = document.createElement('iframe')
-            iframe.style.display = 'none'
-            iframe.src = directUrl
-            document.body.appendChild(iframe)
-            
-            // إزالة الـ iframe بعد 30 ثانية
-            setTimeout(() => {
-              if (iframe.parentNode) {
-                document.body.removeChild(iframe)
-              }
-            }, 30000)
-          }
+          // فتح رابط التحميل (يعمل في WebView)
+          window.open(downloadUrl, '_blank')
 
           successCount++
           const progress = Math.round(((i + 1) / idsToDownload.length) * 100)
@@ -611,12 +526,12 @@ export default function CVsPage() {
           
           // رسالة تحديث مع اسم السيرة
           toast.loading(
-            `✅ تم تحميل: ${cv.fullName} (${i + 1}/${idsToDownload.length})`, 
+            `✅ تم فتح رابط: ${cv.fullName} (${i + 1}/${idsToDownload.length})`, 
             { id: toastId }
           )
 
-          // مهلة قصيرة للسماح للمتصفح ببدء التحميل التالي
-          await new Promise(r => setTimeout(r, 1200))
+          // مهلة للسماح بفتح كل رابط على حدة (مهم في WebView/Mobile Apps)
+          await new Promise(r => setTimeout(r, 2000))
         } catch (error) {
           console.error(`Error downloading CV ${cvId}:`, error)
           failedCount++
@@ -631,16 +546,16 @@ export default function CVsPage() {
       // رسالة النتيجة النهائية
       if (successCount === idsToDownload.length) {
         toast.success(
-          `🎉 تم تحميل جميع الصور بنجاح من Google Drive!\n✅ نجح: ${successCount}`, 
+          `🎉 تم فتح روابط التحميل بنجاح!\n✅ ${successCount} صورة`, 
           { id: toastId, duration: 4000 }
         )
       } else if (successCount > 0) {
         toast.success(
-          `تم تحميل ${successCount} من ${idsToDownload.length} صورة\n${skippedCount > 0 ? `⏭️ تخطي: ${skippedCount} | ` : ''}${failedCount > 0 ? `❌ فشل: ${failedCount}` : ''}`, 
+          `تم فتح ${successCount} من ${idsToDownload.length} رابط\n${skippedCount > 0 ? `⏭️ تخطي: ${skippedCount} | ` : ''}${failedCount > 0 ? `❌ فشل: ${failedCount}` : ''}`, 
           { id: toastId, duration: 4000 }
         )
       } else {
-        toast.error(`فشل تحميل جميع السير الذاتية`, { id: toastId })
+        toast.error(`فشل فتح روابط التحميل`, { id: toastId })
       }
 
       // إخفاء شريط التحميل بعد لحظة
