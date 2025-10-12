@@ -218,3 +218,28 @@ export const BulkActivityLogger = {
   }
 }
 
+/**
+ * Import-related activity loggers
+ */
+export const ImportActivityLogger = {
+  excelImport: async (userId: number | string, count: number, fileName: string) => {
+    return logActivity({
+      action: 'EXCEL_IMPORT',
+      description: `تم استيراد ${count} سيرة ذاتية من ملف ${fileName}`,
+      targetType: 'SYSTEM',
+      targetName: fileName,
+      metadata: { count, fileName, userId }
+    })
+  },
+
+  smartImport: async (userId: number | string, results: any, fileName: string) => {
+    return logActivity({
+      action: 'SMART_IMPORT',
+      description: `تم الاستيراد الذكي من ملف ${fileName}`,
+      targetType: 'SYSTEM',
+      targetName: fileName,
+      metadata: { results, fileName, userId }
+    })
+  }
+}
+
