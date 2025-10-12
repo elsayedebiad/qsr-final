@@ -7,7 +7,10 @@ export function useIsMobile() {
 
   React.useEffect(() => {
     // Only run on client-side
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') {
+      setIsMobile(false)
+      return
+    }
     
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
     const onChange = () => {

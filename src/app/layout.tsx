@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
-import { Toaster } from 'react-hot-toast';
+import { ToasterProvider } from '@/components/ToasterProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import Script from 'next/script';
 import "./globals.css";
@@ -54,16 +54,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <AuthProvider>
           {children}
         </AuthProvider>
-        <Toaster 
-          position="top-center"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
+        <ToasterProvider />
       </body>
     </html>
   );
