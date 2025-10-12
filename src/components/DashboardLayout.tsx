@@ -65,13 +65,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         return
       }
 
-      // التحقق من حالة تفعيل النظام
-      const isActivated = localStorage.getItem('system_activated')
-      if (isActivated !== 'true') {
-        router.push('/activation')
-        return
-      }
-
       const response = await fetch('/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`

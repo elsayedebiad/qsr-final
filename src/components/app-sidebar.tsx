@@ -545,20 +545,6 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {user.role === 'ADMIN' && (
-                    <>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          localStorage.removeItem('system_activated')
-                          window.location.reload()
-                        }}
-                      >
-                        <Settings className="ml-2" />
-                        إعادة تعيين التفعيل
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
                   <DropdownMenuItem onClick={onLogout}>
                     <LogOut className="ml-2" />
                     تسجيل الخروج

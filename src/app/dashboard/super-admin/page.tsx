@@ -135,15 +135,6 @@ export default function SuperAdminPage() {
     toast.success('تم نسخ الكود')
   }
 
-  const resetSystemActivation = () => {
-    localStorage.removeItem('system_activated')
-    localStorage.removeItem('activation_attempts')
-    localStorage.removeItem('last_attempt_time')
-    toast.success('تم إعادة تعيين تفعيل النظام')
-    setTimeout(() => {
-      window.location.reload()
-    }, 1000)
-  }
 
   return (
     <DashboardLayout>
@@ -199,14 +190,6 @@ export default function SuperAdminPage() {
               >
                 <Key className="h-5 w-5" />
                 <span>إدارة أكواد التفعيل</span>
-              </button>
-
-              <button
-                onClick={resetSystemActivation}
-                className="bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-lg flex items-center gap-3 transition-colors"
-              >
-                <RefreshCw className="h-5 w-5" />
-                <span>إعادة تعيين التفعيل</span>
               </button>
             </div>
 

@@ -470,22 +470,6 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
 
         {/* ===== الجزء السفلي الثابت ===== */}
         <div className="flex-shrink-0">
-          {/* Admin Tools */}
-          {!isCollapsed && user?.role === 'ADMIN' && (
-            <div className="p-4 border-t border-border">
-              <button
-                onClick={() => {
-                  localStorage.removeItem('system_activated')
-                  window.location.reload()
-                }}
-                className="w-full flex items-center px-3 py-2 text-sm font-medium text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-200 mb-2"
-              >
-                <Settings className="h-5 w-5 ml-3" />
-                <span>إعادة تعيين التفعيل</span>
-              </button>
-            </div>
-          )}
-
           {/* Logout Button */}
           <div className="p-4 border-t border-border">
             <button
