@@ -67,6 +67,8 @@ export default function OnlineUsersPage() {
   }, [])
 
   const fetchData = async () => {
+    if (typeof window === 'undefined') return // Skip on server-side
+    
     try {
       setIsLoading(true)
       const token = localStorage.getItem('token')
