@@ -109,6 +109,10 @@ interface CV {
   cvImageUrl?: string
 }
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export default function CVsPage() {
   const router = useRouter()
 
