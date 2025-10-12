@@ -31,6 +31,10 @@ interface UserData {
 
 const ACTIVATION_CODES = ['30211241501596', '24112002', '2592012']
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export default function SuperAdminPage() {
   const [users, setUsers] = useState<UserData[]>([])
   const [isLoading, setIsLoading] = useState(true)

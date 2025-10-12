@@ -44,6 +44,10 @@ interface Pagination {
   pages: number
 }
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export default function ActivityLogPage() {
   const router = useRouter()
   const [activities, setActivities] = useState<ActivityLog[]>([])

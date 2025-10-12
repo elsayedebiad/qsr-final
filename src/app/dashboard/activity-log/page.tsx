@@ -700,6 +700,10 @@ function ActivityLogPageContent() {
       )
     }
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 // Default page with authentication check
 export default function ActivityLogPage() {
   return (
