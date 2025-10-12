@@ -51,6 +51,9 @@ interface SessionHistory {
   userAgent: string | null
 }
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic'
+
 export default function OnlineUsersPage() {
   const router = useRouter()
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])

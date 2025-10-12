@@ -67,6 +67,9 @@ interface NotificationData {
   unreadCount: number
 }
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic'
+
 export default function NotificationsPage() {
   const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>([])
