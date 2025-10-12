@@ -69,6 +69,7 @@ interface NotificationData {
 
 // Disable static generation for this page
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export default function NotificationsPage() {
   const router = useRouter()

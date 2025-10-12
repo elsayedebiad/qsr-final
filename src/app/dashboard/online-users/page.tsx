@@ -53,6 +53,7 @@ interface SessionHistory {
 
 // Disable static generation for this page
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export default function OnlineUsersPage() {
   const router = useRouter()
