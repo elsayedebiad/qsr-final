@@ -176,7 +176,6 @@ const nextConfig: NextConfig = {
       }
     ]
   },
-  experimental: {},
   serverExternalPackages: ['xlsx', 'sharp', 'puppeteer-core', '@prisma/client', 'prisma'],
   webpack: (config, { isServer }) => {
     if (isServer) {

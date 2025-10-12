@@ -114,6 +114,8 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
   }
 
   const toggleSystemStatus = async () => {
+    if (typeof window === 'undefined') return // Skip on server-side
+    
     setTogglingSystem(true)
     try {
       const token = localStorage.getItem('token')

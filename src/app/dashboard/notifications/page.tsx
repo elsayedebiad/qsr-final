@@ -85,23 +85,33 @@ export default function NotificationsPage() {
   const [lastNotificationId, setLastNotificationId] = useState<number>(0)
   const [processedCodes, setProcessedCodes] = useState<Set<string>>(new Set())
   const [isPopupOpen, setIsPopupOpen] = useState(false)
-  const [closedCodes, setClosedCodes] = useState<Set<string>>(() => {
+  const [closedCodes, setClosedCodes] = useState<Set<string>>(new Set())
+  const [isClient, setIsClient] = useState(false)
+
+  // Initialize client-side state
+  useEffect(() => {
+    setIsClient(true)
     // Load permanently closed codes from localStorage
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('closedActivationCodes')
-      return saved ? new Set(JSON.parse(saved)) : new Set()
+      if (saved) {
+        setClosedCodes(new Set(JSON.parse(saved)))
+      }
     }
-    return new Set()
-  })
+  }, [])
 
   useEffect(() => {
+    if (!isClient) return // Don't run until client-side
+    
     fetchNotifications()
     // Auto-refresh every 5 seconds to check for new activation codes
     const interval = setInterval(checkForNewActivationCodes, 5000)
     return () => clearInterval(interval)
-  }, [pagination.page, selectedCategory, selectedType, closedCodes]) // Add closedCodes dependency
+  }, [pagination.page, selectedCategory, selectedType, closedCodes, isClient]) // Add isClient dependency
 
   const checkForNewActivationCodes = async () => {
+    if (typeof window === 'undefined') return // Skip on server-side
+    
     try {
       const token = localStorage.getItem('token')
       const response = await fetch(`/api/notifications?limit=5&page=1`, {
@@ -150,6 +160,8 @@ export default function NotificationsPage() {
   }
 
   const fetchNotifications = async () => {
+    if (typeof window === 'undefined') return // Skip on server-side
+    
     try {
       setIsLoading(true)
       const params = new URLSearchParams({
@@ -181,6 +193,8 @@ export default function NotificationsPage() {
   }
 
   const handleNotificationAction = async (action: string, notificationId?: number) => {
+    if (typeof window === 'undefined') return // Skip on server-side
+    
     try {
       const token = localStorage.getItem('token')
       const response = await fetch('/api/notifications', {
