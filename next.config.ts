@@ -176,9 +176,8 @@ const nextConfig: NextConfig = {
       }
     ]
   },
-  experimental: {
-    serverComponentsExternalPackages: ['xlsx', 'sharp', 'puppeteer-core', '@prisma/client', 'prisma'],
-  },
+  experimental: {},
+  serverExternalPackages: ['xlsx', 'sharp', 'puppeteer-core', '@prisma/client', 'prisma'],
   webpack: (config, { isServer }) => {
     if (isServer) {
       // تقليل حجم الـbundle للـserver
