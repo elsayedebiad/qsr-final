@@ -58,6 +58,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   const checkAuth = async () => {
+    if (typeof window === 'undefined') return // Skip on server-side
+    
     try {
       const token = localStorage.getItem('token')
       if (!token) {
@@ -103,6 +105,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   const handleLogout = () => {
+    if (typeof window === 'undefined') return // Skip on server-side
+    
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     toast.success('تم تسجيل الخروج بنجاح')
