@@ -219,6 +219,7 @@ export class NotificationService {
       'ADMIN': 'مدير عام',
       'SUB_ADMIN': 'Operation',
       'CUSTOMER_SERVICE': 'Customer Service',
+      'SALES': 'مبيعات',
       'USER': 'مستخدم عادي'
     }
 

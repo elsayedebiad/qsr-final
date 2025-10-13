@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { CVStatus, Priority, SkillLevel } from '@prisma/client'
@@ -35,7 +35,7 @@ import { processImageUrl } from '@/lib/url-utils'
 import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 
-// إضافة أنيميشن CSS مخصص
+// إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
   @keyframes fadeIn {
     from {
@@ -49,7 +49,7 @@ const customStyles = `
   @keyframes scaleIn {
     from {
       opacity: 0;
-      transform: scale(0.9);
+      transform: scale(0.95);
     }
     to {
       opacity: 1;
@@ -60,7 +60,7 @@ const customStyles = `
   @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(10px);
     }
     to {
       opacity: 1;
@@ -69,20 +69,39 @@ const customStyles = `
   }
 
   .animate-fadeIn {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.2s ease-out;
   }
 
   .animate-scaleIn {
-    animation: scaleIn 0.3s ease-out;
+    animation: scaleIn 0.2s ease-out;
   }
 
   .animate-slideUp {
-    animation: slideUp 0.5s ease-out;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  /* تحسينات للموبايل */
+  @media (max-width: 768px) {
+    .animate-fadeIn,
+    .animate-scaleIn,
+    .animate-slideUp {
+      animation-duration: 0.15s !important;
+    }
+    
+    .transition-all,
+    .transition-transform {
+      transition-duration: 0.15s !important;
+    }
   }
 
   .search-input::placeholder {
     color: black !important;
     opacity: 1 !important;
+  }
+  
+  /* تحسين الصور للأداء */
+  img {
+    content-visibility: auto;
   }
 `
 
@@ -134,10 +153,10 @@ interface CV {
 export default function Sales1Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
-  const [filteredCvs, setFilteredCvs] = useState<CV[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [displayLimit, setDisplayLimit] = useState(20) // عرض 20 سيرة في البداية
   const [statusFilter, setStatusFilter] = useState<CVStatus | 'ALL'>('ALL')
   const [nationalityFilter, setNationalityFilter] = useState<string>('ALL')
   const [skillFilter, setSkillFilter] = useState<string>('ALL')
@@ -320,7 +339,6 @@ export default function Sales1Page() {
         )
         
         setCvs(uniqueCvs)
-        setFilteredCvs(uniqueCvs)
       } catch (error) {
         console.error('Error fetching CVs:', error)
         toast.error('فشل في جلب السير الذاتية')
@@ -459,9 +477,9 @@ export default function Sales1Page() {
     return false
   }
 
-  // فلترة السير الذاتية - نظام شامل مثل الداشبورد
-  useEffect(() => {
-    const filtered = cvs.filter(cv => {
+  // فلترة السير الذاتية - تم تحسينها باستخدام useMemo للأداء
+  const allFilteredCvs = useMemo(() => {
+    return cvs.filter(cv => {
       // البحث النصي الذكي
       const matchesSearch = searchTerm === '' || 
         smartSearch(cv.fullName, searchTerm) ||
@@ -607,12 +625,28 @@ export default function Sales1Page() {
              matchesPassportStatus && matchesHeight && matchesWeight && matchesChildren && matchesLocation &&
              matchesDriving
     })
-
-    setFilteredCvs(filtered)
   }, [cvs, searchTerm, statusFilter, nationalityFilter, maritalStatusFilter, ageFilter, 
       skillFilter, experienceFilter, languageFilter, religionFilter, educationFilter, 
       salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, 
       childrenFilter, locationFilter, drivingFilter])
+
+  // عرض عدد محدود من السير لتحسين الأداء
+  const filteredCvs = useMemo(() => {
+    return allFilteredCvs.slice(0, displayLimit)
+  }, [allFilteredCvs, displayLimit])
+
+  // دالة لتحميل المزيد
+  const loadMore = useCallback(() => {
+    setDisplayLimit(prev => prev + 20)
+  }, [])
+
+  // إعادة ضبط حد العرض عند تغيير الفلاتر
+  useEffect(() => {
+    setDisplayLimit(20) // إعادة تعيين إلى 20 عند تغيير الفلتر
+  }, [searchTerm, statusFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, 
+      experienceFilter, languageFilter, religionFilter, educationFilter, salaryFilter, 
+      contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, 
+      locationFilter, drivingFilter])
 
   // Scroll تلقائي عند تغيير الفلتر
   useEffect(() => {
@@ -1447,6 +1481,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
           )}
         </div>
 
+        {/* ملاحظة حول الصور */}
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4 md:p-5 mb-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <span className="text-2xl md:text-3xl leading-none">⭐</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-amber-900 font-semibold text-sm md:text-base leading-relaxed text-right m-0">
+                <span className="font-bold">ملاحظة:</span> صور العاملات الموجودة على هذا الموقع معدّلة باستخدام الذكاء الاصطناعي، وهي للعرض التوضيحي فقط.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* عرض السير الذاتية */}
         <div ref={cvsContainerRef} className="min-h-[400px]">
         {filteredCvs.length === 0 ? (
@@ -1492,7 +1540,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                             <img
                               src={processImageUrl(cv.profileImage)}
                               alt={cv.fullName}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-gradient-to-br from-blue-500 to-purple-600"
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 bg-gradient-to-br from-blue-500 to-purple-600"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement
                                 if (!target.src.startsWith('data:')) {
@@ -1663,8 +1713,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                         >
                           <img 
                             src={processImageUrl(cv.profileImage)} 
-                            alt={cv.fullName} 
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 bg-gradient-to-br from-blue-500 to-purple-600"
+                            alt={cv.fullName}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 bg-gradient-to-br from-blue-500 to-purple-600"
                             onError={(e) => {
                                 const target = e.target as HTMLImageElement
                                 if (!target.src.startsWith('data:')) {
@@ -1707,6 +1759,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 )}
               </div>
             ))}
+          </div>
+        )}
+        
+        {/* زر عرض المزيد */}
+        {!isLoading && filteredCvs.length > 0 && allFilteredCvs.length > displayLimit && (
+          <div className="flex justify-center mt-8 mb-4">
+            <button
+              onClick={loadMore}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
+            >
+              <ChevronDown className="h-6 w-6 animate-bounce" />
+              عرض المزيد ({allFilteredCvs.length - displayLimit} سيرة متبقية)
+              <ChevronDown className="h-6 w-6 animate-bounce" />
+            </button>
           </div>
         )}
         </div>
@@ -1830,4 +1896,5 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
 </div>
   )
 }
+
 

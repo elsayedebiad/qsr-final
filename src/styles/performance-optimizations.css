@@ -1,0 +1,103 @@
+/* تحسينات الأداء للموبايل */
+
+/* تقليل الأنيميشن على الأجهزة الضعيفة */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* تحسين الأنيميشن للموبايل فقط */
+@media (max-width: 768px) {
+  .animate-fadeIn {
+    animation-duration: 0.2s !important;
+  }
+  
+  .animate-scaleIn {
+    animation-duration: 0.2s !important;
+  }
+  
+  .animate-slideUp {
+    animation-duration: 0.3s !important;
+  }
+  
+  /* تقليل transitions */
+  .transition-all {
+    transition-duration: 0.2s !important;
+  }
+  
+  .transition-transform {
+    transition-duration: 0.2s !important;
+  }
+  
+  /* تحسين hover effects للموبايل */
+  .group:hover {
+    transform: none !important;
+  }
+  
+  /* تقليل shadows للموبايل */
+  .shadow-lg {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+  }
+  
+  .shadow-xl {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1) !important;
+  }
+}
+
+/* Skeleton loader animation محسّن */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    to right,
+    #f0f0f0 0%,
+    #e0e0e0 20%,
+    #f0f0f0 40%,
+    #f0f0f0 100%
+  );
+  background-size: 1000px 100%;
+}
+
+/* تحسين scroll performance */
+.scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* تحسين rendering للصور */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* تفعيل GPU acceleration */
+.gpu-accelerate {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* تحسين performance للقوائم الطويلة */
+.virtualized-list {
+  contain: layout style paint;
+}
+
+/* تقليل repaints */
+.no-repaint {
+  will-change: transform, opacity;
+}
+

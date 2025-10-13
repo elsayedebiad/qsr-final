@@ -1,9 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { 
-  FileText, 
   ArrowLeft, 
   Users, 
   Search, 
@@ -11,47 +10,31 @@ import {
   Sparkles, 
   Heart,
   Eye,
-  Briefcase,
-  LayoutDashboard,
-  LogOut
+  Briefcase
 } from 'lucide-react'
 
 export default function Home() {
   const router = useRouter()
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    // التحقق من حالة تسجيل الدخول
+    // التحقق من حالة تسجيل الدخول والتوجيه للداشبورد مباشرة
     const token = localStorage.getItem('token')
     const userData = localStorage.getItem('user')
     
     if (token && userData) {
       try {
         const parsedUser = JSON.parse(userData)
-        setUser(parsedUser)
-        setIsLoggedIn(true)
+        // توجيه المستخدمين المسجلين للداشبورد مباشرة
+        if (parsedUser.role === 'DEVELOPER') {
+          router.push('/developer-control')
+        } else {
+          router.push('/dashboard')
+        }
       } catch (error) {
         console.error('Error parsing user data:', error)
       }
     }
-  }, [])
-
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setIsLoggedIn(false)
-    setUser(null)
-    router.push('/login')
-  }
-
-  const handleDashboard = () => {
-    if (user?.role === 'DEVELOPER') {
-      router.push('/developer-control')
-    } else {
-      router.push('/dashboard')
-    }
-  }
+  }, [router])
 
   return (
     <div className="min-h-screen bg-background animated-bg-theme relative">
@@ -80,39 +63,12 @@ export default function Home() {
             
             <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
               <button
-                onClick={() => router.push('/home')}
-                className="btn-gradient-success px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 hover-lift text-xs sm:text-sm"
+                onClick={() => router.push('/login')}
+                className="btn-gradient-primary px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 hover-lift text-xs sm:text-sm"
               >
-                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden xs:inline">المعرض</span>
+                <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">دخول</span>
               </button>
-              
-              {isLoggedIn ? (
-                <>
-                  <button
-                    onClick={handleDashboard}
-                    className="btn-gradient-primary px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 hover-lift text-xs sm:text-sm"
-                  >
-                    <LayoutDashboard className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden xs:inline">لوحة التحكم</span>
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="bg-red-600 hover:bg-red-700 text-white px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 hover-lift text-xs sm:text-sm"
-                  >
-                    <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden xs:inline">خروج</span>
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => router.push('/login')}
-                  className="btn-gradient-primary px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1 sm:gap-2 hover-lift text-xs sm:text-sm"
-                >
-                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden xs:inline">دخول</span>
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -139,30 +95,12 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-4">
             <button
-              onClick={() => router.push('/home')}
-              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base md:text-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
+              onClick={() => router.push('/login')}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base md:text-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
             >
-              <FileText className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
-              استعراض المعرض
+              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+              تسجيل الدخول للنظام
             </button>
-            
-            {isLoggedIn ? (
-              <button
-                onClick={handleDashboard}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base md:text-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-              >
-                <LayoutDashboard className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
-                لوحة التحكم
-              </button>
-            ) : (
-              <button
-                onClick={() => router.push('/login')}
-                className="bg-card hover:bg-muted text-foreground border-2 border-border hover:border-primary px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base md:text-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl"
-              >
-                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
-                تسجيل الدخول للإدارة
-              </button>
-            )}
           </div>
         </div>
 
@@ -210,19 +148,19 @@ export default function Home() {
         </div>
 
         {/* CTA Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-green-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-center text-white mx-3 sm:mx-0">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 text-center text-white mx-3 sm:mx-0">
           <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 px-2">
-            ابدأ الآن في استعراض السير الذاتية
+            ابدأ الآن في إدارة السير الذاتية
           </h3>
           <p className="text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-8 opacity-90 px-4">
-            اكتشف مجموعة واسعة من السير الذاتية المنظمة والمفصلة
+            سجل دخولك للوصول إلى لوحة التحكم الكاملة
           </p>
           <button
-            onClick={() => router.push('/home')}
-            className="bg-card text-primary hover:bg-muted px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base md:text-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 mx-auto shadow-lg hover:shadow-xl transform hover:-translate-y-1 w-full sm:w-auto max-w-xs"
+            onClick={() => router.push('/login')}
+            className="bg-white text-blue-600 hover:bg-gray-100 px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-xl font-bold text-sm sm:text-base md:text-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 mx-auto shadow-lg hover:shadow-xl transform hover:-translate-y-1 w-full sm:w-auto max-w-xs"
           >
-            <FileText className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
-            دخول المعرض
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
+            تسجيل الدخول
           </button>
         </div>
       </main>

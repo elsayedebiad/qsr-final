@@ -10,7 +10,6 @@ export async function middleware(request: NextRequest) {
   const publicPaths = [
     '/',
     '/home',
-    '/gallery',
     '/cv/',
     '/sales1',
     '/sales2',

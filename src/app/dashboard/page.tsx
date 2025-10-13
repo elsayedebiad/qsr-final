@@ -121,7 +121,7 @@ export default function CVsPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<CVStatus | 'ALL'>('ALL')
+  const [religionFilter, setReligionFilter] = useState<string>('ALL')
   const [nationalityFilter, setNationalityFilter] = useState<string>('ALL')
   const [skillFilter, setSkillFilter] = useState<string>('ALL')
   const [maritalStatusFilter, setMaritalStatusFilter] = useState<string>('ALL')
@@ -131,7 +131,6 @@ export default function CVsPage() {
   const [languageFilter, setLanguageFilter] = useState<string>('ALL')
   
   // فلاتر إضافية شاملة
-  const [religionFilter, setReligionFilter] = useState<string>('ALL')
   const [educationFilter, setEducationFilter] = useState<string>('ALL')
   const [salaryFilter, setSalaryFilter] = useState<string>('ALL')
   const [contractPeriodFilter, setContractPeriodFilter] = useState<string>('ALL')
@@ -189,7 +188,7 @@ export default function CVsPage() {
   useEffect(() => {
     filterCVs()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cvs, searchTerm, statusFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, languageFilter, religionFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
+  }, [cvs, searchTerm, religionFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, languageFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
 
   // Pagination effect
   useEffect(() => {
@@ -201,7 +200,7 @@ export default function CVsPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, statusFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, languageFilter, religionFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
+  }, [searchTerm, religionFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, languageFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
 
   const fetchCVs = async () => {
     setIsLoading(true)
@@ -222,6 +221,12 @@ export default function CVsPage() {
   const filterCVs = () => {
     // إخفاء السير المتعاقدة والمؤرشفة، وإظهار السير المعادة
     let filtered = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED)
+    
+    // عرض جميع الديانات الموجودة في البيانات (للتشخيص)
+    if (religionFilter !== 'ALL') {
+      const religions = [...new Set(cvs.map(cv => cv.religion || 'غير محدد'))]
+      console.log('🔍 الديانات الموجودة في البيانات:', religions)
+    }
 
     if (searchTerm) {
       const q = searchTerm.toLowerCase()
@@ -236,7 +241,21 @@ export default function CVsPage() {
           (cv.nationality && cv.nationality.toLowerCase().includes(q)),
       )
     }
-    if (statusFilter !== 'ALL') filtered = filtered.filter((cv) => cv.status === statusFilter)
+    // تمت إزالة فلتر الحالة واستبداله بفلتر الديانة في الفلاتر السريعة
+    if (religionFilter !== 'ALL') {
+      console.log('🔍 تطبيق فلتر الديانة:', religionFilter)
+      const beforeCount = filtered.length
+      filtered = filtered.filter((cv) => {
+        // التعامل مع القيم الفارغة أو غير المحددة
+        const cvReligion = cv.religion || ''
+        const match = cvReligion === religionFilter
+        if (match) {
+          console.log('✅ تطابق:', cv.fullName, 'الديانة:', cvReligion)
+        }
+        return match
+      })
+      console.log(`📊 نتائج فلتر الديانة: ${filtered.length} من أصل ${beforeCount}`)
+    }
     if (nationalityFilter !== 'ALL') filtered = filtered.filter((cv) => cv.nationality === nationalityFilter)
     if (skillFilter !== 'ALL') {
       filtered = filtered.filter((cv) => {
@@ -286,7 +305,6 @@ export default function CVsPage() {
     }
 
     // فلاتر إضافية شاملة
-    if (religionFilter !== 'ALL') filtered = filtered.filter((cv) => cv.religion === religionFilter)
     if (educationFilter !== 'ALL') filtered = filtered.filter((cv) => cv.education === educationFilter)
     
     if (salaryFilter !== 'ALL') {
@@ -970,15 +988,13 @@ export default function CVsPage() {
               <div className="flex flex-wrap gap-3">
                 <select
                   className="flex-1 min-w-[160px] px-4 py-2.5 bg-muted border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as CVStatus | 'ALL')}
+                  value={religionFilter}
+                  onChange={(e) => setReligionFilter(e.target.value)}
                 >
-                  <option value="ALL">جميع الحالات</option>
-                  <option value={CVStatus.NEW}>جديد</option>
-                  <option value={CVStatus.BOOKED}>محجوز</option>
-                  <option value={CVStatus.REJECTED}>مرفوض</option>
-                  <option value={CVStatus.RETURNED}>معاد</option>
-                  <option value={CVStatus.ARCHIVED}>مؤرشف</option>
+                  <option value="ALL">جميع الديانات</option>
+                  <option value="مسلمة">مسلمة</option>
+                  <option value="مسيحية">مسيحية</option>
+                  <option value="أخرى">أخرى</option>
                 </select>
 
                 <select
@@ -1105,25 +1121,7 @@ export default function CVsPage() {
                 </div>
 
                 {/* صف إضافي للفلاتر الجديدة */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-success mb-2">
-                      <Star className="h-4 w-4 ml-2" /> الديانة
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-success"
-                      value={religionFilter}
-                      onChange={(e) => setReligionFilter(e.target.value)}
-                    >
-                      <option value="ALL">جميع الديانات</option>
-                      <option value="مسلم">مسلم</option>
-                      <option value="مسيحي">مسيحي</option>
-                      <option value="هندوسي">هندوسي</option>
-                      <option value="بوذي">بوذي</option>
-                      <option value="أخرى">أخرى</option>
-                    </select>
-                  </div>
-
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                   <div className="space-y-2">
                     <label className="flex items-center text-sm font-semibold text-primary mb-2">
                       <BookOpen className="h-4 w-4 ml-2" /> المستوى التعليمي
@@ -1246,14 +1244,13 @@ export default function CVsPage() {
                 <div className="mt-4 flex justify-center">
                   <button
                     onClick={() => {
-                      setStatusFilter('ALL')
+                      setReligionFilter('ALL')
                       setNationalityFilter('ALL')
                       setSkillFilter('ALL')
                       setMaritalStatusFilter('ALL')
                       setAgeFilter('ALL')
                       setExperienceFilter('ALL')
                       setLanguageFilter('ALL')
-                      setReligionFilter('ALL')
                       setEducationFilter('ALL')
                       setSalaryFilter('ALL')
                       setContractPeriodFilter('ALL')
@@ -1666,6 +1663,7 @@ export default function CVsPage() {
                               <Play className="h-5 w-5" />
                             </button>
                           )}
+                          {/* حجز - متاح للمدراء وخدمة العملاء فقط */}
                           {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                             <button
                               onClick={() => openBookingModal(cv)}
@@ -1675,6 +1673,7 @@ export default function CVsPage() {
                               <Bookmark className="h-5 w-5" />
                             </button>
                         )}
+                        {/* أزرار التعاقد والرفض - متاحة للمدراء فقط (ليس للمبيعات) */}
                         {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
                           <>
                             <button
@@ -1840,26 +1839,26 @@ export default function CVsPage() {
                     تحميل
                   </button>
 
+                  {/* تعديل - متاح للمدراء فقط */}
                   {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
-                    <>
-                      <button
-                        onClick={() => router.push(`/dashboard/cv/${cv.id}`)}
-                        className="flex-1 p-2 text-primary hover:bg-primary/10 rounded-lg text-xs flex items-center justify-center gap-1"
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                        تعديل
-                      </button>
-                      
-                      {cv.status === CVStatus.NEW && (
-                        <button
-                          onClick={() => openBookingModal(cv)}
-                          className="flex-1 p-2 text-warning hover:bg-warning/10 rounded-lg text-xs flex items-center justify-center gap-1"
-                        >
-                          <Bookmark className="h-3.5 w-3.5" />
-                          حجز
-                        </button>
-                      )}
-                    </>
+                    <button
+                      onClick={() => router.push(`/dashboard/cv/${cv.id}`)}
+                      className="flex-1 p-2 text-primary hover:bg-primary/10 rounded-lg text-xs flex items-center justify-center gap-1"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      تعديل
+                    </button>
+                  )}
+                  
+                  {/* حجز - متاح للمدراء وخدمة العملاء فقط */}
+                  {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
+                    <button
+                      onClick={() => openBookingModal(cv)}
+                      className="flex-1 p-2 text-warning hover:bg-warning/10 rounded-lg text-xs flex items-center justify-center gap-1"
+                    >
+                      <Bookmark className="h-3.5 w-3.5" />
+                      حجز
+                    </button>
                   )}
                 </div>
               </div>

@@ -177,7 +177,7 @@ export default function ContractsPage() {
 
   return (
     <DashboardLayout>
-      {() => (
+      {(user) => (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
@@ -298,13 +298,16 @@ export default function ContractsPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        <button 
-                          onClick={() => openDeleteModal(contract)} 
-                          className="text-muted-foreground hover:text-destructive transition-colors" 
-                          title="حذف التعاقد"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {/* حذف التعاقد - متاح للمدراء فقط (ليس للمبيعات) */}
+                        {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                          <button 
+                            onClick={() => openDeleteModal(contract)} 
+                            className="text-muted-foreground hover:text-destructive transition-colors" 
+                            title="حذف التعاقد"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

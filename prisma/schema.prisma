@@ -264,6 +264,7 @@ enum Role {
   ADMIN
   SUB_ADMIN
   CUSTOMER_SERVICE
+  SALES
   USER
 }
 

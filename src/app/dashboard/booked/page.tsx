@@ -290,7 +290,7 @@ export default function BookedCVsPage() {
 
   return (
     <DashboardLayout>
-      {() => (
+      {(user) => (
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -380,23 +380,27 @@ export default function BookedCVsPage() {
                     >
                       <Download className="h-4 w-4" />
                     </button>
-                    {userRole === 'ADMIN' && (
+                    {/* حذف الحجز - متاح للمدراء فقط (ليس للمبيعات) */}
+                    {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
                       <button
                         onClick={() => openDeleteModal(booking)}
                         className="text-destructive hover:opacity-80 transition-colors"
-                        title="حذف الحجز (أدمن فقط)"
+                        title="حذف الحجز"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
                   </div>
-                  <button
-                    onClick={() => openContractModal(booking)}
-                    className="btn-success inline-flex items-center px-3 py-1 text-xs"
-                  >
-                    <CheckCircle className="h-3 w-3 ml-1" />
-                    تعاقد
-                  </button>
+                  {/* زر التعاقد - متاح للمدراء فقط (ليس للمبيعات) */}
+                  {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                    <button
+                      onClick={() => openContractModal(booking)}
+                      className="btn-success inline-flex items-center px-3 py-1 text-xs"
+                    >
+                      <CheckCircle className="h-3 w-3 ml-1" />
+                      تعاقد
+                    </button>
+                  )}
                 </div>
 
                 <div className="mt-3 text-xs text-muted-foreground">

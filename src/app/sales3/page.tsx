@@ -1454,6 +1454,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
           )}
         </div>
 
+        {/* ملاحظة حول الصور */}
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4 md:p-5 mb-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <span className="text-2xl md:text-3xl leading-none">⭐</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-amber-900 font-semibold text-sm md:text-base leading-relaxed text-right m-0">
+                <span className="font-bold">ملاحظة:</span> صور العاملات الموجودة على هذا الموقع معدّلة باستخدام الذكاء الاصطناعي، وهي للعرض التوضيحي فقط.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* عرض السير الذاتية */}
         <div ref={cvsContainerRef} className="min-h-[400px]">
         {filteredCvs.length === 0 ? (

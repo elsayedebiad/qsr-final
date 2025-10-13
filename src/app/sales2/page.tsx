@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { CVStatus, Priority, SkillLevel } from '@prisma/client'
@@ -138,6 +138,7 @@ export default function Sales2Page() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [displayLimit, setDisplayLimit] = useState(20)
   const [statusFilter, setStatusFilter] = useState<CVStatus | 'ALL'>('ALL')
   const [nationalityFilter, setNationalityFilter] = useState<string>('ALL')
   const [skillFilter, setSkillFilter] = useState<string>('ALL')
@@ -1445,6 +1446,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
               </div>
             </div>
           )}
+        </div>
+
+        {/* ملاحظة حول الصور */}
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4 md:p-5 mb-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <span className="text-2xl md:text-3xl leading-none">⭐</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-amber-900 font-semibold text-sm md:text-base leading-relaxed text-right m-0">
+                <span className="font-bold">ملاحظة:</span> صور العاملات الموجودة على هذا الموقع معدّلة باستخدام الذكاء الاصطناعي، وهي للعرض التوضيحي فقط.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* عرض السير الذاتية */}

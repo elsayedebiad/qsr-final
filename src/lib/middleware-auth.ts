@@ -6,7 +6,7 @@ export interface AuthSession {
     id: string
     email: string
     name: string
-    role: 'ADMIN' | 'SUB_ADMIN' | 'USER'
+    role: 'ADMIN' | 'SUB_ADMIN' | 'CUSTOMER_SERVICE' | 'SALES' | 'USER'
     isActive: boolean
   }
 }
