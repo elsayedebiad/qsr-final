@@ -805,7 +805,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     </button>
                   )}
                   {whatsappNumber && (
-                    $1
+                    <a 
+                      href={`https://wa.me/${whatsappNumber.replace(/^\+/, '')}`} 
+                      className="bg-[#25d366] hover:bg-[#1fb855] text-white px-4 sm:px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg font-bold text-sm sm:text-base"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       onClick={(e) => {
                         // Track with Google Analytics
                         if (typeof window !== 'undefined' && (window as any).gtag) {
