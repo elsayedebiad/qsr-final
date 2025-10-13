@@ -293,6 +293,12 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
           label: 'Sales 7',
           icon: ExternalLink,
           href: '/sales7'
+        },
+        {
+          id: 'sales8',
+          label: 'Sales 8',
+          icon: ExternalLink,
+          href: '/sales8'
         }
       ]
     },

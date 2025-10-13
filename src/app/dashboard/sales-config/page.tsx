@@ -28,6 +28,7 @@ interface SalesConfigs {
   sales5: SalesConfig
   sales6: SalesConfig
   sales7: SalesConfig
+  sales8: SalesConfig
 }
 
 export default function SalesConfigPage() {
@@ -39,7 +40,8 @@ export default function SalesConfigPage() {
     sales4: { whatsappNumber: '' },
     sales5: { whatsappNumber: '' },
     sales6: { whatsappNumber: '' },
-    sales7: { whatsappNumber: '' }
+    sales7: { whatsappNumber: '' },
+    sales8: { whatsappNumber: '' }
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -148,7 +150,8 @@ export default function SalesConfigPage() {
     { id: 'sales4', name: 'Sales 4', color: 'from-indigo-500 to-blue-500', bgColor: 'bg-indigo-100/50 dark:bg-indigo-900/20', borderColor: 'border-indigo-200 dark:border-indigo-700', textColor: 'text-indigo-900 dark:text-indigo-100' },
     { id: 'sales5', name: 'Sales 5', color: 'from-pink-500 to-rose-500', bgColor: 'bg-pink-100/50 dark:bg-pink-900/20', borderColor: 'border-pink-200 dark:border-pink-700', textColor: 'text-pink-900 dark:text-pink-100' },
     { id: 'sales6', name: 'Sales 6', color: 'from-teal-500 to-green-500', bgColor: 'bg-teal-100/50 dark:bg-teal-900/20', borderColor: 'border-teal-200 dark:border-teal-700', textColor: 'text-teal-900 dark:text-teal-100' },
-    { id: 'sales7', name: 'Sales 7', color: 'from-red-500 to-orange-500', bgColor: 'bg-red-100/50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-700', textColor: 'text-red-900 dark:text-red-100' }
+    { id: 'sales7', name: 'Sales 7', color: 'from-red-500 to-orange-500', bgColor: 'bg-red-100/50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-700', textColor: 'text-red-900 dark:text-red-100' },
+    { id: 'sales8', name: 'Sales 8', color: 'from-yellow-500 to-amber-500', bgColor: 'bg-yellow-100/50 dark:bg-yellow-900/20', borderColor: 'border-yellow-200 dark:border-yellow-700', textColor: 'text-yellow-900 dark:text-yellow-100' }
   ]
 
   if (isLoading) {
