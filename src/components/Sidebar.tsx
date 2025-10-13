@@ -204,6 +204,24 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
           label: 'Sales 8',
           icon: ExternalLink,
           href: '/sales8'
+        },
+        {
+          id: 'sales9',
+          label: 'Sales 9',
+          icon: ExternalLink,
+          href: '/sales9'
+        },
+        {
+          id: 'sales10',
+          label: 'Sales 10',
+          icon: ExternalLink,
+          href: '/sales10'
+        },
+        {
+          id: 'sales11',
+          label: 'Sales 11',
+          icon: ExternalLink,
+          href: '/sales11'
         }
       ]
     },
