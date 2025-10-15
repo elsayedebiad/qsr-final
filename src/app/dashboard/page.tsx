@@ -1719,38 +1719,38 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     )}
                   </div>
                   
-                  {/* أزرار التفاعل - محسّنة للموبايل */}
-                  <div className="p-3 sm:p-4 bg-gradient-to-br from-white to-gray-50 border-t border-gray-100">
+                  {/* أزرار التفاعل - محسّنة لجميع الشاشات */}
+                  <div className="p-2.5 sm:p-3 lg:p-2.5 bg-gradient-to-br from-white to-gray-50 border-t border-gray-100">
                     {/* الصف الأول - التحميل والعرض */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
+                    <div className="grid grid-cols-2 gap-2 mb-2">
                       <button
                         onClick={() => downloadSingleImage(cv.id)}
-                        className="bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3.5 sm:py-4 px-2 rounded-xl text-sm sm:text-base flex flex-col items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 hover:scale-[1.02]"
+                        className="bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3.5 sm:py-3 lg:py-2.5 px-2 rounded-xl text-sm sm:text-base lg:text-sm flex flex-col items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 hover:scale-[1.02]"
                         title="تحميل السيرة"
                       >
-                        <Download className="h-6 w-6 sm:h-7 sm:w-7 mb-1.5" />
+                        <Download className="h-6 w-6 sm:h-5 sm:w-5 mb-1 sm:mb-0.5" />
                         <span className="font-bold">تحميل</span>
                       </button>
                       
                       <button
                         onClick={() => setSelectedCVForView(cv)}
-                        className="bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3.5 sm:py-4 px-2 rounded-xl text-sm sm:text-base flex flex-col items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 hover:scale-[1.02]"
+                        className="bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3.5 sm:py-3 lg:py-2.5 px-2 rounded-xl text-sm sm:text-base lg:text-sm flex flex-col items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 hover:scale-[1.02]"
                         title="عرض السيرة الكاملة"
                       >
-                        <Eye className="h-6 w-6 sm:h-7 sm:w-7 mb-1.5" />
+                        <Eye className="h-6 w-6 sm:h-5 sm:w-5 mb-1 sm:mb-0.5" />
                         <span className="font-bold">عرض</span>
                       </button>
                     </div>
                     
                     {/* الصف الثاني - المشاركة والفيديو */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => shareSingleCV(cv)}
-                        className="bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 sm:py-3.5 px-2 rounded-lg text-sm sm:text-base flex flex-col items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
+                        className="bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 sm:py-2.5 lg:py-2 px-2 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
                         title="مشاركة السيرة"
                       >
-                        <Share2 className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
-                        <span className="font-bold text-xs sm:text-sm">مشاركة</span>
+                        <Share2 className="h-5 w-5 sm:h-4 sm:w-4 mb-0.5" />
+                        <span className="font-bold">مشاركة</span>
                       </button>
                       
                       <button
@@ -1761,11 +1761,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                             toast.error('لا يوجد رابط فيديو لهذه السيرة');
                           }
                         }}
-                        className="bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-3 sm:py-3.5 px-2 rounded-lg text-sm sm:text-base flex flex-col items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
+                        className="bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-3 sm:py-2.5 lg:py-2 px-2 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
                         title="مشاهدة الفيديو"
                       >
-                        <Play className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
-                        <span className="font-bold text-xs sm:text-sm">فيديو</span>
+                        <Play className="h-5 w-5 sm:h-4 sm:w-4 mb-0.5" />
+                        <span className="font-bold">فيديو</span>
                       </button>
                     </div>
                   </div>
