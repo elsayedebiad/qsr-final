@@ -14,6 +14,9 @@ const cairo = Cairo({
 export const metadata: Metadata = {
   title: "نظام إدارة السير الذاتية",
   description: "نظام شامل لإدارة السير الذاتية مع إمكانيات التعاون المباشر",
+  other: {
+    'facebook-domain-verification': 'vhq21gzzksi4dz5wnf4tl0x1obh9c5',
+  },
 };
 
 export default function RootLayout({
