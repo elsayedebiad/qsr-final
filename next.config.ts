@@ -39,7 +39,9 @@ const nextConfig: NextConfig = {
                 https://googleads.g.doubleclick.net
                 https://*.doubleclick.net
                 https://connect.facebook.net 
-                https://www.facebook.com;
+                https://www.facebook.com
+                https://analytics.tiktok.com
+                https://*.tiktok.com;
               script-src-elem 'self' 'unsafe-inline' blob:
                 https://www.googletagmanager.com 
                 https://tagmanager.google.com 
@@ -54,7 +56,13 @@ const nextConfig: NextConfig = {
                 https://www.googleadservices.com
                 https://*.googleadservices.com
                 https://googleads.g.doubleclick.net
-                https://*.doubleclick.net;
+                https://*.doubleclick.net
+                https://connect.facebook.net
+                https://*.facebook.net
+                https://www.facebook.com
+                https://*.facebook.com
+                https://analytics.tiktok.com
+                https://*.tiktok.com;
               connect-src 'self' 
                 https://www.google-analytics.com 
                 https://analytics.google.com 
@@ -74,6 +82,13 @@ const nextConfig: NextConfig = {
                 https://*.googleadservices.com
                 https://googleads.g.doubleclick.net
                 https://*.doubleclick.net
+                https://connect.facebook.net
+                https://*.facebook.net
+                https://www.facebook.com
+                https://*.facebook.com
+                https://graph.facebook.com
+                https://analytics.tiktok.com
+                https://*.tiktok.com
                 https://www.youtube.com 
                 https://youtube.com 
                 https://*.youtube.com 
@@ -107,6 +122,11 @@ const nextConfig: NextConfig = {
                 https://*.googleadservices.com
                 https://googleads.g.doubleclick.net
                 https://*.doubleclick.net
+                https://www.facebook.com
+                https://*.facebook.com
+                https://*.facebook.net
+                https://analytics.tiktok.com
+                https://*.tiktok.com
                 https://drive.google.com 
                 https://lh3.googleusercontent.com 
                 https://*.googleusercontent.com 
@@ -148,6 +168,11 @@ const nextConfig: NextConfig = {
                 https://*.googleadservices.com
                 https://googleads.g.doubleclick.net
                 https://*.doubleclick.net
+                https://www.facebook.com
+                https://*.facebook.com
+                https://*.facebook.net
+                https://analytics.tiktok.com
+                https://*.tiktok.com
                 https://www.youtube.com 
                 https://youtube.com 
                 https://player.vimeo.com 

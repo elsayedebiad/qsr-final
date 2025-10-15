@@ -23,6 +23,8 @@ export async function GET(
         position: true,
         age: true,
         profileImage: true,
+        cvImageUrl: true, // صورة السيرة الذاتية الكاملة
+        videoLink: true,
         phone: true,
         referenceCode: true,
         status: true,

@@ -142,6 +142,9 @@ export default function CVsPage() {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
   const [viewingCv, setViewingCv] = useState<CV | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
+  const [selectedCVForView, setSelectedCVForView] = useState<CV | null>(null)
+  const [showSharePopup, setShowSharePopup] = useState(false)
+  const [sharePopupMessage, setSharePopupMessage] = useState('')
 
   const [selectedCvs, setSelectedCvs] = useState<string[]>([])
   const [showBulkDownloader, setShowBulkDownloader] = useState(false)
@@ -201,6 +204,29 @@ export default function CVsPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, religionFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, languageFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
+
+  // إغلاق الـModal بزر Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedCVForView(null)
+      }
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [])
+  
+  // منع التمرير عند فتح الـModal
+  useEffect(() => {
+    if (selectedCVForView || selectedVideo) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [selectedCVForView, selectedVideo])
 
   const fetchCVs = async () => {
     setIsLoading(true)
@@ -637,6 +663,131 @@ export default function CVsPage() {
     }
   };
 
+  // مشاركة السير المحددة (متعددة)
+  const shareBulkCVs = async () => {
+    if (selectedCvs.length === 0) {
+      toast.error('اختر على الأقل سيرة واحدة للمشاركة')
+      return
+    }
+
+    console.log('🔍 عدد السير المحددة:', selectedCvs.length)
+
+    // الحصول على السير المحددة
+    const selectedCVsData = cvs.filter(cv => selectedCvs.includes(cv.id))
+    console.log('📊 السير المحددة:', selectedCVsData.map(cv => ({ name: cv.fullName, hasImage: !!cv.cvImageUrl })))
+
+    // فلترة السير التي لها صور
+    const cvsWithImages = selectedCVsData.filter(cv => cv.cvImageUrl && cv.cvImageUrl.trim() !== '')
+
+    console.log('🖼️ السير التي لها صور:', cvsWithImages.length)
+
+    if (cvsWithImages.length === 0) {
+      toast.error('لا توجد صور متاحة للسير المحددة')
+      console.error('❌ لا توجد cvImageUrl للسير المحددة')
+      return
+    }
+
+    // التحقق من دعم Web Share API
+    if (!navigator.share) {
+      toast.error('المتصفح لا يدعم المشاركة. جرب من الموبايل.')
+      console.error('❌ المتصفح لا يدعم Web Share API')
+      return
+    }
+
+    try {
+      setSharePopupMessage(`⏳ جاري تحضير ${cvsWithImages.length} صورة...`)
+      setShowSharePopup(true)
+
+      // تحميل جميع الصور
+      const files: File[] = []
+      let successCount = 0
+      let failedCount = 0
+      
+      for (let i = 0; i < cvsWithImages.length; i++) {
+        const cv = cvsWithImages[i]
+        setSharePopupMessage(`⏳ جاري تحميل ${i + 1}/${cvsWithImages.length}...`)
+        
+        try {
+          const imageUrl = processImageUrl(cv.cvImageUrl!)
+          console.log(`📥 تحميل صورة ${i + 1}: ${cv.fullName}`, imageUrl)
+          
+          const response = await fetch(imageUrl, { 
+            mode: 'cors',
+            cache: 'no-cache'
+          })
+          
+          console.log(`📡 Response status: ${response.status}`)
+          
+          if (response.ok) {
+            const blob = await response.blob()
+            console.log(`✅ تم تحميل blob: ${blob.size} bytes, type: ${blob.type}`)
+            
+            const fileName = `${cv.fullName}_${cv.referenceCode || cv.id}.jpg`
+              .replace(/[\\/:*?"<>|]+/g, '-')
+              .replace(/\s+/g, '_')
+            
+            const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' })
+            files.push(file)
+            successCount++
+          } else {
+            failedCount++
+            console.error(`❌ فشل تحميل ${cv.fullName}: Status ${response.status}`)
+          }
+        } catch (error) {
+          failedCount++
+          console.error(`❌ خطأ في تحميل صورة ${cv.fullName}:`, error)
+        }
+      }
+
+      console.log(`📊 النتيجة: نجح ${successCount}, فشل ${failedCount}`)
+
+      if (files.length === 0) {
+        setSharePopupMessage('❌ فشل تحميل جميع الصور')
+        toast.error('فشل تحميل الصور. تحقق من الاتصال بالإنترنت.')
+        setTimeout(() => setShowSharePopup(false), 3000)
+        return
+      }
+
+      // التحقق من دعم مشاركة ملفات متعددة
+      const canShareFiles = navigator.canShare && navigator.canShare({ files })
+      console.log('🔍 هل يمكن مشاركة الملفات؟', canShareFiles)
+      
+      if (canShareFiles) {
+        setSharePopupMessage(`📤 جاهز! اختر التطبيق لمشاركة ${files.length} صورة...`)
+        
+        console.log('📤 بدء المشاركة:', files.map(f => ({ name: f.name, size: f.size, type: f.type })))
+        
+        await navigator.share({
+          title: `${files.length} سيرة ذاتية`,
+          text: `مشاركة ${files.length} سيرة ذاتية`,
+          files
+        })
+        
+        setSharePopupMessage(`✅ تمت مشاركة ${files.length} صورة بنجاح!`)
+        toast.success(`تمت مشاركة ${files.length} صورة`)
+        setTimeout(() => {
+          setShowSharePopup(false)
+          setSelectedCvs([]) // إلغاء التحديد
+        }, 2000)
+      } else {
+        console.error('❌ المتصفح لا يدعم مشاركة ملفات متعددة')
+        setSharePopupMessage('❌ المتصفح لا يدعم مشاركة ملفات متعددة')
+        toast.error('جرب من تطبيق الموبايل للمشاركة')
+        setTimeout(() => setShowSharePopup(false), 3000)
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('❌ خطأ في المشاركة المتعددة:', error)
+        setSharePopupMessage('❌ حدث خطأ أثناء المشاركة')
+        toast.error(`خطأ: ${error.message}`)
+        setTimeout(() => setShowSharePopup(false), 3000)
+      } else {
+        // المستخدم ألغى
+        console.log('ℹ️ المستخدم ألغى المشاركة')
+        setShowSharePopup(false)
+      }
+    }
+  }
 
   // فتح نافذة العمليات الجماعية
   const handleBulkDelete = () => {
@@ -781,6 +932,144 @@ export default function CVsPage() {
       toast.error(error instanceof Error ? error.message : 'فشل في الحجز')
     } finally {
       setIsCreatingBooking(false)
+    }
+  }
+
+  // إرسال رسالة واتساب للحجز (للمستخدمين من نوع USER)
+  const sendWhatsAppMessage = (cv: CV) => {
+    try {
+      // استخدام رقم واتساب افتراضي من الإعدادات أو من ملف البيئة
+      const defaultWhatsAppNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '966500000000';
+      
+      // تنظيف رقم الهاتف (إزالة أي أحرف غير رقمية)
+      const cleanPhone = defaultWhatsAppNumber.replace(/\D/g, '');
+      
+      // إنشاء الرسالة مع تنسيق محسن
+      const message = `مرحباً، أريد الاستفسار عن السيرة الذاتية:
+الاسم: ${cv.fullName || 'غير محدد'}
+${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''}${cv.referenceCode ? `الكود المرجعي: ${cv.referenceCode}\n` : ''}${cv.nationality ? `الجنسية: ${cv.nationality}\n` : ''}${cv.position ? `الوظيفة: ${cv.position}\n` : ''}${cv.experience ? `الخبرة: ${cv.experience}\n` : ''}${cv.age ? `العمر: ${cv.age} سنة\n` : ''}${cv.monthlySalary ? `الراتب المطلوب: ${cv.monthlySalary} ريال\n` : ''}
+من الداشبورد`;
+
+      // ترميز الرسالة لعنوان URL
+      const encodedMessage = encodeURIComponent(message);
+      
+      // إنشاء رابط WhatsApp
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+      
+      // فتح WhatsApp في نافذة/تبويب جديد
+      window.open(whatsappUrl, '_blank');
+    } catch (error) {
+      console.error('خطأ في فتح WhatsApp:', error);
+      toast.error('حدث خطأ أثناء فتح WhatsApp');
+    }
+  };
+
+  // مشاركة سيرة ذاتية واحدة (إرسال الصورة مباشرة)
+  const shareSingleCV = async (cv: CV) => {
+    const shareUrl = `${window.location.origin}/cv/${cv.id}`
+    
+    // التحقق من دعم Web Share API
+    if (!navigator.share) {
+      // Fallback: نسخ الرابط
+      try {
+        await navigator.clipboard.writeText(shareUrl)
+        setSharePopupMessage('✅ تم نسخ الرابط بنجاح!')
+        setShowSharePopup(true)
+        setTimeout(() => setShowSharePopup(false), 3000)
+      } catch (error) {
+        setSharePopupMessage('❌ فشل في نسخ الرابط')
+        setShowSharePopup(true)
+        setTimeout(() => setShowSharePopup(false), 3000)
+      }
+      return
+    }
+
+    try {
+      // محاولة مشاركة الصورة إذا كانت متوفرة
+      if (cv.cvImageUrl) {
+        // عرض popup التحميل
+        setSharePopupMessage('⏳ جاري تحضير الصورة للمشاركة...')
+        setShowSharePopup(true)
+        
+        try {
+          // تحميل الصورة من Google Drive
+          const imageUrl = processImageUrl(cv.cvImageUrl)
+          
+          // Fetch الصورة
+          const response = await fetch(imageUrl, { mode: 'cors' })
+          
+          if (!response.ok) {
+            throw new Error('فشل في تحميل الصورة')
+          }
+          
+          const blob = await response.blob()
+          
+          // إنشاء ملف من الـBlob
+          const fileName = `${cv.fullName}_${cv.referenceCode || cv.id}.jpg`
+            .replace(/[\\/:*?"<>|]+/g, '-')
+            .replace(/\s+/g, '_')
+          
+          const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' })
+          
+          // تحديث الرسالة
+          setSharePopupMessage('📤 جاهز! اختر التطبيق للمشاركة...')
+          
+          // التحقق من دعم مشاركة الملفات
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: `سيرة ذاتية - ${cv.fullName}`,
+              text: `${cv.fullName} - ${cv.nationality || ''} - ${cv.position || ''}`,
+              files: [file]
+            })
+            // نجحت المشاركة
+            setSharePopupMessage('✅ تمت المشاركة بنجاح!')
+            setTimeout(() => setShowSharePopup(false), 2000)
+          } else {
+            // المتصفح لا يدعم مشاركة الملفات - مشاركة الرابط بدلاً
+            setSharePopupMessage('📤 مشاركة الرابط...')
+            await navigator.share({
+              title: `سيرة ذاتية - ${cv.fullName}`,
+              text: `تحقق من هذه السيرة الذاتية: ${cv.fullName} (${cv.nationality})`,
+              url: shareUrl,
+            })
+            setSharePopupMessage('✅ تمت المشاركة بنجاح!')
+            setTimeout(() => setShowSharePopup(false), 2000)
+          }
+        } catch (imageError) {
+          console.warn('فشل في تحميل الصورة، سيتم مشاركة الرابط بدلاً:', imageError)
+          
+          // Fallback: مشاركة الرابط
+          setSharePopupMessage('📤 مشاركة الرابط...')
+          await navigator.share({
+            title: `سيرة ذاتية - ${cv.fullName}`,
+            text: `تحقق من هذه السيرة الذاتية: ${cv.fullName} (${cv.nationality})`,
+            url: shareUrl,
+          })
+          setSharePopupMessage('✅ تمت المشاركة بنجاح!')
+          setTimeout(() => setShowSharePopup(false), 2000)
+        }
+      } else {
+        // لا توجد صورة - مشاركة الرابط فقط
+        setSharePopupMessage('📤 جاري المشاركة...')
+        setShowSharePopup(true)
+        await navigator.share({
+          title: `سيرة ذاتية - ${cv.fullName}`,
+          text: `تحقق من هذه السيرة الذاتية: ${cv.fullName} (${cv.nationality})`,
+          url: shareUrl,
+        })
+        setSharePopupMessage('✅ تمت المشاركة بنجاح!')
+        setTimeout(() => setShowSharePopup(false), 2000)
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('خطأ في المشاركة:', error)
+        setSharePopupMessage('❌ حدث خطأ أثناء المشاركة')
+        setShowSharePopup(true)
+        setTimeout(() => setShowSharePopup(false), 3000)
+      } else {
+        // المستخدم ألغى المشاركة
+        setShowSharePopup(false)
+      }
     }
   }
 
@@ -1293,11 +1582,19 @@ export default function CVsPage() {
                   </button>
                   <button
                     onClick={downloadBulkImages}
-                    className="btn btn-primary text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3 flex-1 sm:flex-initial"
+                    className="btn btn-primary text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
                     title="تحميل PNG لكل سيرة من المحدد"
                   >
                     <Download className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
-                    <span className="hidden xs:inline">تحميل PNG</span> ({selectedCvs.length})
+                    <span className="hidden xs:inline">تحميل</span> ({selectedCvs.length})
+                  </button>
+                  <button
+                    onClick={shareBulkCVs}
+                    className="btn btn-info text-xs sm:text-sm py-1.5 sm:py-2 px-2 sm:px-3"
+                    title="مشاركة الصور المحددة"
+                  >
+                    <Share2 className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 inline" />
+                    <span className="hidden xs:inline">مشاركة</span> ({selectedCvs.length})
                   </button>
                   {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
                     <>
@@ -1346,36 +1643,49 @@ export default function CVsPage() {
 
           {/* عرض Grid للمستخدمين من نوع USER - مشابه لصفحات السلز */}
           {user?.role === 'USER' ? (
-            <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6' : 'space-y-4'}>
+            <div className={viewMode === 'grid' ? 'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6' : 'space-y-4'}>
               {paginatedCvs.map((cv) => (
                 <div
                   key={cv.id}
-                  className={`group bg-white rounded-lg shadow-md border ${selectedCvs.includes(cv.id) ? 'border-primary ring-2 ring-primary/20' : 'border-gray-200'} overflow-hidden hover:shadow-lg transition-all duration-300`}
+                  className={`group bg-white rounded-2xl shadow-xl border-2 ${selectedCvs.includes(cv.id) ? 'border-blue-500 ring-4 ring-blue-500/20' : 'border-gray-100'} overflow-hidden hover:shadow-2xl hover:border-blue-400/40 transition-all duration-500 hover:-translate-y-2 transform`}
                 >
-                  {/* صورة السيرة الذاتية */}
-                  <div className="aspect-[3/4] relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                    {cv.profileImage ? (
+                  {/* صورة السيرة الذاتية - تصميم محسّن */}
+                  <div className="aspect-[3/4] relative overflow-hidden bg-white">
+                    {cv.cvImageUrl ? (
                       <>
                         <div className="w-full h-full relative">
-                          <input
-                            type="checkbox"
-                            className="absolute top-2 left-2 w-5 h-5 text-primary bg-white border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-primary z-10 cursor-pointer"
-                            checked={selectedCvs.includes(cv.id)}
-                            onChange={() => toggleCvSelection(cv.id)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                          {/* Checkbox محسّن */}
+                          <div className="absolute top-3 left-3 z-20">
+                            <label className="relative flex items-center justify-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="peer sr-only"
+                                checked={selectedCvs.includes(cv.id)}
+                                onChange={() => toggleCvSelection(cv.id)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <div className="w-7 h-7 bg-white border-3 border-gray-300 rounded-lg shadow-lg peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 flex items-center justify-center">
+                                {selectedCvs.includes(cv.id) && (
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                            </label>
+                          </div>
+
+                          {/* الصورة */}
                           <button
                             onClick={() => {
-                              setViewingCv(cv)
-                              setShowImageModal(true)
+                              setSelectedCVForView(cv)
                             }}
-                            className="w-full h-full focus:outline-none cursor-pointer"
-                            title="اضغط لعرض صورة السيرة الكاملة"
+                            className="w-full h-full focus:outline-none cursor-pointer group/img relative"
+                            title="اضغط لعرض السيرة الكاملة"
                           >
                             <img
-                              src={processImageUrl(cv.profileImage)}
+                              src={processImageUrl(cv.cvImageUrl)}
                               alt={cv.fullName}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              className="w-full h-full object-contain transition-all duration-500 group-hover/img:scale-105"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement
                                 if (!target.src.startsWith('data:')) {
@@ -1383,106 +1693,80 @@ export default function CVsPage() {
                                 }
                               }}
                             />
+                            {/* Overlay محسّن عند الـHover */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-all duration-300 flex items-end justify-center pb-6">
+                              <div className="bg-white/95 backdrop-blur-md px-6 py-3 rounded-xl shadow-2xl transform translate-y-4 group-hover/img:translate-y-0 transition-transform duration-300">
+                                <p className="text-blue-600 font-bold text-base flex items-center gap-2">
+                                  <Eye className="h-5 w-5" />
+                                  <span>اضغط للعرض الكامل</span>
+                                </p>
+                              </div>
+                            </div>
                           </button>
-                        </div>
-                        
-                        {/* شريط علوي */}
-                        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/90 to-transparent p-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="bg-primary text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded">
-                                {cv.referenceCode}
-                              </span>
-                              {cv.age && (
-                                <span className="bg-white/90 text-gray-800 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded">
-                                  {cv.age} سنة
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-2xl sm:text-3xl">
-                              {cv.nationality === 'FILIPINO' && '🇵🇭'}
-                              {cv.nationality === 'INDIAN' && '🇮🇳'}
-                              {cv.nationality === 'BANGLADESHI' && '🇧🇩'}
-                              {cv.nationality === 'ETHIOPIAN' && '🇪🇹'}
-                              {cv.nationality === 'KENYAN' && '🇰🇪'}
-                              {cv.nationality === 'UGANDAN' && '🇺🇬'}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* شريط سفلي */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/85 to-transparent p-2 sm:p-3">
-                          <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <div className="bg-white/20 backdrop-blur-sm p-1 rounded flex-shrink-0">
-                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                              <p className="text-white font-bold text-[10px] sm:text-xs truncate flex-1">
-                                {cv.fullNameArabic || cv.fullName}
-                              </p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded px-1.5 py-1">
-                                <svg className="w-2.5 h-2.5 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
-                                </svg>
-                                <p className="text-white text-[9px] sm:text-[10px] truncate font-medium">
-                                  {cv.position || 'غير محدد'}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded px-1.5 py-1">
-                                <span className="text-xs">
-                                  {cv.religion && cv.religion.includes('Muslim') ? '🕌' : '✝️'}
-                                </span>
-                                <p className="text-white text-[9px] sm:text-[10px] font-semibold truncate">
-                                  {cv.religion || 'غير محدد'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
                         </div>
                       </>
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                        <p className="text-white text-sm font-bold">{cv.fullName}</p>
+                      <div className="w-full h-full bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 flex items-center justify-center">
+                        <div className="text-white text-center p-4">
+                          <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-3 shadow-xl">
+                            <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <p className="text-base font-bold">{cv.fullName}</p>
+                        </div>
                       </div>
                     )}
                   </div>
                   
-                  {/* أزرار التفاعل */}
-                  <div className="p-2 sm:p-4 bg-gradient-to-br from-gray-50 to-white">
-                    <div className="grid grid-cols-3 gap-1 sm:gap-2">
+                  {/* أزرار التفاعل - محسّنة للموبايل */}
+                  <div className="p-3 sm:p-4 bg-gradient-to-br from-white to-gray-50 border-t border-gray-100">
+                    {/* الصف الأول - التحميل والعرض */}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
                       <button
-                        onClick={() => {
-                          setViewingCv(cv)
-                          setShowImageModal(true)
-                        }}
-                        className="bg-gradient-to-b from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-white py-2 px-1 rounded-md text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] shadow-sm active:scale-95"
+                        onClick={() => downloadSingleImage(cv.id)}
+                        className="bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3.5 sm:py-4 px-2 rounded-xl text-sm sm:text-base flex flex-col items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 hover:scale-[1.02]"
+                        title="تحميل السيرة"
                       >
-                        <Eye className="h-4 w-4 mb-0.5" />
-                        <span className="font-bold">عرض</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          // تحميل مفرد
-                          downloadSingleImage(cv.id)
-                        }}
-                        className="bg-gradient-to-b from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-2 px-1 rounded-md text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] shadow-sm active:scale-95"
-                      >
-                        <Download className="h-4 w-4 mb-0.5" />
+                        <Download className="h-6 w-6 sm:h-7 sm:w-7 mb-1.5" />
                         <span className="font-bold">تحميل</span>
                       </button>
-                      {cv.videoLink && (
-                        <button
-                          onClick={() => setSelectedVideo(cv.videoLink!)}
-                          className="bg-gradient-to-b from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-2 px-1 rounded-md text-[9px] sm:text-xs flex flex-col items-center justify-center transition-all duration-200 min-h-[50px] shadow-sm active:scale-95"
-                        >
-                          <Play className="h-4 w-4 mb-0.5" />
-                          <span className="font-bold">فيديو</span>
-                        </button>
-                      )}
+                      
+                      <button
+                        onClick={() => setSelectedCVForView(cv)}
+                        className="bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3.5 sm:py-4 px-2 rounded-xl text-sm sm:text-base flex flex-col items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 hover:scale-[1.02]"
+                        title="عرض السيرة الكاملة"
+                      >
+                        <Eye className="h-6 w-6 sm:h-7 sm:w-7 mb-1.5" />
+                        <span className="font-bold">عرض</span>
+                      </button>
+                    </div>
+                    
+                    {/* الصف الثاني - المشاركة والفيديو */}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                      <button
+                        onClick={() => shareSingleCV(cv)}
+                        className="bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 sm:py-3.5 px-2 rounded-lg text-sm sm:text-base flex flex-col items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
+                        title="مشاركة السيرة"
+                      >
+                        <Share2 className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
+                        <span className="font-bold text-xs sm:text-sm">مشاركة</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          if (cv.videoLink && cv.videoLink.trim() !== '') {
+                            setSelectedVideo(cv.videoLink);
+                          } else {
+                            toast.error('لا يوجد رابط فيديو لهذه السيرة');
+                          }
+                        }}
+                        className="bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-3 sm:py-3.5 px-2 rounded-lg text-sm sm:text-base flex flex-col items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
+                        title="مشاهدة الفيديو"
+                      >
+                        <Play className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
+                        <span className="font-bold text-xs sm:text-sm">فيديو</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1500,27 +1784,7 @@ export default function CVsPage() {
                 <ChevronRight className="h-3 w-3" />
               </p>
             </div>
-            <div className="overflow-x-auto" 
-                 style={{
-                   scrollbarWidth: 'thin',
-                   scrollbarColor: '#d1d5db #f3f4f6'
-                 }}>
-              <style jsx>{`
-                div::-webkit-scrollbar {
-                  height: 8px;
-                }
-                div::-webkit-scrollbar-track {
-                  background: #f3f4f6;
-                  border-radius: 4px;
-                }
-                div::-webkit-scrollbar-thumb {
-                  background: #d1d5db;
-                  border-radius: 4px;
-                }
-                div::-webkit-scrollbar-thumb:hover {
-                  background: #9ca3af;
-                }
-              `}</style>
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
               <table className="w-full text-sm text-right text-muted-foreground min-w-max"
                      style={{ minWidth: '1200px' }}>
                 <thead className="bg-muted border-b border-border">
@@ -2587,6 +2851,196 @@ export default function CVsPage() {
         fileName={downloadModalFileName}
         errorMessage={downloadModalError}
       />
+
+      {/* CV View Modal - عرض السيرة الذاتية (للمستخدمين من نوع USER) */}
+      {selectedCVForView && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-2 sm:p-4 animate-fadeIn"
+          onClick={() => setSelectedCVForView(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden shadow-2xl transform animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center p-4 sm:p-6 border-b-2 border-gray-100 bg-gradient-to-r from-[#1e3a8a] to-[#1e40af]">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 sm:p-3 rounded-lg backdrop-blur-sm">
+                  <Eye className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-white">
+                    {selectedCVForView.fullNameArabic || selectedCVForView.fullName}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-white/80">
+                    {selectedCVForView.referenceCode} • {selectedCVForView.nationality}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedCVForView(null)}
+                className="text-white hover:text-red-300 transition-all duration-300 hover:rotate-90 hover:scale-110 p-2 rounded-lg hover:bg-white/10"
+              >
+                <X className="h-6 w-6 sm:h-7 sm:w-7" />
+              </button>
+            </div>
+
+            {/* Content - الصورة */}
+            <div className="p-4 sm:p-6 bg-gray-50 overflow-y-auto max-h-[calc(95vh-180px)]">
+              {selectedCVForView.cvImageUrl ? (
+                <div className="flex justify-center">
+                  <div className="relative inline-block w-full max-w-4xl group">
+                    {/* Tooltip */}
+                    <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                      اضغط للتكبير 🔍
+                    </div>
+                    <img
+                      src={processImageUrl(selectedCVForView.cvImageUrl)}
+                      alt={selectedCVForView.fullName}
+                      className="w-full h-auto object-contain bg-white rounded-lg shadow-xl border-2 border-gray-200 hover:shadow-2xl transition-all duration-300 cursor-zoom-in"
+                      onClick={(e) => {
+                        // فتح الصورة في تبويب جديد عند النقر
+                        window.open(processImageUrl(selectedCVForView.cvImageUrl!), '_blank');
+                      }}
+                      title="اضغط لفتح الصورة بالحجم الكامل"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        if (!target.src.startsWith('data:')) {
+                          target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="inline-block p-8 bg-gray-200 rounded-full mb-4">
+                    <ImageIcon className="h-16 w-16 text-gray-400" />
+                  </div>
+                  <p className="text-gray-600 text-lg">لا توجد صورة متاحة لهذه السيرة الذاتية</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer - الأزرار */}
+            <div className="p-4 sm:p-6 border-t-2 border-gray-100 bg-white">
+              <div className="flex flex-wrap gap-3 sm:gap-4 justify-center">
+                <button
+                  onClick={() => sendWhatsAppMessage(selectedCVForView)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                >
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
+                  </svg>
+                  <span>حجز السيرة الذاتية</span>
+                </button>
+
+                <button
+                  onClick={() => shareSingleCV(selectedCVForView)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                >
+                  <Share2 className="h-5 w-5 sm:h-6 sm:w-6" />
+                  <span>مشاركة</span>
+                </button>
+
+                <button
+                  onClick={() => downloadSingleImage(selectedCVForView.id)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                >
+                  <Download className="h-5 w-5 sm:h-6 sm:w-6" />
+                  <span>تحميل</span>
+                </button>
+
+                {selectedCVForView.videoLink && (
+                  <button
+                    onClick={() => {
+                      setSelectedVideo(selectedCVForView.videoLink || null);
+                      setSelectedCVForView(null);
+                    }}
+                    className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                  >
+                    <Play className="h-5 w-5 sm:h-6 sm:w-6" />
+                    <span>فيديو</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Popup - Popup احترافي للمشاركة */}
+      {showSharePopup && (
+        <div className="fixed bottom-6 right-6 z-[10000] animate-slideUp">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-lg border-2 border-white/20 max-w-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                {sharePopupMessage.includes('⏳') && (
+                  <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
+                {sharePopupMessage.includes('✅') && (
+                  <svg className="w-6 h-6 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                {sharePopupMessage.includes('❌') && (
+                  <svg className="w-6 h-6 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+                {sharePopupMessage.includes('📤') && (
+                  <svg className="w-6 h-6 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                )}
+              </div>
+              <p className="font-bold text-base">{sharePopupMessage}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+
+        .animate-scaleIn {
+          animation: scaleIn 0.2s ease-out;
+        }
+
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+      `}</style>
     </>
   )
 }
+

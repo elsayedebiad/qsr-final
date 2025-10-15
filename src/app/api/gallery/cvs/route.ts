@@ -24,6 +24,7 @@ export async function GET() {
         maritalStatus: true,
         age: true,
         profileImage: true,
+        cvImageUrl: true, // صورة السيرة الذاتية الكاملة
         videoLink: true, // إضافة حقل الفيديو
         status: true,
         priority: true,

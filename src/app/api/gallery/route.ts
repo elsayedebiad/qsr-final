@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         maritalStatus: true,
         age: true,
         profileImage: true,
+        cvImageUrl: true, // صورة السيرة الذاتية الكاملة
         videoLink: true,
         status: true,
         priority: true,
