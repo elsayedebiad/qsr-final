@@ -305,10 +305,9 @@ export default function CVsPage() {
     if (ageFilter !== 'ALL') {
       filtered = filtered.filter((cv) => {
         if (!cv.age) return false
-        if (ageFilter === '18-25') return cv.age >= 18 && cv.age <= 25
-        if (ageFilter === '26-35') return cv.age >= 26 && cv.age <= 35
-        if (ageFilter === '36-45') return cv.age >= 36 && cv.age <= 45
-        if (ageFilter === '46+') return cv.age >= 46
+        if (ageFilter === '21-30') return cv.age >= 21 && cv.age <= 30
+        if (ageFilter === '30-40') return cv.age >= 30 && cv.age <= 40
+        if (ageFilter === '40-50') return cv.age >= 40 && cv.age <= 50
         return true
       })
     }
@@ -1309,10 +1308,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   onChange={(e) => setAgeFilter(e.target.value)}
                 >
                   <option value="ALL">جميع الأعمار</option>
-                  <option value="18-25">18-25 سنة</option>
-                  <option value="26-35">26-35 سنة</option>
-                  <option value="36-45">36-45 سنة</option>
-                  <option value="46+">46+ سنة</option>
+                  <option value="21-30">21-30 سنة</option>
+                  <option value="30-40">30-40 سنة</option>
+                  <option value="40-50">40-50 سنة</option>
                 </select>
 
                 {/* زر المزيد من الفلاتر */}
