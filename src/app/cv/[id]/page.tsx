@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { Share2, MessageCircle, ArrowLeft, Image as ImageIcon } from 'lucide-react'
 import QSOTemplate from '../../../components/cv-templates/qso-template'
@@ -86,6 +86,8 @@ interface CV {
 
 export default function PublicCVPage() {
   const params = useParams()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [cv, setCv] = useState<CV | null>(null)
   const [loading, setLoading] = useState(true)
   const [imageLoading, setImageLoading] = useState(true)
@@ -101,6 +103,9 @@ export default function PublicCVPage() {
   const [downloadStatus, setDownloadStatus] = useState<'preparing' | 'downloading' | 'success' | 'error'>('preparing')
   const [downloadFileName, setDownloadFileName] = useState('')
   const [downloadError, setDownloadError] = useState('')
+  
+  // الحصول على صفحة المصدر من URL
+  const fromPage = searchParams.get('from') || 'dashboard'
 
   useEffect(() => {
     if (params.id) {
@@ -453,7 +458,7 @@ export default function PublicCVPage() {
           <h1 className="text-2xl font-bold text-foreground mb-4">السيرة الذاتية غير موجودة</h1>
           <p className="text-muted-foreground mb-6">الرابط الذي تحاول الوصول إليه غير صحيح أو تم حذف السيرة الذاتية</p>
           <button
-            onClick={() => window.history.back()}
+            onClick={() => router.push(`/${fromPage}`)}
             className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

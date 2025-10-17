@@ -30,6 +30,7 @@ interface ExcelRow {
   'فترة العقد'?: string  // إضافة اسم العمود من القالب
   'الوظيفة المطلوبة'?: string
   'المنصب'?: string  // إضافة اسم العمود من القالب
+  'الوظيفة'?: string  // إضافة عمود الوظيفة من ملف System.csv
   'رقم الجواز'?: string
   'رقم جواز السفر'?: string  // إضافة اسم العمود من القالب
   'تاريخ إصدار الجواز'?: string
@@ -473,7 +474,7 @@ const processExcelRow = (row: ExcelRow, rowNumber: number): ProcessedCV => {
       ),
       monthlySalary: cleanStringValue(row['الراتب الشهري']),
       contractPeriod: cleanStringValue(row['مدة العقد'] || row['فترة العقد']), // إضافة اسم العمود من القالب
-      position: cleanStringValue(row['الوظيفة المطلوبة'] || row['المنصب']), // إضافة اسم العمود من القالب
+      position: cleanStringValue(row['الوظيفة المطلوبة'] || row['المنصب'] || row['الوظيفة']), // إضافة عمود الوظيفة من System.csv
       passportNumber: cleanStringValue(row['رقم الجواز'] || row['رقم جواز السفر']), // إضافة اسم العمود من القالب
       passportIssueDate: cleanDateValue(row['تاريخ إصدار الجواز']),
       passportExpiryDate: cleanDateValue(row['تاريخ انتهاء الجواز']),
