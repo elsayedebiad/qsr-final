@@ -96,22 +96,42 @@ export const isGoogleDriveUrl = (url: string): boolean => {
  * @returns Processed URL ready for use in <img> src
  */
 export const processImageUrl = (url: string | undefined | null): string => {
-  if (!url) {
+  if (!url || url.trim() === '') {
+    console.log('No image URL provided, using placeholder')
     return getPlaceholderImage()
   }
 
+  // Clean the URL
+  const cleanUrl = url.trim()
+
   // Convert Google Drive URLs
-  if (isGoogleDriveUrl(url)) {
-    return convertGoogleDriveUrl(url)
+  if (isGoogleDriveUrl(cleanUrl)) {
+    const processedUrl = convertGoogleDriveUrl(cleanUrl)
+    console.log('Processed Google Drive URL:', cleanUrl, '->', processedUrl)
+    return processedUrl
   }
 
   // Handle local uploads - ensure they're accessible
-  if (url.startsWith('/uploads/')) {
-    return url
+  if (cleanUrl.startsWith('/uploads/')) {
+    console.log('Local upload URL:', cleanUrl)
+    return cleanUrl
+  }
+
+  // Handle data URLs (base64 images)
+  if (cleanUrl.startsWith('data:')) {
+    console.log('Data URL detected')
+    return cleanUrl
+  }
+
+  // Handle relative URLs
+  if (cleanUrl.startsWith('./') || cleanUrl.startsWith('../')) {
+    console.log('Relative URL:', cleanUrl)
+    return cleanUrl
   }
 
   // Return other URLs as is
-  return url
+  console.log('Direct URL:', cleanUrl)
+  return cleanUrl
 }
 
 /**

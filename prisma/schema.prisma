@@ -68,6 +68,8 @@ model CV {
   age                Int?
   englishLevel       SkillLevel?
   arabicLevel        SkillLevel?
+  englishLevelRaw    String?        // القيمة الأصلية من الشيت
+  arabicLevelRaw     String?        // القيمة الأصلية من الشيت
   babySitting        SkillLevel?
   childrenCare       SkillLevel?
   tutoring           SkillLevel?

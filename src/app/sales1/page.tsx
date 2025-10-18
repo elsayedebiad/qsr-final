@@ -32,9 +32,10 @@ import {
   Image as ImageIcon
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
-import { processImageUrl } from '@/lib/url-utils'
+import { processImageUrl, getPlaceholderImage } from '@/lib/url-utils'
 import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
+import ImageWithFallback from '@/components/ImageWithFallback'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -161,18 +162,19 @@ export default function Sales1Page() {
   const [statusFilter, setStatusFilter] = useState<CVStatus | 'ALL'>('ALL')
   const [nationalityFilter, setNationalityFilter] = useState<string>('ALL')
   const [positionFilter, setPositionFilter] = useState<string>('ALL') // فلتر الوظيفة: سائق، خدمات
-  const [skillFilter, setSkillFilter] = useState<string>('ALL')
+  const [skillFilters, setSkillFilters] = useState<string[]>([]) // تحديد متعدد للمهارات
   const [maritalStatusFilter, setMaritalStatusFilter] = useState<string>('ALL')
   const [ageFilter, setAgeFilter] = useState<string>('ALL')
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [experienceFilter, setExperienceFilter] = useState<string>('ALL')
-  const [languageFilter, setLanguageFilter] = useState<string>('ALL')
+  const [arabicLevelFilter, setArabicLevelFilter] = useState<string>('ALL')
+  const [englishLevelFilter, setEnglishLevelFilter] = useState<string>('ALL')
+  const [showSkillsDropdown, setShowSkillsDropdown] = useState(false)
   const cvsContainerRef = useRef<HTMLDivElement>(null)
   
   // فلاتر إضافية شاملة
   const [religionFilter, setReligionFilter] = useState<string>('ALL')
   const [educationFilter, setEducationFilter] = useState<string>('ALL')
-  const [salaryFilter, setSalaryFilter] = useState<string>('ALL')
   const [contractPeriodFilter, setContractPeriodFilter] = useState<string>('ALL')
   const [passportStatusFilter, setPassportStatusFilter] = useState<string>('ALL')
   const [heightFilter, setHeightFilter] = useState<string>('ALL')
@@ -524,33 +526,22 @@ export default function Sales1Page() {
       // فلاتر أساسية
       const matchesStatus = statusFilter === 'ALL' || cv.status === statusFilter
       
-      // فلتر الوظيفة - تصنيف حسب الوظيفة (سائق، نقل خدمات)
+      // فلتر الوظيفة - يتطابق مع الوظيفة المحددة من البيانات المرفوعة
       const matchesPosition = positionFilter === 'ALL' || (() => {
-        const position = (cv.position || '').trim() // إزالة المسافات الزائدة
-        switch (positionFilter) {
-          case 'DRIVER':
-            // السائقين: من لديهم "سائق" في الوظيفة بالضبط
-            return position.includes('سائق') || position.includes('driver')
-          case 'SERVICES':
-            // نقل الخدمات: من لديهم "نقل خدمات" في الوظيفة بالضبط
-            return position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-          default:
-            return true
+        const position = (cv.position || '').trim()
+        // للوظائف الخاصة مثل سائق ونقل خدمات، نستخدم includes
+        if (positionFilter === 'سائق') {
+          return position.includes('سائق') || position.toLowerCase().includes('driver')
         }
+        if (positionFilter === 'نقل خدمات') {
+            return position.includes('نقل خدمات') || position.includes('نقل الخدمات')
+        }
+        // للوظائف الأخرى، نستخدم التطابق الدقيق
+        return position === positionFilter
       })()
       
-      // فلتر الجنسية - يتم تجاهله عند اختيار سائق أو خدمات
-      const matchesNationality = (positionFilter === 'DRIVER' || positionFilter === 'SERVICES')
-        ? true
-        : matchesNationalityFilter(cv.nationality, nationalityFilter)
-      
-      // استثناء السائقين ونقل الخدمات عند اختيار جنسية معينة
-      const excludeFromNationality = nationalityFilter !== 'ALL' && (positionFilter === 'ALL') ? (() => {
-        const position = (cv.position || '').trim()
-        const isDriver = position.includes('سائق') || position.includes('driver')
-        const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-        return !isDriver && !isService // استثناء السائقين ونقل الخدمات
-      })() : true
+      // فلتر الجنسية
+      const matchesNationality = matchesNationalityFilter(cv.nationality, nationalityFilter)
       
       const matchesMaritalStatus = maritalStatusFilter === 'ALL' || cv.maritalStatus === maritalStatusFilter
       
@@ -565,9 +556,9 @@ export default function Sales1Page() {
         }
       })()
 
-      // فلتر المهارات
-      const matchesSkill = skillFilter === 'ALL' || (() => {
-        switch (skillFilter) {
+      // فلتر المهارات - دعم التحديد المتعدد
+      const matchesSkill = skillFilters.length === 0 || skillFilters.every(skill => {
+        switch (skill) {
           case 'babySitting': return cv.babySitting && cv.babySitting !== SkillLevel.NO
           case 'childrenCare': return cv.childrenCare && cv.childrenCare !== SkillLevel.NO
           case 'cleaning': return cv.cleaning && cv.cleaning !== SkillLevel.NO
@@ -580,18 +571,39 @@ export default function Sales1Page() {
           case 'sewing': return cv.sewing && cv.sewing !== SkillLevel.NO
           default: return true
         }
-      })()
+      })
 
       // فلتر الخبرة
       const matchesExperience = experienceFilter === 'ALL' || cv.experience === experienceFilter
 
-      // فلتر اللغة
-      const matchesLanguage = languageFilter === 'ALL' || (() => {
-        switch (languageFilter) {
-          case 'arabic': return cv.arabicLevel && cv.arabicLevel !== SkillLevel.NO
-          case 'english': return cv.englishLevel && cv.englishLevel !== SkillLevel.NO
-          default: return true
-        }
+      // فلتر اللغة العربية
+      const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
+        const arabicLevel = cv.arabicLevel || 'NO'
+        
+        console.log(`CV ${cv.id}: Arabic level = ${arabicLevel}, Filter = ${arabicLevelFilter}`)
+        
+        // فلترة دقيقة حسب المستوى المطلوب
+        if (arabicLevelFilter === 'لا' && arabicLevel === 'NO') return true
+        if (arabicLevelFilter === 'ضعيف' && arabicLevel === 'NO') return true
+        if (arabicLevelFilter === 'جيد' && arabicLevel === 'WILLING') return true
+        if (arabicLevelFilter === 'ممتاز' && arabicLevel === 'YES') return true
+        
+        return false
+      })()
+
+      // فلتر اللغة الإنجليزية
+      const matchesEnglishLevel = englishLevelFilter === 'ALL' || (() => {
+        const englishLevel = cv.englishLevel || 'NO'
+        
+        console.log(`CV ${cv.id}: English level = ${englishLevel}, Filter = ${englishLevelFilter}`)
+        
+        // فلترة دقيقة حسب المستوى المطلوب
+        if (englishLevelFilter === 'لا' && englishLevel === 'NO') return true
+        if (englishLevelFilter === 'ضعيف' && englishLevel === 'NO') return true
+        if (englishLevelFilter === 'جيد' && englishLevel === 'WILLING') return true
+        if (englishLevelFilter === 'ممتاز' && englishLevel === 'YES') return true
+        
+        return false
       })()
 
       // فلتر الديانة
@@ -609,19 +621,6 @@ export default function Sales1Page() {
 
       // فلتر التعليم
       const matchesEducation = educationFilter === 'ALL' || cv.educationLevel === educationFilter
-
-      // فلتر الراتب
-      const matchesSalary = salaryFilter === 'ALL' || (() => {
-        if (!cv.monthlySalary) return false
-        const salary = parseInt(cv.monthlySalary.replace(/[^0-9]/g, ''))
-        switch (salaryFilter) {
-          case 'LOW': return salary >= 0 && salary <= 500
-          case 'MEDIUM': return salary >= 501 && salary <= 1000
-          case 'MEDIUM': return salary >= 1001 && salary <= 1500
-          case '1501+': return salary >= 1501
-          default: return true
-        }
-      })()
 
       // فلتر فترة العقد
       const matchesContractPeriod = contractPeriodFilter === 'ALL' || cv.contractPeriod === contractPeriodFilter
@@ -663,9 +662,9 @@ export default function Sales1Page() {
       // فلتر عدد الأطفال
       const matchesChildren = childrenFilter === 'ALL' || (() => {
         switch (childrenFilter) {
-          case 'NONE': return children === 0
-          case 'FEW': return children && cv.numberOfChildren >= 1 && cv.numberOfChildren <= 2
-          case '3+': return cv.numberOfChildren && cv.numberOfChildren >= 3
+          case 'NONE': return cv.numberOfChildren === 0
+          case 'FEW': return cv.numberOfChildren !== undefined && cv.numberOfChildren >= 1 && cv.numberOfChildren <= 2
+          case '3+': return cv.numberOfChildren !== undefined && cv.numberOfChildren >= 3
           default: return true
         }
       })()
@@ -678,21 +677,83 @@ export default function Sales1Page() {
       // فلتر السائق الخاص
       const matchesDriving = drivingFilter === 'ALL' || cv.driving === drivingFilter
 
-      return matchesSearch && matchesStatus && matchesPosition && matchesNationality && excludeFromNationality && 
-             matchesMaritalStatus && matchesAge && matchesSkill && matchesExperience && matchesLanguage && 
-             matchesReligion && matchesEducation && matchesSalary && matchesContractPeriod && 
+      return matchesSearch && matchesStatus && matchesPosition && matchesNationality && 
+             matchesMaritalStatus && matchesAge && matchesSkill && matchesExperience && matchesArabicLevel && 
+             matchesEnglishLevel && matchesReligion && matchesEducation && matchesContractPeriod && 
              matchesPassportStatus && matchesHeight && matchesWeight && matchesChildren && matchesLocation &&
              matchesDriving
     })
   }, [cvs, searchTerm, statusFilter, positionFilter, nationalityFilter, maritalStatusFilter, ageFilter, 
-      skillFilter, experienceFilter, languageFilter, religionFilter, educationFilter, 
-      salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, 
+      skillFilters, experienceFilter, arabicLevelFilter, englishLevelFilter, religionFilter, educationFilter, 
+      contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, 
       childrenFilter, locationFilter, drivingFilter])
 
   // عرض عدد محدود من السير لتحسين الأداء
   const filteredCvs = useMemo(() => {
-    return allFilteredCvs.slice(0, displayLimit)
+    const result = allFilteredCvs.slice(0, displayLimit)
+    console.log(`Filtered CVs: ${result.length} out of ${allFilteredCvs.length} total`)
+    return result
   }, [allFilteredCvs, displayLimit])
+
+  // استخراج الوظائف الفريدة من البيانات المرفوعة
+  const uniquePositions = useMemo(() => {
+    const positions = cvs
+      .map(cv => cv.position)
+      .filter((position): position is string => !!position && position.trim() !== '')
+      .map(position => position.trim())
+    
+    // إزالة التكرارات
+    return Array.from(new Set(positions)).sort()
+  }, [cvs])
+
+  // استخراج سنوات الخبرة الفريدة من البيانات
+  const uniqueExperiences = useMemo(() => {
+    const experiences = cvs
+      .map(cv => cv.experience)
+      .filter((exp): exp is string => !!exp && exp.trim() !== '')
+      .map(exp => exp.trim())
+    
+    // إزالة التكرارات وترتيب بالأرقام
+    const unique = Array.from(new Set(experiences))
+    return unique.sort((a, b) => {
+      // استخراج الرقم من النص (مثلاً "2 سنة" => 2)
+      const numA = parseInt(a.match(/\d+/)?.[0] || '0')
+      const numB = parseInt(b.match(/\d+/)?.[0] || '0')
+      return numA - numB
+    })
+  }, [cvs])
+
+  // استخراج مستويات التعليم الفريدة من البيانات
+  const uniqueEducationLevels = useMemo(() => {
+    const educations = cvs
+      .map(cv => cv.educationLevel)
+      .filter((edu): edu is string => !!edu && edu.trim() !== '')
+      .map(edu => edu.trim())
+    
+    // إزالة التكرارات
+    return Array.from(new Set(educations)).sort()
+  }, [cvs])
+
+  // استخراج مستويات اللغات الفريدة من البيانات للتحقق
+  const uniqueArabicLevels = useMemo(() => {
+    const levels = cvs
+      .map(cv => cv.arabicLevel || 'NO') // معالجة القيم الفارغة
+      .filter((level): level is SkillLevel => !!level)
+    
+    const unique = Array.from(new Set(levels))
+    console.log('Arabic levels in data:', unique)
+    return unique
+  }, [cvs])
+
+  const uniqueEnglishLevels = useMemo(() => {
+    const levels = cvs
+      .map(cv => cv.englishLevel || 'NO') // معالجة القيم الفارغة
+      .filter((level): level is SkillLevel => !!level)
+    
+    const unique = Array.from(new Set(levels))
+    console.log('English levels in data:', unique)
+    return unique
+  }, [cvs])
 
   // دالة لتحميل المزيد
   const loadMore = useCallback(() => {
@@ -701,20 +762,46 @@ export default function Sales1Page() {
 
   // إعادة ضبط حد العرض عند تغيير الفلاتر
   useEffect(() => {
+    console.log('Filters changed:', {
+      arabicLevelFilter,
+      englishLevelFilter,
+      experienceFilter,
+      educationFilter
+    })
+    
+    // إضافة تحقق إضافي للفلاتر
+    if (arabicLevelFilter !== 'ALL') {
+      console.log(`Arabic filter active: ${arabicLevelFilter}`)
+    }
+    if (englishLevelFilter !== 'ALL') {
+      console.log(`English filter active: ${englishLevelFilter}`)
+    }
+    
     setDisplayLimit(20) // إعادة تعيين إلى 20 عند تغيير الفلتر
-  }, [searchTerm, statusFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, 
-      experienceFilter, languageFilter, religionFilter, educationFilter, salaryFilter, 
+  }, [searchTerm, statusFilter, nationalityFilter, skillFilters, maritalStatusFilter, ageFilter, 
+      experienceFilter, arabicLevelFilter, englishLevelFilter, religionFilter, educationFilter, 
       contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, 
       locationFilter, drivingFilter])
 
   // Scroll تلقائي عند تغيير الفلتر
   useEffect(() => {
-    if (cvsContainerRef.current && (nationalityFilter !== 'ALL' || statusFilter !== 'ALL' || searchTerm)) {
+    if (cvsContainerRef.current && (nationalityFilter !== 'ALL' || statusFilter !== 'ALL' || positionFilter !== 'ALL' || searchTerm)) {
       setTimeout(() => {
         cvsContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 100)
     }
-  }, [nationalityFilter, statusFilter, searchTerm])
+  }, [nationalityFilter, statusFilter, positionFilter, searchTerm])
+
+  // دالة للتعامل مع تبديل المهارات
+  const toggleSkillFilter = (skill: string) => {
+    setSkillFilters(prev => {
+      if (prev.includes(skill)) {
+        return prev.filter(s => s !== skill)
+      } else {
+        return [...prev, skill]
+      }
+    })
+  }
 
   // إرسال رسالة واتساب
   const sendWhatsAppMessage = (cv: CV) => {
@@ -1372,12 +1459,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 <h3 className="text-white font-bold text-xl mb-3">أوغندا</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
-                    {cvs.filter(cv => {
-                      const position = (cv.position || '').trim()
-                      const isDriver = position.includes('سائق') || position.includes('driver')
-                      const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-                      return cv.nationality && cv.nationality.includes('أوغند') && !isDriver && !isService
-                    }).length}
+                    {cvs.filter(cv => cv.nationality && cv.nationality.includes('أوغند')).length}
                   </span>
                 </div>
               </div>
@@ -1386,23 +1468,21 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             {/* فلتر سائقين */}
             <div
               onClick={() => {
-                if (positionFilter === 'DRIVER') {
+                if (positionFilter === 'سائق') {
                   setPositionFilter('ALL');
-                  setNationalityFilter('ALL'); // إعادة تفعيل فلتر الجنسية
                 } else {
-                  setPositionFilter('DRIVER');
-                  setNationalityFilter('ALL'); // تجاهل فلتر الجنسية
+                  setPositionFilter('سائق');
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                positionFilter === 'DRIVER'
+                positionFilter === 'سائق'
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               {/* خلفية متدرجة */}
               <div className={`absolute inset-0 transition-all duration-300 ${
-                positionFilter === 'DRIVER'
+                positionFilter === 'سائق'
                   ? 'bg-gradient-to-br from-emerald-700 to-emerald-900'
                   : 'bg-gradient-to-br from-emerald-600 to-emerald-800 group-hover:from-emerald-500 group-hover:to-emerald-700'
               }`}></div>
@@ -1414,7 +1494,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   <span className="text-white font-bold text-3xl">
                     {cvs.filter(cv => {
                       const position = (cv.position || '').trim()
-                      return position.includes('سائق') || position.includes('driver')
+                      return position.includes('سائق') || position.toLowerCase().includes('driver')
                     }).length}
                   </span>
                 </div>
@@ -1445,12 +1525,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 <h3 className="text-white font-bold text-xl mb-3">بروندية</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
-                    {cvs.filter(cv => {
-                      const position = (cv.position || '').trim()
-                      const isDriver = position.includes('سائق') || position.includes('driver')
-                      const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-                      return cv.nationality && cv.nationality.includes('بوروندي') && !isDriver && !isService
-                    }).length}
+                    {cvs.filter(cv => cv.nationality && cv.nationality.includes('بوروندي')).length}
                   </span>
                 </div>
               </div>
@@ -1459,23 +1534,21 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             {/* فلتر نقل خدمات */}
             <div
               onClick={() => {
-                if (positionFilter === 'SERVICES') {
+                if (positionFilter === 'نقل خدمات') {
                   setPositionFilter('ALL');
-                  setNationalityFilter('ALL'); // إعادة تفعيل فلتر الجنسية
                 } else {
-                  setPositionFilter('SERVICES');
-                  setNationalityFilter('ALL'); // تجاهل فلتر الجنسية
+                  setPositionFilter('نقل خدمات');
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                positionFilter === 'SERVICES'
+                positionFilter === 'نقل خدمات'
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               {/* خلفية متدرجة */}
               <div className={`absolute inset-0 transition-all duration-300 ${
-                positionFilter === 'SERVICES'
+                positionFilter === 'نقل خدمات'
                   ? 'bg-gradient-to-br from-amber-700 to-amber-900'
                   : 'bg-gradient-to-br from-amber-600 to-amber-800 group-hover:from-amber-500 group-hover:to-amber-700'
               }`}></div>
@@ -1493,16 +1566,17 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 </div>
               </div>
             </div>
+
           </div>
 
           {/* الفلاتر السريعة */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
             <select
               className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] transition-all"
               value={religionFilter}
               onChange={(e) => setReligionFilter(e.target.value)}
             >
-              <option value="ALL">اختر الديانة</option>
+                    <option value="ALL">اختر الديانة</option>
               <option value="MUSLIM">مسلم 🕌</option>
               <option value="CHRISTIAN">مسيحي ✝️</option>
             </select>
@@ -1512,7 +1586,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
               value={nationalityFilter}
               onChange={(e) => setNationalityFilter(e.target.value)}
             >
-              <option value="ALL">جميع الجنسيات</option>
+              <option value="ALL">جميع الجنسيات ({cvs.length})</option>
               <option value="FILIPINO">الفلبين</option>
               <option value="INDIAN">الهند</option>
               <option value="BANGLADESHI">بنغلاديش</option>
@@ -1523,10 +1597,23 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
 
             <select
               className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] transition-all"
+              value={positionFilter}
+              onChange={(e) => setPositionFilter(e.target.value)}
+            >
+              <option value="ALL">جميع الوظائف ({cvs.length})</option>
+              {uniquePositions.map(position => (
+                <option key={position} value={position}>
+                  {position} ({cvs.filter(cv => cv.position?.trim() === position).length})
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:border-gray-400 focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] transition-all"
               value={ageFilter}
               onChange={(e) => setAgeFilter(e.target.value)}
             >
-              <option value="ALL">جميع الأعمار</option>
+                    <option value="ALL">جميع الأعمار</option>
               <option value="21-30">21-30 سنة</option>
               <option value="30-40">30-40 سنة</option>
               <option value="40-50">40-50 سنة</option>
@@ -1549,25 +1636,112 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
           {showAdvancedFilters && (
             <div className="bg-gray-50 rounded-lg p-4 mt-4 border border-gray-200">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">المهارات</label>
-                  <select
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={skillFilter}
-                    onChange={(e) => setSkillFilter(e.target.value)}
-                  >
-                    <option value="ALL">جميع المهارات</option>
-                    <option value="babySitting">رعاية أطفال</option>
-                    <option value="childrenCare">العناية بالأطفال</option>
-                    <option value="cleaning">تنظيف</option>
-                    <option value="arabicCooking">طبخ عربي</option>
-                    <option value="driving">قيادة</option>
-                    <option value="washing">غسيل</option>
-                    <option value="ironing">كي</option>
-                    <option value="tutoring">تدريس</option>
-                    <option value="disabledCare">رعاية كبار السن</option>
-                    <option value="sewing">خياطة</option>
-                  </select>
+                <div className="relative">
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">المهارات (تحديد متعدد)</label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowSkillsDropdown(!showSkillsDropdown)}
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between hover:border-gray-400 transition-all"
+                    >
+                      <span className="truncate">
+                        {skillFilters.length === 0 
+                          ? 'اختر المهارات' 
+                          : `تم اختيار ${skillFilters.length} مهارة`}
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${showSkillsDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {showSkillsDropdown && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-10" 
+                          onClick={() => setShowSkillsDropdown(false)}
+                        />
+                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                          <div className="p-2">
+                            {skillFilters.length > 0 && (
+                              <button
+                                onClick={() => {
+                                  setSkillFilters([])
+                                }}
+                                className="w-full px-3 py-2 mb-2 text-xs text-red-600 hover:bg-red-50 rounded font-medium transition-colors"
+                              >
+                                ✕ مسح الكل
+                              </button>
+                            )}
+                            {[
+                              { id: 'babySitting', label: 'رعاية أطفال', icon: '👶' },
+                              { id: 'childrenCare', label: 'العناية بالأطفال', icon: '👧' },
+                              { id: 'cleaning', label: 'تنظيف', icon: '🧹' },
+                              { id: 'arabicCooking', label: 'طبخ عربي', icon: '🍲' },
+                              { id: 'driving', label: 'قيادة', icon: '🚗' },
+                              { id: 'washing', label: 'غسيل', icon: '🧺' },
+                              { id: 'ironing', label: 'كي', icon: '👔' },
+                              { id: 'tutoring', label: 'تدريس', icon: '📚' },
+                              { id: 'disabledCare', label: 'رعاية كبار السن', icon: '👴' },
+                              { id: 'sewing', label: 'خياطة', icon: '🧵' }
+                            ].map(skill => (
+                              <label
+                                key={skill.id}
+                                className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all ${
+                                  skillFilters.includes(skill.id)
+                                    ? 'bg-blue-50 text-blue-700 font-medium'
+                                    : 'hover:bg-gray-50 text-gray-700'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={skillFilters.includes(skill.id)}
+                                  onChange={() => toggleSkillFilter(skill.id)}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-lg">{skill.icon}</span>
+                                <span className="text-sm flex-1">{skill.label}</span>
+                                {skillFilters.includes(skill.id) && (
+                                  <span className="text-blue-600 text-xs">✓</span>
+                                )}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* عرض المهارات المحددة كـ tags */}
+                  {skillFilters.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {skillFilters.map(skillId => {
+                        const skillLabels: Record<string, string> = {
+                          babySitting: 'رعاية أطفال',
+                          childrenCare: 'العناية بالأطفال',
+                          cleaning: 'تنظيف',
+                          arabicCooking: 'طبخ عربي',
+                          driving: 'قيادة',
+                          washing: 'غسيل',
+                          ironing: 'كي',
+                          tutoring: 'تدريس',
+                          disabledCare: 'رعاية كبار السن',
+                          sewing: 'خياطة'
+                        }
+                        return (
+                          <span
+                            key={skillId}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
+                          >
+                            {skillLabels[skillId]}
+                            <button
+                              onClick={() => toggleSkillFilter(skillId)}
+                              className="hover:text-blue-900"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -1586,58 +1760,64 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">اللغة</label>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">مستوى اللغة العربية</label>
                   <select
                     className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={languageFilter}
-                    onChange={(e) => setLanguageFilter(e.target.value)}
+                    value={arabicLevelFilter}
+                    onChange={(e) => setArabicLevelFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع اللغات</option>
-                    <option value="arabic">عربي</option>
-                    <option value="english">إنجليزي</option>
+                    <option value="ALL">الكل ({cvs.length})</option>
+                    <option value="لا">❌ لا ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'NO').length})</option>
+                    <option value="ضعيف">⚠️ ضعيف ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'NO').length})</option>
+                    <option value="جيد">✅ جيد ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'WILLING').length})</option>
+                    <option value="ممتاز">⭐ ممتاز ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'YES').length})</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">التعليم</label>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">مستوى اللغة الإنجليزية</label>
+                  <select
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={englishLevelFilter}
+                    onChange={(e) => setEnglishLevelFilter(e.target.value)}
+                  >
+                    <option value="ALL">الكل ({cvs.length})</option>
+                    <option value="لا">❌ لا ({cvs.filter(cv => (cv.englishLevel || 'NO') === 'NO').length})</option>
+                    <option value="ضعيف">⚠️ ضعيف ({cvs.filter(cv => (cv.englishLevel || 'NO') === 'NO').length})</option>
+                    <option value="جيد">✅ جيد ({cvs.filter(cv => (cv.englishLevel || 'NO') === 'WILLING').length})</option>
+                    <option value="ممتاز">⭐ ممتاز ({cvs.filter(cv => (cv.englishLevel || 'NO') === 'YES').length})</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">المستوى التعليمي</label>
                   <select
                     className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={educationFilter}
                     onChange={(e) => setEducationFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات</option>
-                    <option value="PRIMARY">ابتدائي</option>
-                    <option value="SECONDARY">ثانوي</option>
-                    <option value="UNIVERSITY">جامعي</option>
+                    <option value="ALL">الكل ({cvs.length})</option>
+                    {uniqueEducationLevels.map(edu => (
+                      <option key={edu} value={edu}>
+                        {edu} ({cvs.filter(cv => cv.educationLevel === edu).length})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">الخبرة</label>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">سنوات الخبرة</label>
                   <select
                     className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value={experienceFilter}
                     onChange={(e) => setExperienceFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات</option>
-                    <option value="BEGINNER">مبتدئ</option>
-                    <option value="INTERMEDIATE">متوسط</option>
-                    <option value="ADVANCED">متقدم</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">الراتب الشهري</label>
-                  <select
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={salaryFilter}
-                    onChange={(e) => setSalaryFilter(e.target.value)}
-                  >
-                    <option value="ALL">جميع الرواتب</option>
-                    <option value="0-500">0-500 ريال</option>
-                    <option value="501-1000">501-1000 ريال</option>
-                    <option value="1001-1500">1001-1500 ريال</option>
-                    <option value="1501+">1501+ ريال</option>
+                    <option value="ALL">الكل ({cvs.length})</option>
+                    {uniqueExperiences.map(exp => (
+                      <option key={exp} value={exp}>
+                        {exp} ({cvs.filter(cv => cv.experience === exp).length})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -1652,22 +1832,6 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     <option value="0">بدون أطفال</option>
                     <option value="1-2">1-2 أطفال</option>
                     <option value="3+">3+ أطفال</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-gray-700 mb-1 block">الديانة</label>
-                  <select
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={religionFilter}
-                    onChange={(e) => setReligionFilter(e.target.value)}
-                  >
-                    <option value="ALL">جميع الديانات</option>
-                    <option value="MUSLIM">مسلم</option>
-                    <option value="CHRISTIAN">مسيحي</option>
-                    <option value="BUDDHIST">بوذي</option>
-                    <option value="HINDU">هندوسي</option>
-                    <option value="OTHER">أخرى</option>
                   </select>
                 </div>
               </div>
@@ -1731,18 +1895,12 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                             className="w-full h-full focus:outline-none cursor-pointer group relative"
                             title="اضغط لعرض السيرة الكاملة"
                           >
-                            <img
-                              src={processImageUrl(cv.cvImageUrl)}
+                            <ImageWithFallback
+                              src={cv.cvImageUrl}
                               alt={cv.fullName}
                               loading="lazy"
                               decoding="async"
                               className="w-full h-full object-contain transition-all duration-500 group-hover:brightness-110"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement
-                                if (!target.src.startsWith('data:')) {
-                                  target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
-                                }
-                              }}
                             />
                             {/* Overlay عند الـHover */}
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -1832,18 +1990,12 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                           className="w-full h-full focus:outline-none cursor-pointer group/img relative"
                           title="اضغط لعرض السيرة الكاملة"
                         >
-                          <img 
-                            src={processImageUrl(cv.cvImageUrl)} 
+                          <ImageWithFallback
+                            src={cv.cvImageUrl}
                             alt={cv.fullName}
                             loading="lazy"
                             decoding="async"
-                            className="w-full h-full object-contain transition-all duration-300 group-hover/img:brightness-110"
-                            onError={(e) => {
-                                const target = e.target as HTMLImageElement
-                                if (!target.src.startsWith('data:')) {
-                                  target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
-                                }
-                              }}
+                            className="w-full h-full object-contain transition-all duration-300 group-hover:brightness-110"
                           />
                         </button>
                       ) : (
@@ -2088,21 +2240,17 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
                       اضغط للتكبير 🔍
                     </div>
-                    <img
-                      src={processImageUrl(selectedCVForView.cvImageUrl)}
+                    <ImageWithFallback
+                      src={selectedCVForView.cvImageUrl}
                       alt={selectedCVForView.fullName}
                       className="w-full h-auto object-contain bg-white rounded-lg shadow-xl border-2 border-gray-200 hover:shadow-2xl transition-all duration-300 cursor-zoom-in"
                       onClick={(e) => {
                         // فتح الصورة في تبويب جديد عند النقر
+                        if (selectedCVForView.cvImageUrl) {
                         window.open(processImageUrl(selectedCVForView.cvImageUrl), '_blank');
-                      }}
-                      title="اضغط لفتح الصورة بالحجم الكامل"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        if (!target.src.startsWith('data:')) {
-                          target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
                         }
                       }}
+                      title="اضغط لفتح الصورة بالحجم الكامل"
                     />
                   </div>
                 </div>

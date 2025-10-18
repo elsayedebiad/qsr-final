@@ -490,8 +490,34 @@ const processExcelRow = (row: ExcelRow, rowNumber: number): ProcessedCV => {
       height: cleanStringValue(row['الطول']),
       complexion: cleanStringValue(row['لون البشرة']),
       age: cleanNumberValue(row['العمر']),
-      englishLevel: normalizeSkillLevel(row['الإنجليزية']),
-      arabicLevel: normalizeSkillLevel(row['العربية']),
+      englishLevel: (() => {
+        const rawValue = row['مستوى الإنجليزية']
+        if (!rawValue) return undefined
+        
+        // تحويل القيم الفعلية من الشيت إلى YES/NO/WILLING
+        const normalized = rawValue.toString().trim()
+        
+        if (normalized === 'لا' || normalized === 'غير متاح') return 'NO'
+        if (normalized === 'ضعيف') return 'NO'
+        if (normalized === 'متوسط' || normalized === 'مقبول') return 'WILLING'
+        if (normalized === 'نعم' || normalized === 'ممتاز') return 'YES'
+        
+        return 'NO' // افتراضي
+      })(),
+      arabicLevel: (() => {
+        const rawValue = row['مستوى العربية']
+        if (!rawValue) return undefined
+        
+        // تحويل القيم الفعلية من الشيت إلى YES/NO/WILLING
+        const normalized = rawValue.toString().trim()
+        
+        if (normalized === 'لا') return 'NO'
+        if (normalized === 'ضعيف') return 'NO'
+        if (normalized === 'متوسط') return 'WILLING'
+        if (normalized === 'نعم' || normalized === 'ممتاز') return 'YES'
+        
+        return 'NO' // افتراضي
+      })(),
       educationLevel: cleanStringValue(row['الدرجة العلمية']),
       babySitting: normalizeSkillLevel(row['رعاية الأطفال']),
       childrenCare: normalizeSkillLevel(row['رعاية الأطفال']),

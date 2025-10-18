@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "CV" ADD COLUMN IF NOT EXISTS "englishLevelRaw" TEXT,
+ADD COLUMN IF NOT EXISTS "arabicLevelRaw" TEXT;
+
