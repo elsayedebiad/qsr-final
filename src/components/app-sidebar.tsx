@@ -30,6 +30,7 @@ import {
   PowerOff,
   Archive,
   Wifi,
+  BarChart3,
 } from "lucide-react"
 
 import {
@@ -339,6 +340,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       label: 'سجل الأنشطة',
       icon: Activity,
       href: '/dashboard/activity-log',
+      adminOnly: true
+    },
+    {
+      id: 'upload-statistics',
+      label: 'إحصائيات الرفع والتحديث',
+      icon: BarChart3,
+      href: '/dashboard/upload-statistics',
       adminOnly: true
     },
     {
