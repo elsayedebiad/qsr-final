@@ -574,7 +574,21 @@ export default function Sales1Page() {
       })
 
       // فلتر الخبرة
-      const matchesExperience = experienceFilter === 'ALL' || cv.experience === experienceFilter
+      const toYears = (v: any) => {
+        // دعم الأرقام العربية وتحويلها
+        const asString = String(v ?? '')
+        const normalized = asString.replace(/[\u0660-\u0669]/g, d => String('0123456789'[d.charCodeAt(0) - 0x0660]))
+        const numMatch = normalized.match(/\d+/)?.[0] || ''
+        return numMatch ? parseInt(numMatch, 10) : null
+      }
+      const matchesExperience = (() => {
+        if (experienceFilter === 'ALL') return true
+        const cvNum = toYears(cv.experience)
+        const filterNum = toYears(experienceFilter)
+        if (cvNum != null && filterNum != null) return cvNum === filterNum
+        const norm = (x: any) => String(x ?? '').trim().toLowerCase()
+        return norm(cv.experience) === norm(experienceFilter)
+      })()
 
       // فلتر اللغة العربية
       const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
@@ -620,7 +634,11 @@ export default function Sales1Page() {
       })()
 
       // فلتر التعليم
-      const matchesEducation = educationFilter === 'ALL' || cv.educationLevel === educationFilter
+      const matchesEducation = (() => {
+        if (educationFilter === 'ALL') return true
+        const norm = (x: any) => String(x ?? '').trim().toLowerCase()
+        return norm(cv.educationLevel) === norm(educationFilter)
+      })()
 
       // فلتر فترة العقد
       const matchesContractPeriod = contractPeriodFilter === 'ALL' || cv.contractPeriod === contractPeriodFilter
