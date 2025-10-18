@@ -85,25 +85,51 @@ export default function UploadStatisticsPage() {
       setIsLoading(true)
       const token = localStorage.getItem('token')
       
+      if (!token) {
+        toast.error('يجب تسجيل الدخول أولاً')
+        return
+      }
+      
       let url = `/api/upload-statistics?filterType=${filterType}`
       if (filterType === 'custom' && startDate && endDate) {
         url += `&startDate=${startDate}&endDate=${endDate}`
       }
 
+      console.log('Fetching statistics from:', url)
+      
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       })
 
+      console.log('Response status:', response.status)
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        console.error('API Error:', errorData)
-        throw new Error(errorData.details || errorData.error || 'فشل في جلب الإحصائيات')
+        let errorData
+        try {
+          errorData = await response.json()
+        } catch {
+          errorData = { error: `HTTP Error ${response.status}: ${response.statusText}` }
+        }
+        
+        console.error('API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: errorData
+        })
+        
+        const errorMessage = errorData.details || errorData.error || `فشل في جلب الإحصائيات (${response.status})`
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
-      console.log('Received statistics data:', data)
+      console.log('Successfully received statistics data:', {
+        totalUploaded: data.summary?.totalUploaded,
+        totalUpdated: data.summary?.totalUpdated,
+        userStatsCount: data.userStats?.length
+      })
       setStatistics(data)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'حدث خطأ في جلب الإحصائيات'

@@ -256,6 +256,7 @@ export async function GET(req: NextRequest) {
         nationality: cv.nationality,
         status: cv.status,
         priority: cv.priority,
+        createdAt: cv.createdAt,
         updatedAt: cv.updatedAt,
         createdBy: cv.createdBy
       })),
