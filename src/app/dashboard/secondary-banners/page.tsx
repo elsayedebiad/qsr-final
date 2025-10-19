@@ -56,7 +56,11 @@ export default function SecondaryBannersPage() {
     { id: 'sales4', name: 'Sales 4' },
     { id: 'sales5', name: 'Sales 5' },
     { id: 'sales6', name: 'Sales 6' },
-    { id: 'sales7', name: 'Sales 7' }
+    { id: 'sales7', name: 'Sales 7' },
+    { id: 'sales8', name: 'Sales 8' },
+    { id: 'sales9', name: 'Sales 9' },
+    { id: 'sales10', name: 'Sales 10' },
+    { id: 'sales11', name: 'Sales 11' }
   ]
 
   // جلب البنرات
