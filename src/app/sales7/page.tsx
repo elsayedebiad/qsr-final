@@ -512,6 +512,11 @@ export default function Sales1Page() {
 
   // فلترة السير الذاتية - تم تحسينها باستخدام useMemo للأداء
   const allFilteredCvs = useMemo(() => {
+    // التحقق من وجود البيانات أولاً
+    if (!cvs || cvs.length === 0) {
+      return []
+    }
+    
     return cvs.filter(cv => {
       // البحث النصي الذكي
       const matchesSearch = searchTerm === '' || 
@@ -749,7 +754,10 @@ export default function Sales1Page() {
   // عرض عدد محدود من السير لتحسين الأداء
   const filteredCvs = useMemo(() => {
     const result = allFilteredCvs.slice(0, displayLimit)
-    console.log(`Filtered CVs: ${result.length} out of ${allFilteredCvs.length} total`)
+    // تسجيل فقط في بيئة التطوير وعند وجود بيانات
+    if (process.env.NODE_ENV === 'development' && allFilteredCvs.length > 0) {
+      console.log(`Filtered CVs: ${result.length} out of ${allFilteredCvs.length} total`)
+    }
     return result
   }, [allFilteredCvs, displayLimit])
 
@@ -788,22 +796,32 @@ export default function Sales1Page() {
 
   // استخراج مستويات اللغات الفريدة من البيانات للتحقق
   const uniqueArabicLevels = useMemo(() => {
+    if (!cvs || cvs.length === 0) return []
+    
     const levels = cvs
       .map(cv => cv.arabicLevel || 'NO') // معالجة القيم الفارغة
       .filter((level): level is SkillLevel => !!level)
     
     const unique = Array.from(new Set(levels))
-    console.log('Arabic levels in data:', unique)
+    // تسجيل فقط في بيئة التطوير وعند وجود بيانات
+    if (process.env.NODE_ENV === 'development' && unique.length > 0) {
+      console.log('Arabic levels in data:', unique)
+    }
     return unique
   }, [cvs])
 
   const uniqueEnglishLevels = useMemo(() => {
+    if (!cvs || cvs.length === 0) return []
+    
     const levels = cvs
       .map(cv => cv.englishLevel || 'NO') // معالجة القيم الفارغة
       .filter((level): level is SkillLevel => !!level)
     
     const unique = Array.from(new Set(levels))
-    console.log('English levels in data:', unique)
+    // تسجيل فقط في بيئة التطوير وعند وجود بيانات
+    if (process.env.NODE_ENV === 'development' && unique.length > 0) {
+      console.log('English levels in data:', unique)
+    }
     return unique
   }, [cvs])
 
