@@ -147,7 +147,7 @@ interface CV {
   cvImageUrl?: string
 }
 
-export default function sales3Page() {
+export default function Sales3Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -595,127 +595,53 @@ export default function sales3Page() {
             return false
         }
       })()
-
-      // فلتر اللغة العربية - يعمل مع قاعدة البيانات
-      const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
-        const arabicLevel = cv.arabicLevel ?? cv.languageLevel ?? 'NONE'
-        return arabicLevel === arabicLevelFilter
-      })()
-
-      // فلتر اللغة الإنجليزية - يعمل مع قاعدة البيانات  
-      const matchesEnglishLevel = englishLevelFilter === 'ALL' || (() => {
-        const englishLevel = cv.englishLevel ?? 'NONE'
-        return englishLevel === englishLevelFilter
-      })()
-
-      // فلتر الديانة
-      const matchesReligion = religionFilter === 'ALL' || (() => {
-        if (!cv.religion) return false
-        const religion = cv.religion.toUpperCase()
-        switch (religionFilter) {
-          case 'MUSLIM': return religion.includes('MUSLIM') || cv.religion.includes('مسلم')
-          case 'CHRISTIAN': return religion.includes('CHRISTIAN') || cv.religion.includes('مسيحي')
-          case 'BUDDHIST': return religion.includes('BUDDHIST') || cv.religion.includes('بوذي')
-          case 'HINDU': return religion.includes('HINDU') || cv.religion.includes('هندوسي')
-          default: return cv.religion === religionFilter
-        }
-      })()
-
-      // فلتر التعليم - متعلم/غير متعلم
-      const matchesEducation = (() => {
-        if (educationFilter === 'ALL') return true
+      
+      // فلتر التعليم
+      const matchesEducation = educationFilter === 'ALL' || (() => {
         const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
-        
-        // البيانات الفعلية في DUKA.xlsx تحتوي على "نعم" أو "لا"
+        // البيانات الفعلية تحتوي على "نعم" أو "لا"
         if (educationFilter === 'متعلم') {
-          // يعتبر متعلم إذا كانت القيمة "نعم"
           return educationLevel === 'نعم' || educationLevel === 'yes' || 
                  educationLevel === 'متعلم' || educationLevel === 'educated'
-        } else if (educationFilter === 'غير متعلم') {
-          // يعتبر غير متعلم إذا كانت القيمة "لا" أو فارغة
+        }
+        if (educationFilter === 'غير متعلم') {
           return educationLevel === 'لا' || educationLevel === 'no' || 
                  educationLevel === '' || educationLevel === 'غير متعلم' || 
                  educationLevel === 'أمي' || educationLevel === 'none'
         }
         return false
       })()
-
-      // فلتر فترة العقد
-      const matchesContractPeriod = contractPeriodFilter === 'ALL' || cv.contractPeriod === contractPeriodFilter
-
-      // فلتر حالة الجواز
-      const matchesPassportStatus = passportStatusFilter === 'ALL' || (() => {
-        switch (passportStatusFilter) {
-          case 'VALID': return cv.passportNumber && cv.passportExpiryDate
-          case 'EXPIRED': return cv.passportNumber && !cv.passportExpiryDate
-          case 'MISSING': return !cv.passportNumber
-          default: return true
+      
+      // فلتر الدين - يعمل مع قاعدة البيانات
+      const matchesReligion = religionFilter === 'ALL' || (() => {
+        if (!cv.religion) return false
+        if (religionFilter === 'مسلمة') {
+          return cv.religion.includes('مسلم') || cv.religion.includes('MUSLIM')
         }
-      })()
-
-      // فلتر الطول
-      const matchesHeight = heightFilter === 'ALL' || (() => {
-        if (!cv.height) return false
-        const height = parseInt(cv.height)
-        switch (heightFilter) {
-          case 'SHORT': return height < 160
-          case 'MEDIUM': return height >= 160 && height <= 170
-          case 'TALL': return height > 170
-          default: return true
+        if (religionFilter === 'مسيحية') {
+          return cv.religion.includes('مسيحي') || cv.religion.includes('CHRISTIAN')
         }
-      })()
-
-      // فلتر الوزن
-      const matchesWeight = weightFilter === 'ALL' || (() => {
-        if (!cv.weight) return false
-        const weight = parseInt(cv.weight)
-        switch (weightFilter) {
-          case 'LIGHT': return weight < 60
-          case 'MEDIUM': return weight >= 60 && weight <= 80
-          case 'HEAVY': return weight > 80
-          default: return true
+        if (religionFilter === 'أخرى') {
+          return !cv.religion.includes('مسلم') && !cv.religion.includes('مسيحي')
         }
+        return false
       })()
-
-      // فلتر عدد الأطفال
-      const matchesChildren = childrenFilter === 'ALL' || (() => {
-        switch (childrenFilter) {
-          case 'NONE': return cv.numberOfChildren === 0
-          case 'FEW': return cv.numberOfChildren !== undefined && cv.numberOfChildren >= 1 && cv.numberOfChildren <= 2
-          case '3+': return cv.numberOfChildren !== undefined && cv.numberOfChildren >= 3
-          default: return true
-        }
-      })()
-
-      // فلتر الموقع
-      const matchesLocation = locationFilter === 'ALL' || 
-        cv.livingTown?.toLowerCase().includes(locationFilter.toLowerCase()) ||
-        cv.placeOfBirth?.toLowerCase().includes(locationFilter.toLowerCase())
-
-      // فلتر السائق الخاص
-      const matchesDriving = drivingFilter === 'ALL' || cv.driving === drivingFilter
-
+      
+      // تطبيق جميع الفلاتر
       return matchesSearch && matchesStatus && matchesPosition && matchesNationality && 
-             excludeDriversFromNationality && matchesAge && matchesSkill && matchesArabicLevel && 
-             matchesEnglishLevel && matchesReligion && matchesEducation && matchesExperience &&
-             matchesContractPeriod && matchesPassportStatus && matchesHeight &&
-             matchesWeight && matchesChildren && matchesLocation && matchesDriving
+             excludeDriversFromNationality && matchesMaritalStatus && matchesAge && 
+             matchesSkill && matchesArabicLevel && matchesEnglishLevel && 
+             matchesEducation && matchesExperience && matchesReligion
     })
-  }, [cvs, searchTerm, statusFilter, positionFilter, nationalityFilter, ageFilter, 
-      skillFilters, arabicLevelFilter, englishLevelFilter, religionFilter, educationFilter,
-      contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter,
-      childrenFilter, locationFilter, drivingFilter])
-
-  // عرض عدد محدود من السير لتحسين الأداء
+  }, [cvs, searchTerm, statusFilter, nationalityFilter, positionFilter, maritalStatusFilter, 
+      ageFilter, skillFilters, arabicLevelFilter, englishLevelFilter, 
+      religionFilter, educationFilter, experienceFilter, matchesNationalityFilter])
+      
+  // قائمة مفلترة للعرض (تحديد عدد معين للعرض)
   const filteredCvs = useMemo(() => {
-    const result = allFilteredCvs.slice(0, displayLimit)
-    // تسجيل فقط في بيئة التطوير وعند وجود بيانات
-    if (process.env.NODE_ENV === 'development' && allFilteredCvs.length > 0) {
-      console.log(`Filtered CVs: ${result.length} out of ${allFilteredCvs.length} total`)
-    }
-    return result
+    return allFilteredCvs.slice(0, displayLimit)
   }, [allFilteredCvs, displayLimit])
-
+  
   // استخراج الوظائف الفريدة من البيانات المرفوعة
   const uniquePositions = useMemo(() => {
     const positions = cvs
@@ -726,7 +652,7 @@ export default function sales3Page() {
     // إزالة التكرارات
     return Array.from(new Set(positions)).sort()
   }, [cvs])
-
+  
   // استخراج الجنسيات الفريدة من البيانات المرفوعة
   const uniqueNationalities = useMemo(() => {
     const nationalities = cvs
@@ -737,7 +663,7 @@ export default function sales3Page() {
     // إزالة التكرارات
     return Array.from(new Set(nationalities)).sort()
   }, [cvs])
-
+  
   // خريطة تحويل الجنسيات من الإنجليزية للعربية
   const nationalityDisplayMap: { [key: string]: string } = {
     'FILIPINO': 'الفلبين',
@@ -749,7 +675,7 @@ export default function sales3Page() {
     'BURUNDIAN': 'بروندية',
     'INDIAN': 'الهند'
   }
-
+  
   // الحصول على الاسم العربي للجنسية
   const getNationalityDisplayName = (nationality: string): string => {
     // البحث في الخريطة أولاً
@@ -764,8 +690,7 @@ export default function sales3Page() {
     // وإلا استخدم الاسم الإنجليزي
     return nationality
   }
-
-
+  
   // دوال حساب عدد البيانات لكل فلتر
   const getCountForFilter = useCallback((filterType: string, filterValue: string): number => {
     if (!cvs || cvs.length === 0) return 0
@@ -794,10 +719,28 @@ export default function sales3Page() {
           return position === value || position.includes(value)
           
         case 'arabicLevel':
-          return (cv.arabicLevel ?? cv.languageLevel ?? 'NO') === filterValue
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          const positionArabic = (cv.position || '').trim()
+          const isDriverArabic = positionArabic.includes('سائق') || positionArabic.toLowerCase().includes('driver')
+          const isServiceArabic = positionArabic.includes('نقل خدمات') || positionArabic.includes('نقل الخدمات')
+          if (isDriverArabic || isServiceArabic) return false
+          
+          const arabicLevel = cv.arabicLevel ?? cv.languageLevel
+          if (filterValue === 'WEAK') return arabicLevel === null || arabicLevel === undefined
+          if (filterValue === 'NO') return arabicLevel === 'NO'
+          return arabicLevel === filterValue
           
         case 'englishLevel':
-          return (cv.englishLevel ?? 'NO') === filterValue
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          const positionEnglish = (cv.position || '').trim()
+          const isDriverEnglish = positionEnglish.includes('سائق') || positionEnglish.toLowerCase().includes('driver')
+          const isServiceEnglish = positionEnglish.includes('نقل خدمات') || positionEnglish.includes('نقل الخدمات')
+          if (isDriverEnglish || isServiceEnglish) return false
+          
+          const englishLevel = cv.englishLevel
+          if (filterValue === 'WEAK') return englishLevel === null || englishLevel === undefined
+          if (filterValue === 'NO') return englishLevel === 'NO'
+          return englishLevel === filterValue
           
         case 'education':
           const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
@@ -1693,7 +1636,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     <option value="ALL">جميع المستويات ({cvs.length})</option>
                     <option value="YES">ممتاز ({getCountForFilter('arabicLevel', 'YES')})</option>
                     <option value="WILLING">جيد ({getCountForFilter('arabicLevel', 'WILLING')})</option>
-                    <option value="NO">ضعيف ({getCountForFilter('arabicLevel', 'NO')})</option>
+                    <option value="WEAK">ضعيف ({getCountForFilter('arabicLevel', 'WEAK')})</option>
+                    <option value="NO">لا ({getCountForFilter('arabicLevel', 'NO')})</option>
                   </select>
                 </div>
 
@@ -1709,7 +1653,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     <option value="ALL">جميع المستويات ({cvs.length})</option>
                     <option value="YES">ممتاز ({getCountForFilter('englishLevel', 'YES')})</option>
                     <option value="WILLING">جيد ({getCountForFilter('englishLevel', 'WILLING')})</option>
-                    <option value="NO">ضعيف ({getCountForFilter('englishLevel', 'NO')})</option>
+                    <option value="WEAK">ضعيف ({getCountForFilter('englishLevel', 'WEAK')})</option>
+                    <option value="NO">لا ({getCountForFilter('englishLevel', 'NO')})</option>
                   </select>
                 </div>
 

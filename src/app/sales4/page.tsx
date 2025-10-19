@@ -147,7 +147,7 @@ interface CV {
   cvImageUrl?: string
 }
 
-export default function sales4Page() {
+export default function Sales4Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -598,13 +598,17 @@ export default function sales4Page() {
 
       // فلتر اللغة العربية - يعمل مع قاعدة البيانات
       const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
-        const arabicLevel = cv.arabicLevel ?? cv.languageLevel ?? 'NONE'
+        const arabicLevel = cv.arabicLevel ?? cv.languageLevel
+        if (arabicLevelFilter === 'WEAK') return arabicLevel === null || arabicLevel === undefined
+        if (arabicLevelFilter === 'NO') return arabicLevel === 'NO'
         return arabicLevel === arabicLevelFilter
       })()
 
       // فلتر اللغة الإنجليزية - يعمل مع قاعدة البيانات  
       const matchesEnglishLevel = englishLevelFilter === 'ALL' || (() => {
-        const englishLevel = cv.englishLevel ?? 'NONE'
+        const englishLevel = cv.englishLevel
+        if (englishLevelFilter === 'WEAK') return englishLevel === null || englishLevel === undefined
+        if (englishLevelFilter === 'NO') return englishLevel === 'NO'
         return englishLevel === englishLevelFilter
       })()
 
@@ -805,10 +809,28 @@ export default function sales4Page() {
           return position === value || position.includes(value)
           
         case 'arabicLevel':
-          return (cv.arabicLevel ?? cv.languageLevel ?? 'NO') === filterValue
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          const positionArabic = (cv.position || '').trim()
+          const isDriverArabic = positionArabic.includes('سائق') || positionArabic.toLowerCase().includes('driver')
+          const isServiceArabic = positionArabic.includes('نقل خدمات') || positionArabic.includes('نقل الخدمات')
+          if (isDriverArabic || isServiceArabic) return false
+          
+          const arabicLevel = cv.arabicLevel ?? cv.languageLevel
+          if (filterValue === 'WEAK') return arabicLevel === null || arabicLevel === undefined
+          if (filterValue === 'NO') return arabicLevel === 'NO'
+          return arabicLevel === filterValue
           
         case 'englishLevel':
-          return (cv.englishLevel ?? 'NO') === filterValue
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          const positionEnglish = (cv.position || '').trim()
+          const isDriverEnglish = positionEnglish.includes('سائق') || positionEnglish.toLowerCase().includes('driver')
+          const isServiceEnglish = positionEnglish.includes('نقل خدمات') || positionEnglish.includes('نقل الخدمات')
+          if (isDriverEnglish || isServiceEnglish) return false
+          
+          const englishLevel = cv.englishLevel
+          if (filterValue === 'WEAK') return englishLevel === null || englishLevel === undefined
+          if (filterValue === 'NO') return englishLevel === 'NO'
+          return englishLevel === filterValue
           
         case 'education':
           const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
