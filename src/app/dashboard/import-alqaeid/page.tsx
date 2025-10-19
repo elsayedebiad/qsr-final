@@ -3,17 +3,23 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
-import { Priority, MaritalStatus, SkillLevel } from '@prisma/client'
+// Types for import result
+interface ImportResult {
+  imported: number
+  skipped: number
+  total: number
+  errors?: string[]
+}
 import { 
   ArrowLeft, 
   Upload, 
   FileSpreadsheet, 
   Download, 
-  AlertCircle, 
   CheckCircle,
   X,
   Loader2
 } from 'lucide-react'
+import SmoothProgressBar from '@/components/SmoothProgressBar'
 
 export default function ImportAlQaeidPage() {
   const router = useRouter()
@@ -21,7 +27,8 @@ export default function ImportAlQaeidPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [importResult, setImportResult] = useState<any>(null)
+  const [uploadStatus, setUploadStatus] = useState<string>('idle')
+  const [importResult, setImportResult] = useState<ImportResult | null>(null)
 
   const downloadAlQaeidTemplate = () => {
     // Create comprehensive CSV template for Al-Qaeid format
@@ -68,6 +75,7 @@ FATIMA ALI AHMED,فاطمة علي أحمد,fatima@example.com,+251923456789,EA1
     setIsLoading(true);
     setImportResult(null);
     setProgress(0);
+    setUploadStatus('uploading');
 
     const formData = new FormData();
     formData.append('file', selectedFile);
@@ -87,17 +95,34 @@ FATIMA ALI AHMED,فاطمة علي أحمد,fatima@example.com,+251923456789,EA1
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
-        const percentComplete = Math.round((event.loaded / event.total) * 100);
-        setProgress(percentComplete);
+        // حساب التقدم بشكل أكثر دقة (50% للرفع، 50% للمعالجة)
+        const uploadPercent = (event.loaded / event.total) * 50;
+        setProgress(Math.round(uploadPercent));
       }
     };
 
     xhr.onload = () => {
-      setIsLoading(false);
       if (xhr.status === 200) {
-        const data = JSON.parse(xhr.responseText);
-        setImportResult(data);
-        toast.success(`اكتمل الاستيراد: ${data.imported} بنجاح, ${data.skipped} تم تخطيه`);
+        setUploadStatus('processing');
+        // محاكاة تقدم المعالجة
+        let processingProgress = 50;
+        const interval = setInterval(() => {
+          processingProgress += 10;
+          setProgress(Math.min(processingProgress, 95));
+          if (processingProgress >= 95) {
+            clearInterval(interval);
+          }
+        }, 200);
+        
+        setTimeout(() => {
+          clearInterval(interval);
+          setProgress(100);
+          const data = JSON.parse(xhr.responseText);
+          setImportResult(data);
+          setIsLoading(false);
+          setUploadStatus('complete');
+          toast.success(`اكتمل الاستيراد: ${data.imported} بنجاح, ${data.skipped} تم تخطيه`);
+        }, 1000);
       } else {
         try {
           const errorData = JSON.parse(xhr.responseText);
@@ -288,23 +313,42 @@ FATIMA ALI AHMED,فاطمة علي أحمد,fatima@example.com,+251923456789,EA1
           {/* Import Button */}
           {/* Progress and Import Button */}
           {selectedFile && !importResult && (
-            <div className="text-center">
+            <div className="space-y-4">
               {isLoading && (
-                <div className="w-full bg-gray-200 rounded-full h-4 my-4">
-                  <div 
-                    className="bg-blue-600 h-4 rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  ></div>
+                <div className="bg-card rounded-lg shadow p-6">
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-foreground mb-2">
+                      {uploadStatus === 'uploading' && 'جاري رفع الملف...'}
+                      {uploadStatus === 'processing' && 'جاري معالجة البيانات...'}
+                      {uploadStatus === 'complete' && 'اكتمل الاستيراد!'}
+                    </h4>
+                    <SmoothProgressBar 
+                      targetProgress={progress}
+                      duration={300}
+                      showPercentage={true}
+                      height="10px"
+                      color="bg-gradient-to-r from-blue-500 to-blue-600"
+                    />
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>
+                      {uploadStatus === 'uploading' && 'يرجى الانتظار أثناء رفع الملف...'}
+                      {uploadStatus === 'processing' && 'يتم الآن تحليل البيانات واستيرادها...'}
+                    </span>
+                  </div>
                 </div>
               )}
-              <button
-                onClick={handleImport}
-                disabled={isLoading}
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? <Loader2 className="h-5 w-5 animate-spin ml-2" /> : <Upload className="h-5 w-5 ml-2" />}
-                {isLoading ? `جاري الاستيراد... (${progress}%)` : 'استيراد البيانات'}
-              </button>
+              <div className="text-center">
+                <button
+                  onClick={handleImport}
+                  disabled={isLoading}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin ml-2" /> : <Upload className="h-5 w-5 ml-2" />}
+                  {isLoading ? 'جاري الاستيراد...' : 'استيراد البيانات'}
+                </button>
+              </div>
             </div>
           )}
 

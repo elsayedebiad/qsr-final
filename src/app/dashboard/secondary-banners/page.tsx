@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import DashboardLayout from '@/components/DashboardLayout'
+import SmoothProgressBar from '@/components/SmoothProgressBar'
 import { 
   Image as ImageIcon, 
   Plus, 
@@ -10,12 +11,12 @@ import {
   Trash2, 
   Eye, 
   EyeOff,
-  Upload,
   X,
   Save,
   RefreshCw,
   FileImage,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react'
 import { compressAndConvertImage, isValidImageFile, isValidFileSize, getImageInfo } from '@/lib/image-utils'
 
@@ -38,7 +39,6 @@ export default function SecondaryBannersPage() {
   const [editingBanner, setEditingBanner] = useState<SecondaryBanner | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>('')
   const [imageInfo, setImageInfo] = useState<{width: number, height: number, size: string} | null>(null)
 
@@ -64,7 +64,7 @@ export default function SecondaryBannersPage() {
   ]
 
   // جلب البنرات
-  const fetchBanners = async () => {
+  const fetchBanners = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await fetch(`/api/secondary-banners?salesPageId=${selectedSalesPage}`)
@@ -80,11 +80,11 @@ export default function SecondaryBannersPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [selectedSalesPage])
 
   useEffect(() => {
     fetchBanners()
-  }, [selectedSalesPage])
+  }, [fetchBanners])
 
   // معالجة اختيار الصورة
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,23 +107,36 @@ export default function SecondaryBannersPage() {
       setIsUploading(true)
       setUploadProgress(0)
 
-      // الحصول على معلومات الصورة
+      // محاكاة تقدم سلس للرفع
+      const simulateProgress = async (target: number, duration: number) => {
+        const steps = 10
+        const stepDelay = duration / steps
+        const stepSize = (target - uploadProgress) / steps
+        
+        for (let i = 1; i <= steps; i++) {
+          await new Promise(resolve => setTimeout(resolve, stepDelay))
+          setUploadProgress(prev => Math.min(prev + stepSize, target))
+        }
+      }
+
+      // الحصول على معلومات الصورة (20%)
+      await simulateProgress(20, 300)
       const info = await getImageInfo(file)
       setImageInfo(info)
 
-      // إنشاء معاينة
+      // إنشاء معاينة (50%)
+      await simulateProgress(50, 400)
       const preview = await compressAndConvertImage(file, 400, 300, 0.7)
       setImagePreview(preview)
 
-      // ضغط الصورة للتخزين
-      setUploadProgress(50)
+      // ضغط الصورة للتخزين (100%)
+      await simulateProgress(80, 500)
       const maxWidth = formData.deviceType === 'DESKTOP' ? 1200 : 800
       const maxHeight = formData.deviceType === 'DESKTOP' ? 600 : 800
       
       const compressedImage = await compressAndConvertImage(file, maxWidth, maxHeight, 0.8)
       
-      setUploadProgress(100)
-      setSelectedFile(file)
+      await simulateProgress(100, 200)
       setFormData(prev => ({ ...prev, imageUrl: compressedImage }))
       
       toast.success('تم رفع الصورة بنجاح')
@@ -138,7 +151,6 @@ export default function SecondaryBannersPage() {
 
   // إزالة الصورة المختارة
   const handleRemoveImage = () => {
-    setSelectedFile(null)
     setImagePreview('')
     setImageInfo(null)
     setFormData(prev => ({ ...prev, imageUrl: '' }))
@@ -147,7 +159,6 @@ export default function SecondaryBannersPage() {
   // إعادة تعيين النموذج
   const resetForm = () => {
     setFormData({ imageUrl: '', deviceType: 'DESKTOP', order: 0 })
-    setSelectedFile(null)
     setImagePreview('')
     setImageInfo(null)
     setEditingBanner(null)
@@ -457,12 +468,19 @@ export default function SecondaryBannersPage() {
                           className="cursor-pointer flex flex-col items-center gap-2"
                         >
                           {isUploading ? (
-                            <>
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                              <p className="text-sm text-muted-foreground">
-                                جاري المعالجة... {uploadProgress}%
+                            <div className="w-full max-w-xs">
+                              <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto mb-2" />
+                              <SmoothProgressBar 
+                                targetProgress={uploadProgress}
+                                duration={300}
+                                showPercentage={true}
+                                height="8px"
+                                color="bg-gradient-to-r from-primary to-primary/80"
+                              />
+                              <p className="text-sm text-muted-foreground text-center mt-2">
+                                جاري معالجة الصورة...
                               </p>
-                            </>
+                            </div>
                           ) : (
                             <>
                               <FileImage className="h-8 w-8 text-muted-foreground" />

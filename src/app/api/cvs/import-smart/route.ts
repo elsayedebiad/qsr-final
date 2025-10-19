@@ -136,8 +136,8 @@ interface ProcessedCV {
   height?: string
   complexion?: string
   age?: number
-  englishLevel?: 'YES' | 'NO' | 'WILLING'
-  arabicLevel?: 'YES' | 'NO' | 'WILLING'
+  englishLevel?: 'YES' | 'NO' | 'WILLING' | null
+  arabicLevel?: 'YES' | 'NO' | 'WILLING' | null
   educationLevel?: string
   babySitting?: 'YES' | 'NO' | 'WILLING'
   childrenCare?: 'YES' | 'NO' | 'WILLING'
@@ -506,34 +506,48 @@ const processExcelRow = (row: ExcelRow, rowNumber: number): ProcessedCV => {
       englishLevel: (() => {
         // البحث عن عمود الإنجليزية بأسماء مختلفة
         const rawValue = row['مستوى الإنجليزية'] || row['الإنجليزية'] || row['English'] || row['English Level'] || row['انجليزي'] || row['انجليزية']
-        if (!rawValue) return undefined
+        if (!rawValue) return null // لا توجد قيمة
         
-        // تحويل القيم الفعلية من الشيت إلى YES/NO/WILLING
+        // تحويل القيم الفعلية من الشيت إلى YES/NO/WILLING/null
         const normalized = rawValue.toString().trim()
         
-        if (normalized === 'لا' || normalized === 'غير متاح') return 'NO'
-        if (normalized === 'ضعيف') return 'NO'
-        if (normalized === 'متوسط' || normalized === 'مقبول') return 'WILLING'
-        if (normalized === 'نعم' || normalized === 'ممتاز') return 'YES'
-        if (normalized === 'جيد') return 'WILLING'
+        if (normalized === 'ممتاز') return 'YES' // ممتاز
+        if (normalized === 'جيد') return 'WILLING' // جيد
+        if (normalized === 'ضعيف') return null // ضعيف = null
+        if (normalized === 'لا' || normalized === '') return 'NO' // لا يتحدث اللغة
         
-        return 'NO' // افتراضي
+        // للقيم الإنجليزية
+        if (normalized.toLowerCase() === 'excellent' || normalized === 'نعم') return 'YES'
+        if (normalized.toLowerCase() === 'good') return 'WILLING'
+        if (normalized.toLowerCase() === 'weak' || normalized.toLowerCase() === 'poor') return null
+        if (normalized.toLowerCase() === 'no' || normalized.toLowerCase() === 'none') return 'NO'
+        
+        return null // افتراضي للقيم غير المعروفة
       })(),
       arabicLevel: (() => {
         // البحث عن عمود العربية بأسماء مختلفة
         const rawValue = row['مستوى العربية'] || row['العربية'] || row['Arabic'] || row['Arabic Level'] || row['عربي'] || row['عربية']
-        if (!rawValue) return undefined
+        if (!rawValue) return null // لا توجد قيمة
         
-        // تحويل القيم الفعلية من الشيت إلى YES/NO/WILLING
+        // تحويل القيم الفعلية من الشيت إلى YES/NO/WILLING/null
         const normalized = rawValue.toString().trim()
         
-        if (normalized === 'لا') return 'NO'
-        if (normalized === 'ضعيف') return 'NO'
-        if (normalized === 'متوسط') return 'WILLING'
-        if (normalized === 'نعم' || normalized === 'ممتاز') return 'YES'
-        if (normalized === 'جيد') return 'WILLING'
+        if (normalized === 'ممتاز') return 'YES' // ممتاز
+        if (normalized === 'جيد') return 'WILLING' // جيد
+        if (normalized === 'ضعيف') return null // ضعيف = null
+        if (normalized === 'لا' || normalized === '') return 'NO' // لا يتحدث اللغة
         
-        return 'NO' // افتراضي
+        // معالجة القيم الإضافية المحتملة
+        if (normalized === 'متوسط') return 'WILLING' // متوسط = جيد
+        if (normalized === 'نعم') return 'YES' // نعم = ممتاز
+        
+        // للقيم الإنجليزية
+        if (normalized.toLowerCase() === 'excellent') return 'YES'
+        if (normalized.toLowerCase() === 'good') return 'WILLING'
+        if (normalized.toLowerCase() === 'weak' || normalized.toLowerCase() === 'poor') return null
+        if (normalized.toLowerCase() === 'no' || normalized.toLowerCase() === 'none') return 'NO'
+        
+        return null // افتراضي للقيم غير المعروفة
       })(),
       educationLevel: cleanStringValue(row['الدرجة العلمية'] || row['التعليم'] || row['المؤهل العلمي'] || row['Education'] || row['Education Level']),
       babySitting: normalizeSkillLevel(row['رعاية الأطفال']),

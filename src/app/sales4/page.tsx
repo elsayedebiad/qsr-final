@@ -520,6 +520,20 @@ export default function sales4Page() {
       // فلتر الجنسية
       const matchesNationality = matchesNationalityFilter(cv.nationality, nationalityFilter)
       
+      // استثناء السائقين ونقل الخدمات عند تفعيل فلتر الجنسية
+      const excludeDriversFromNationality = (() => {
+        if (nationalityFilter !== 'ALL') {
+          // التحقق إذا كانت الوظيفة سائق أو نقل خدمات
+          const position = (cv.position || '').trim()
+          const isDriver = position.includes('سائق') || position.includes('driver')
+          const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
+          
+          // استثناء السائقين ونقل الخدمات من فلاتر الجنسية
+          if (isDriver || isService) return false
+        }
+        return true
+      })()
+      
       const matchesMaritalStatus = maritalStatusFilter === 'ALL' || cv.maritalStatus === maritalStatusFilter
       
       // فلتر العمر
@@ -592,13 +606,13 @@ export default function sales4Page() {
 
       // فلتر اللغة العربية - يعمل مع قاعدة البيانات
       const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
-        const arabicLevel = cv.arabicLevel ?? cv.languageLevel ?? 'NO'
+        const arabicLevel = cv.arabicLevel ?? cv.languageLevel ?? 'NONE'
         return arabicLevel === arabicLevelFilter
       })()
 
       // فلتر اللغة الإنجليزية - يعمل مع قاعدة البيانات  
       const matchesEnglishLevel = englishLevelFilter === 'ALL' || (() => {
-        const englishLevel = cv.englishLevel || 'NO'
+        const englishLevel = cv.englishLevel ?? 'NONE'
         return englishLevel === englishLevelFilter
       })()
 
@@ -694,7 +708,7 @@ export default function sales4Page() {
       const matchesDriving = drivingFilter === 'ALL' || cv.driving === drivingFilter
 
       return matchesSearch && matchesStatus && matchesPosition && matchesNationality && 
-             matchesAge && matchesSkill && matchesArabicLevel && 
+             excludeDriversFromNationality && matchesAge && matchesSkill && matchesArabicLevel && 
              matchesEnglishLevel && matchesReligion && matchesEducation &&
              matchesContractPeriod && matchesPassportStatus && matchesHeight &&
              matchesWeight && matchesChildren && matchesLocation && matchesDriving
@@ -1379,6 +1393,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       setNationalityFilter('ALL');
                     } else {
                       setNationalityFilter(filterKey);
+                      setPositionFilter('ALL'); // إلغاء فلتر الوظيفة
                     }
                   }}
                   className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
@@ -1416,6 +1431,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   setPositionFilter('ALL');
                 } else {
                   setPositionFilter('سائق');
+                  setNationalityFilter('ALL'); // إلغاء فلتر الجنسية
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
@@ -1453,6 +1469,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   setPositionFilter('ALL');
                 } else {
                   setPositionFilter('نقل خدمات');
+                  setNationalityFilter('ALL'); // إلغاء فلتر الجنسية
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${

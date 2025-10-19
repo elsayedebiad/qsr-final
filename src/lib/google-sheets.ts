@@ -163,8 +163,8 @@ export class GoogleSheetsService {
       height: sheetData.height || null,
       complexion: sheetData.complexion || null,
       age: parseInt(sheetData.age) || null,
-      englishLevel: this.mapSkillLevel(sheetData.englishLevel),
-      arabicLevel: this.mapSkillLevel(sheetData.arabicLevel),
+      englishLevel: this.mapLanguageLevel(sheetData.englishLevel),
+      arabicLevel: this.mapLanguageLevel(sheetData.arabicLevel),
       babySitting: this.mapSkillLevel(sheetData.babySitting),
       childrenCare: this.mapSkillLevel(sheetData.childrenCare),
       tutoring: this.mapSkillLevel(sheetData.tutoring),
@@ -208,9 +208,54 @@ export class GoogleSheetsService {
       'نعم': 'YES',
       'لا': 'NO',
       'مستعد': 'WILLING',
-      'مستعدة': 'WILLING'
+      'مستعدة': 'WILLING',
+      'مستعدة للتعلم': 'WILLING'
     }
     return levelMap[level] || 'NO'
+  }
+
+  // تحويل مستوى اللغة (العربية والإنجليزية)
+  private mapLanguageLevel(level: string): string {
+    if (!level) return 'NONE'
+    
+    const normalizedLevel = level.toString().trim().toLowerCase()
+    
+    // خريطة تحويل القيم العربية
+    const arabicLevelMap: { [key: string]: string } = {
+      'ممتاز': 'YES',
+      'جيد': 'WILLING',
+      'ضعيف': 'NO',
+      'لا': 'NONE',
+      'نعم': 'YES',
+      'مستعد': 'WILLING',
+      'مستعدة': 'WILLING',
+      'مستعدة للتعلم': 'WILLING'
+    }
+    
+    // خريطة تحويل القيم الإنجليزية
+    const englishLevelMap: { [key: string]: string } = {
+      'excellent': 'YES',
+      'good': 'WILLING',
+      'weak': 'NO',
+      'poor': 'NO',
+      'no': 'NONE',
+      'none': 'NONE',
+      'yes': 'YES',
+      'willing': 'WILLING'
+    }
+    
+    // البحث في القيم العربية أولاً
+    if (arabicLevelMap[level]) {
+      return arabicLevelMap[level]
+    }
+    
+    // ثم البحث في القيم الإنجليزية
+    if (englishLevelMap[normalizedLevel]) {
+      return englishLevelMap[normalizedLevel]
+    }
+    
+    // إذا لم توجد قيمة، نعتبرها "لا"
+    return 'NONE'
   }
 
   // تحويل الأولوية

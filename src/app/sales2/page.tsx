@@ -147,7 +147,7 @@ interface CV {
   cvImageUrl?: string
 }
 
-export default function sales2Page() {
+export default function Sales2Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -537,6 +537,20 @@ export default function sales2Page() {
       // فلتر الجنسية
       const matchesNationality = matchesNationalityFilter(cv.nationality, nationalityFilter)
       
+      // استثناء السائقين ونقل الخدمات عند تفعيل فلتر الجنسية
+      const excludeDriversFromNationality = (() => {
+        if (nationalityFilter !== 'ALL') {
+          // التحقق إذا كانت الوظيفة سائق أو نقل خدمات
+          const position = (cv.position || '').trim()
+          const isDriver = position.includes('سائق') || position.includes('driver')
+          const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
+          
+          // استثناء السائقين ونقل الخدمات من فلاتر الجنسية
+          if (isDriver || isService) return false
+        }
+        return true
+      })()
+      
       const matchesMaritalStatus = maritalStatusFilter === 'ALL' || cv.maritalStatus === maritalStatusFilter
       
       // فلتر العمر
@@ -609,18 +623,23 @@ export default function sales2Page() {
 
       // فلتر اللغة العربية - يعمل مع قاعدة البيانات
       const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
-        const arabicLevel = cv.arabicLevel ?? cv.languageLevel ?? 'NO'
+        const arabicLevel = cv.arabicLevel ?? cv.languageLevel
+        if (arabicLevelFilter === 'WEAK') return arabicLevel === null || arabicLevel === undefined
+        if (arabicLevelFilter === 'NO') return arabicLevel === 'NO'
         return arabicLevel === arabicLevelFilter
       })()
 
       // فلتر اللغة الإنجليزية - يعمل مع قاعدة البيانات  
       const matchesEnglishLevel = englishLevelFilter === 'ALL' || (() => {
-        const englishLevel = cv.englishLevel || 'NO'
+        const englishLevel = cv.englishLevel
+        if (englishLevelFilter === 'WEAK') return englishLevel === null || englishLevel === undefined
+        if (englishLevelFilter === 'NO') return englishLevel === 'NO'
         return englishLevel === englishLevelFilter
       })()
 
       // فلتر الديانة
       const matchesReligion = religionFilter === 'ALL' || (() => {
+// ...
         if (!cv.religion) return false
         const religion = cv.religion.toUpperCase()
         switch (religionFilter) {
@@ -711,7 +730,7 @@ export default function sales2Page() {
       const matchesDriving = drivingFilter === 'ALL' || cv.driving === drivingFilter
 
       return matchesSearch && matchesStatus && matchesPosition && matchesNationality && 
-             matchesAge && matchesSkill && matchesArabicLevel && 
+             excludeDriversFromNationality && matchesAge && matchesSkill && matchesArabicLevel && 
              matchesEnglishLevel && matchesReligion && matchesEducation &&
              matchesContractPeriod && matchesPassportStatus && matchesHeight &&
              matchesWeight && matchesChildren && matchesLocation && matchesDriving
@@ -809,10 +828,28 @@ export default function sales2Page() {
           return position === value || position.includes(value)
           
         case 'arabicLevel':
-          return (cv.arabicLevel ?? cv.languageLevel ?? 'NO') === filterValue
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          const positionArabic = (cv.position || '').trim()
+          const isDriverArabic = positionArabic.includes('سائق') || positionArabic.toLowerCase().includes('driver')
+          const isServiceArabic = positionArabic.includes('نقل خدمات') || positionArabic.includes('نقل الخدمات')
+          if (isDriverArabic || isServiceArabic) return false
+          
+          const arabicLevel = cv.arabicLevel ?? cv.languageLevel
+          if (filterValue === 'WEAK') return arabicLevel === null || arabicLevel === undefined
+          if (filterValue === 'NO') return arabicLevel === 'NO'
+          return arabicLevel === filterValue
           
         case 'englishLevel':
-          return (cv.englishLevel ?? 'NO') === filterValue
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          const positionEnglish = (cv.position || '').trim()
+          const isDriverEnglish = positionEnglish.includes('سائق') || positionEnglish.toLowerCase().includes('driver')
+          const isServiceEnglish = positionEnglish.includes('نقل خدمات') || positionEnglish.includes('نقل الخدمات')
+          if (isDriverEnglish || isServiceEnglish) return false
+          
+          const englishLevel = cv.englishLevel
+          if (filterValue === 'WEAK') return englishLevel === null || englishLevel === undefined
+          if (filterValue === 'NO') return englishLevel === 'NO'
+          return englishLevel === filterValue
           
         case 'education':
           const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase()
@@ -1385,6 +1422,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       setNationalityFilter('ALL');
                     } else {
                       setNationalityFilter(filterKey);
+                      setPositionFilter('ALL'); // إلغاء فلتر الوظيفة
                     }
                   }}
                   className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
@@ -1423,6 +1461,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   setPositionFilter('ALL');
                 } else {
                   setPositionFilter('سائق');
+                  setNationalityFilter('ALL'); // إلغاء فلتر الجنسية
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
@@ -1460,6 +1499,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   setPositionFilter('ALL');
                 } else {
                   setPositionFilter('نقل خدمات');
+                  setNationalityFilter('ALL'); // إلغاء فلتر الجنسية
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
@@ -1689,7 +1729,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     <option value="ALL">جميع المستويات ({cvs.length})</option>
                     <option value="YES">ممتاز ({getCountForFilter('arabicLevel', 'YES')})</option>
                     <option value="WILLING">جيد ({getCountForFilter('arabicLevel', 'WILLING')})</option>
-                    <option value="NO">ضعيف ({getCountForFilter('arabicLevel', 'NO')})</option>
+                    <option value="WEAK">ضعيف ({getCountForFilter('arabicLevel', 'WEAK')})</option>
+                    <option value="NO">لا ({getCountForFilter('arabicLevel', 'NO')})</option>
                   </select>
                 </div>
 
@@ -1705,7 +1746,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     <option value="ALL">جميع المستويات ({cvs.length})</option>
                     <option value="YES">ممتاز ({getCountForFilter('englishLevel', 'YES')})</option>
                     <option value="WILLING">جيد ({getCountForFilter('englishLevel', 'WILLING')})</option>
-                    <option value="NO">ضعيف ({getCountForFilter('englishLevel', 'NO')})</option>
+                    <option value="WEAK">ضعيف ({getCountForFilter('englishLevel', 'WEAK')})</option>
+                    <option value="NO">لا ({getCountForFilter('englishLevel', 'NO')})</option>
                   </select>
                 </div>
 

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle, RefreshCw, AlertCircle, XCircle, Loader2 } from 'lucide-react'
+import { CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react'
+import SmoothProgressBar from './SmoothProgressBar'
 
 interface ProgressStep {
   id: string
@@ -27,8 +28,17 @@ export default function SmartImportProgress({
 
   useEffect(() => {
     const completedSteps = steps.filter(step => step.status === 'completed').length
+    const processingSteps = steps.filter(step => step.status === 'processing').length
     const totalSteps = steps.length
-    setProgress((completedSteps / totalSteps) * 100)
+    
+    // حساب التقدم بشكل أكثر دقة
+    // كل خطوة مكتملة = 100% من حصتها
+    // كل خطوة قيد المعالجة = 50% من حصتها
+    const stepValue = 100 / totalSteps
+    const completedValue = completedSteps * stepValue
+    const processingValue = processingSteps * (stepValue * 0.5)
+    
+    setProgress(completedValue + processingValue)
   }, [steps])
 
   if (!isVisible) return null
@@ -77,16 +87,13 @@ export default function SmartImportProgress({
 
         {/* Progress Bar */}
         <div className="mb-6">
-          <div className="flex justify-between text-sm text-muted-foreground mb-2">
-            <span>التقدم</span>
-            <span className="font-semibold text-foreground">{Math.round(progress)}%</span>
-          </div>
-          <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-primary to-primary/80 h-3 rounded-full transition-all duration-300 ease-out shadow-sm"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          <SmoothProgressBar 
+            targetProgress={progress}
+            duration={500}
+            showPercentage={true}
+            height="12px"
+            color="bg-gradient-to-r from-primary to-primary/80"
+          />
         </div>
 
         {/* Steps */}

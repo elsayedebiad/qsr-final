@@ -154,8 +154,8 @@ export class GoogleSheetsDemoService {
       height: normalizedData.height || null,
       complexion: normalizedData.complexion || null,
       age: parseInt(normalizedData.age) || null,
-      englishLevel: this.mapSkillLevel(normalizedData.englishLevel),
-      arabicLevel: this.mapSkillLevel(normalizedData.arabicLevel),
+      englishLevel: this.mapLanguageLevel(normalizedData.englishLevel),
+      arabicLevel: this.mapLanguageLevel(normalizedData.arabicLevel),
       babySitting: this.mapSkillLevel(normalizedData.babySitting),
       childrenCare: this.mapSkillLevel(normalizedData.childrenCare),
       tutoring: this.mapSkillLevel(normalizedData.tutoring),
@@ -199,9 +199,54 @@ export class GoogleSheetsDemoService {
       'نعم': 'YES',
       'لا': 'NO',
       'مستعد': 'WILLING',
-      'مستعدة': 'WILLING'
+      'مستعدة': 'WILLING',
+      'مستعدة للتعلم': 'WILLING'
     }
     return levelMap[level] || 'NO'
+  }
+
+  // تحويل مستوى اللغة (العربية والإنجليزية)
+  private mapLanguageLevel(level: string): string {
+    if (!level) return 'NONE'
+    
+    const normalizedLevel = level.toString().trim().toLowerCase()
+    
+    // خريطة تحويل القيم العربية
+    const arabicLevelMap: { [key: string]: string } = {
+      'ممتاز': 'YES',
+      'جيد': 'WILLING',
+      'ضعيف': 'NO',
+      'لا': 'NONE',
+      'نعم': 'YES',
+      'مستعد': 'WILLING',
+      'مستعدة': 'WILLING',
+      'مستعدة للتعلم': 'WILLING'
+    }
+    
+    // خريطة تحويل القيم الإنجليزية
+    const englishLevelMap: { [key: string]: string } = {
+      'excellent': 'YES',
+      'good': 'WILLING',
+      'weak': 'NO',
+      'poor': 'NO',
+      'no': 'NONE',
+      'none': 'NONE',
+      'yes': 'YES',
+      'willing': 'WILLING'
+    }
+    
+    // البحث في القيم العربية أولاً
+    if (arabicLevelMap[level]) {
+      return arabicLevelMap[level]
+    }
+    
+    // ثم البحث في القيم الإنجليزية
+    if (englishLevelMap[normalizedLevel]) {
+      return englishLevelMap[normalizedLevel]
+    }
+    
+    // إذا لم توجد قيمة، نعتبرها "لا"
+    return 'NONE'
   }
 
   // تحويل الأولوية
