@@ -724,24 +724,18 @@ const [englishLevelFilter, setEnglishLevelFilter] = useState<string>('ALL')
     return Array.from(new Set(positions)).sort()
   }, [cvs])
 
-  // استخراج سنوات الخبرة الفريدة من البيانات
+  // خيارات الخبرة المنظمة والثابتة
   const uniqueExperiences = useMemo(() => {
-    const experiences = cvs
-      .map(cv => cv.experience)
-      .filter((exp): exp is string => !!exp && exp.trim() !== '')
-      .map(exp => exp.trim())
+    return [
+      'لا يوجد',
+      'سنة واحدة', 
+      'سنتين',
+      '3 سنوات',
+      'أكثر من 3 سنوات'
+    ]
+  }, [])
 
-    // إزالة التكرارات وترتيب بالأرقام
-    const unique = Array.from(new Set(experiences))
-    return unique.sort((a, b) => {
-      // استخراج الرقم من النص (مثلاً "2 سنة" => 2)
-      const numA = parseInt(a.match(/\d+/)?.[0] || '0')
-      const numB = parseInt(b.match(/\d+/)?.[0] || '0')
-      return numA - numB
-    })
-  }, [cvs])
-
-  // استخراج مستويات التعليم الفريدة من البيانات
+  // استخراج مستويات التعليم الفريقة من البيانات
   const uniqueEducationLevels = useMemo(() => {
     const educations = cvs
       .map(cv => cv.educationLevel)

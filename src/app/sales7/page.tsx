@@ -583,41 +583,81 @@ export default function Sales1Page() {
       }
       const matchesExperience = (() => {
         if (experienceFilter === 'ALL') return true
-        const cvNum = toYears(cv.experience)
-        const filterNum = toYears(experienceFilter)
-        if (cvNum != null && filterNum != null) return cvNum === filterNum
-        const norm = (x: any) => String(x ?? '').trim().toLowerCase()
-        return norm(cv.experience) === norm(experienceFilter)
+        
+        const experience = cv.experience || ''
+        const cleaned = experience.trim().toLowerCase()
+        
+        // استخراج الرقم من النص
+        const extractYears = (text: string): number => {
+          const match = text.match(/\d+/)
+          return match ? parseInt(match[0]) : 0
+        }
+        
+        const years = extractYears(cleaned)
+        
+        switch (experienceFilter) {
+          case 'لا يوجد':
+            return years === 0 || cleaned.includes('لا يوجد') || cleaned.includes('لا') || cleaned.includes('بدون')
+          
+          case 'سنة واحدة':
+            return years === 1 || cleaned.includes('سنة واحدة') || cleaned.includes('واحدة')
+          
+          case 'سنتين':
+            return years === 2 || cleaned.includes('سنتين') || cleaned.includes('اثنين')
+          
+          case '3 سنوات':
+            return years === 3 || cleaned.includes('ثلاث') || cleaned.includes('3')
+          
+          case 'أكثر من 3 سنوات':
+            return years > 3 || cleaned.includes('خمس') || cleaned.includes('5') || 
+                   cleaned.includes('أربع') || cleaned.includes('4') || 
+                   cleaned.includes('ست') || cleaned.includes('6') ||
+                   cleaned.includes('سبع') || cleaned.includes('7') ||
+                   cleaned.includes('أكثر') || cleaned.includes('عديد')
+          
+          default:
+            return false
+        }
       })()
 
-      // فلتر اللغة العربية
+      // فلتر اللغة العربية - منطق محسّن وواضح
       const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
         const arabicLevel = cv.arabicLevel || 'NO'
         
-        console.log(`CV ${cv.id}: Arabic level = ${arabicLevel}, Filter = ${arabicLevelFilter}`)
-        
-        // فلترة دقيقة حسب المستوى المطلوب
-        if (arabicLevelFilter === 'لا' && arabicLevel === 'NO') return true
-        if (arabicLevelFilter === 'ضعيف' && arabicLevel === 'NO') return true
-        if (arabicLevelFilter === 'جيد' && (arabicLevel === 'YES' || arabicLevel === 'WILLING')) return true
-        if (arabicLevelFilter === 'ممتاز' && arabicLevel === 'YES') return true
-        
-        return false
+        // منطق فلترة واضح ومباشر
+        switch (arabicLevelFilter) {
+          case 'لا':
+            return arabicLevel === 'NO'
+          case 'ضعيف':
+            return arabicLevel === 'NO'
+          case 'جيد':
+            // جيد يشمل WILLING فقط (متوسط)
+            return arabicLevel === 'WILLING'
+          case 'ممتاز':
+            return arabicLevel === 'YES'
+          default:
+            return false
+        }
       })()
 
-      // فلتر اللغة الإنجليزية
+      // فلتر اللغة الإنجليزية - منطق محسّن وواضح
       const matchesEnglishLevel = englishLevelFilter === 'ALL' || (() => {
         const englishLevel = cv.englishLevel || 'NO'
         
-        console.log(`CV ${cv.id}: English level = ${englishLevel}, Filter = ${englishLevelFilter}`)
-        
-        // فلترة دقيقة حسب المستوى المطلوب
-        if (englishLevelFilter === 'لا' && englishLevel === 'NO') return true
-        if (englishLevelFilter === 'ضعيف' && englishLevel === 'NO') return true
-        if (englishLevelFilter === 'جيد' && (englishLevel === 'YES' || englishLevel === 'WILLING')) return true
-        if (englishLevelFilter === 'ممتاز' && englishLevel === 'YES') return true
-        
-        return false
+        // منطق فلترة واضح ومباشر
+        switch (englishLevelFilter) {
+          case 'لا':
+            return englishLevel === 'NO'
+          case 'ضعيف':
+            return englishLevel === 'NO'
+          case 'جيد':
+            // جيد يشمل WILLING فقط (متوسط)
+            return englishLevel === 'WILLING'
+          case 'ممتاز':
+            return englishLevel === 'YES'
+          default:
+            return false
+        }
       })()
 
       // فلتر الديانة
@@ -724,22 +764,16 @@ export default function Sales1Page() {
     return Array.from(new Set(positions)).sort()
   }, [cvs])
 
-  // استخراج سنوات الخبرة الفريدة من البيانات
+  // خيارات الخبرة المنظمة والثابتة
   const uniqueExperiences = useMemo(() => {
-    const experiences = cvs
-      .map(cv => cv.experience)
-      .filter((exp): exp is string => !!exp && exp.trim() !== '')
-      .map(exp => exp.trim())
-    
-    // إزالة التكرارات وترتيب بالأرقام
-    const unique = Array.from(new Set(experiences))
-    return unique.sort((a, b) => {
-      // استخراج الرقم من النص (مثلاً "2 سنة" => 2)
-      const numA = parseInt(a.match(/\d+/)?.[0] || '0')
-      const numB = parseInt(b.match(/\d+/)?.[0] || '0')
-      return numA - numB
-    })
-  }, [cvs])
+    return [
+      'لا يوجد',
+      'سنة واحدة', 
+      'سنتين',
+      '3 سنوات',
+      'أكثر من 3 سنوات'
+    ]
+  }, [])
 
   // استخراج مستويات التعليم الفريدة من البيانات
   const uniqueEducationLevels = useMemo(() => {
@@ -1786,8 +1820,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   >
                     <option value="ALL">الكل ({cvs.length})</option>
                     <option value="لا">❌ لا ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'NO').length})</option>
-                    <option value="ضعيف">⚠️ ضعيف ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'NO').length})</option>
-                    <option value="جيد">✅ جيد ({cvs.filter(cv => { const lvl = (cv.arabicLevel || 'NO'); return lvl === 'YES' || lvl === 'WILLING' }).length})</option>
+                    <option value="ضعيف">⚠️ ضعيف (0)</option>
+                    <option value="جيد">✅ جيد ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'WILLING').length})</option>
                     <option value="ممتاز">⭐ ممتاز ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'YES').length})</option>
                   </select>
                 </div>
@@ -1801,7 +1835,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   >
                     <option value="ALL">الكل ({cvs.length})</option>
                     <option value="لا">❌ لا ({cvs.filter(cv => (cv.englishLevel || 'NO') === 'NO').length})</option>
-                    <option value="ضعيف">⚠️ ضعيف ({cvs.filter(cv => (cv.englishLevel || 'NO') === 'NO').length})</option>
+                    <option value="ضعيف">⚠️ ضعيف (0)</option>
                     <option value="جيد">✅ جيد ({cvs.filter(cv => (cv.englishLevel || 'NO') === 'WILLING').length})</option>
                     <option value="ممتاز">⭐ ممتاز ({cvs.filter(cv => (cv.englishLevel || 'NO') === 'YES').length})</option>
                   </select>
@@ -1831,11 +1865,50 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     onChange={(e) => setExperienceFilter(e.target.value)}
                   >
                     <option value="ALL">الكل ({cvs.length})</option>
-                    {uniqueExperiences.map(exp => (
-                      <option key={exp} value={exp}>
-                        {exp} ({cvs.filter(cv => cv.experience === exp).length})
-                      </option>
-                    ))}
+                    {uniqueExperiences.map(exp => {
+                      // حساب العدد الصحيح لكل مستوى خبرة باستخدام نفس منطق الفلترة
+                      const count = cvs.filter(cv => {
+                        const experience = cv.experience || ''
+                        const cleaned = experience.trim().toLowerCase()
+                        
+                        const extractYears = (text: string): number => {
+                          const match = text.match(/\d+/)
+                          return match ? parseInt(match[0]) : 0
+                        }
+                        
+                        const years = extractYears(cleaned)
+                        
+                        switch (exp) {
+                          case 'لا يوجد':
+                            return years === 0 || cleaned.includes('لا يوجد') || cleaned.includes('لا') || cleaned.includes('بدون')
+                          
+                          case 'سنة واحدة':
+                            return years === 1 || cleaned.includes('سنة واحدة') || cleaned.includes('واحدة')
+                          
+                          case 'سنتين':
+                            return years === 2 || cleaned.includes('سنتين') || cleaned.includes('اثنين')
+                          
+                          case '3 سنوات':
+                            return years === 3 || cleaned.includes('ثلاث') || cleaned.includes('3')
+                          
+                          case 'أكثر من 3 سنوات':
+                            return years > 3 || cleaned.includes('خمس') || cleaned.includes('5') || 
+                                   cleaned.includes('أربع') || cleaned.includes('4') || 
+                                   cleaned.includes('ست') || cleaned.includes('6') ||
+                                   cleaned.includes('سبع') || cleaned.includes('7') ||
+                                   cleaned.includes('أكثر') || cleaned.includes('عديد')
+                          
+                          default:
+                            return false
+                        }
+                      }).length
+                      
+                      return (
+                        <option key={exp} value={exp}>
+                          {exp} ({count})
+                        </option>
+                      )
+                    })}
                   </select>
                 </div>
 

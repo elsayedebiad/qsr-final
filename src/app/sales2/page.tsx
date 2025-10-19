@@ -590,34 +590,44 @@ export default function Sales1Page() {
         return norm(cv.experience) === norm(experienceFilter)
       })()
 
-      // فلتر اللغة العربية
+      // فلتر اللغة العربية - منطق محسّن وواضح
       const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
         const arabicLevel = cv.arabicLevel || 'NO'
         
-        console.log(`CV ${cv.id}: Arabic level = ${arabicLevel}, Filter = ${arabicLevelFilter}`)
-        
-        // فلترة دقيقة حسب المستوى المطلوب
-        if (arabicLevelFilter === 'لا' && arabicLevel === 'NO') return true
-        if (arabicLevelFilter === 'ضعيف' && arabicLevel === 'NO') return true
-        if (arabicLevelFilter === 'جيد' && (arabicLevel === 'YES' || arabicLevel === 'WILLING')) return true
-        if (arabicLevelFilter === 'ممتاز' && arabicLevel === 'YES') return true
-        
-        return false
+        // منطق فلترة واضح ومباشر
+        switch (arabicLevelFilter) {
+          case 'لا':
+            return arabicLevel === 'NO'
+          case 'ضعيف':
+            return arabicLevel === 'NO'
+          case 'جيد':
+            // جيد يشمل WILLING فقط (متوسط)
+            return arabicLevel === 'WILLING'
+          case 'ممتاز':
+            return arabicLevel === 'YES'
+          default:
+            return false
+        }
       })()
 
-      // فلتر اللغة الإنجليزية
+      // فلتر اللغة الإنجليزية - منطق محسّن وواضح
       const matchesEnglishLevel = englishLevelFilter === 'ALL' || (() => {
         const englishLevel = cv.englishLevel || 'NO'
         
-        console.log(`CV ${cv.id}: English level = ${englishLevel}, Filter = ${englishLevelFilter}`)
-        
-        // فلترة دقيقة حسب المستوى المطلوب
-        if (englishLevelFilter === 'لا' && englishLevel === 'NO') return true
-        if (englishLevelFilter === 'ضعيف' && englishLevel === 'NO') return true
-        if (englishLevelFilter === 'جيد' && (englishLevel === 'YES' || englishLevel === 'WILLING')) return true
-        if (englishLevelFilter === 'ممتاز' && englishLevel === 'YES') return true
-        
-        return false
+        // منطق فلترة واضح ومباشر
+        switch (englishLevelFilter) {
+          case 'لا':
+            return englishLevel === 'NO'
+          case 'ضعيف':
+            return englishLevel === 'NO'
+          case 'جيد':
+            // جيد يشمل WILLING فقط (متوسط)
+            return englishLevel === 'WILLING'
+          case 'ممتاز':
+            return englishLevel === 'YES'
+          default:
+            return false
+        }
       })()
 
       // فلتر الديانة
@@ -641,7 +651,15 @@ export default function Sales1Page() {
       })()
 
       // فلتر فترة العقد
-      const matchesContractPeriod = contractPeriodFilter === 'ALL' || cv.contractPeriod === contractPeriodFilter
+      const matchesContractPeriod = contractPeriodFilter === 'ALL' || (() => {
+        if (!cv.contractPeriod) return false
+        const period = cv.contractPeriod.toLowerCase()
+        switch (contractPeriodFilter) {
+          case 'سنة': return period.includes('سنة') || period.includes('year')
+          case 'سنتين': return period.includes('سنتين') || period.includes('two years')
+          default: return cv.contractPeriod === contractPeriodFilter
+        }
+      })()
 
       // فلتر حالة الجواز
       const matchesPassportStatus = passportStatusFilter === 'ALL' || (() => {
@@ -724,22 +742,16 @@ export default function Sales1Page() {
     return Array.from(new Set(positions)).sort()
   }, [cvs])
 
-  // استخراج سنوات الخبرة الفريدة من البيانات
+  // خيارات الخبرة المنظمة والثابتة
   const uniqueExperiences = useMemo(() => {
-    const experiences = cvs
-      .map(cv => cv.experience)
-      .filter((exp): exp is string => !!exp && exp.trim() !== '')
-      .map(exp => exp.trim())
-    
-    // إزالة التكرارات وترتيب بالأرقام
-    const unique = Array.from(new Set(experiences))
-    return unique.sort((a, b) => {
-      // استخراج الرقم من النص (مثلاً "2 سنة" => 2)
-      const numA = parseInt(a.match(/\d+/)?.[0] || '0')
-      const numB = parseInt(b.match(/\d+/)?.[0] || '0')
-      return numA - numB
-    })
-  }, [cvs])
+    return [
+      'لا يوجد',
+      'سنة واحدة', 
+      'سنتين',
+      '3 سنوات',
+      'أكثر من 3 سنوات'
+    ]
+  }, [])
 
   // استخراج مستويات التعليم الفريدة من البيانات
   const uniqueEducationLevels = useMemo(() => {

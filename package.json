@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
-    "create-developer": "node scripts/create-developer-account.js"
+    "create-developer": "node scripts/create-developer-account.js",
+    "check-data": "node scripts/check-data.js",
+    "health-check": "curl -f http://localhost:3000/api/health || echo 'Health check failed'"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
