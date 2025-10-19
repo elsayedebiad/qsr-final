@@ -56,6 +56,11 @@ export default function ProfessionalProgressBar({
   animationStyle = 'smooth',
   showDetails = false
 }: ProfessionalProgressBarProps) {
+  // التأكد من أن targetProgress قيمة صالحة
+  const safeTargetProgress = isNaN(targetProgress) || !isFinite(targetProgress) 
+    ? 0 
+    : Math.max(0, Math.min(100, targetProgress))
+    
   const [displayProgress, setDisplayProgress] = useState(0)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [remainingTime, setRemainingTime] = useState<number | null>(null)
@@ -70,18 +75,18 @@ export default function ProfessionalProgressBar({
         setElapsedTime(elapsed)
         
         // حساب الوقت المتبقي بناءً على معدل التقدم
-        if (targetProgress > 0 && targetProgress < 100) {
-          const rate = targetProgress / elapsed
-          const remaining = Math.ceil((100 - targetProgress) / rate)
+        if (safeTargetProgress > 0 && safeTargetProgress < 100) {
+          const rate = safeTargetProgress / elapsed
+          const remaining = Math.ceil((100 - safeTargetProgress) / rate)
           setRemainingTime(remaining)
-        } else if (targetProgress >= 100) {
+        } else if (safeTargetProgress >= 100) {
           setRemainingTime(0)
         }
       }, 1000)
       
       return () => clearInterval(timer)
     }
-  }, [showTimeRemaining, startTime, targetProgress])
+  }, [showTimeRemaining, startTime, safeTargetProgress])
 
   // أنيميشن التقدم السلس
   useEffect(() => {
@@ -101,7 +106,7 @@ export default function ProfessionalProgressBar({
         easedProgress = easeOutElastic(progress)
       }
       
-      const currentValue = startValue + (targetProgress - startValue) * easedProgress
+      const currentValue = startValue + (safeTargetProgress - startValue) * easedProgress
       setDisplayProgress(Math.min(currentValue, 100))
       
       if (progress < 1) {
@@ -116,7 +121,7 @@ export default function ProfessionalProgressBar({
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [targetProgress, animationStyle, displayProgress])
+  }, [safeTargetProgress, animationStyle, displayProgress])
 
   // دوال Easing
   const easeInOutCubic = (t: number): number => {
@@ -202,7 +207,7 @@ export default function ProfessionalProgressBar({
         
         {showPercentage && !indeterminate && (
           <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
-            {Math.round(displayProgress)}%
+            {isNaN(displayProgress) || !isFinite(displayProgress) ? 0 : Math.round(displayProgress)}%
           </span>
         )}
       </div>
@@ -219,7 +224,7 @@ export default function ProfessionalProgressBar({
             // شريط التقدم العادي
             <div
               className={`h-full ${getColorClasses()} transition-all duration-300 ease-out relative overflow-hidden`}
-              style={{ width: `${displayProgress}%` }}
+              style={{ width: `${isNaN(displayProgress) || !isFinite(displayProgress) ? 0 : Math.max(0, Math.min(100, displayProgress))}%` }}
             >
               {/* تأثير اللمعان */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer" />

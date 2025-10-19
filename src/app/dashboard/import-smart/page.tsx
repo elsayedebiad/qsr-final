@@ -334,19 +334,27 @@ export default function SmartImportPage() {
       const progressIncrement = totalRecords > 100 ? 2 : totalRecords > 50 ? 3 : 5
       
       progressInterval = setInterval(() => {
-        // زيادة التقدم تدريجياً
-        currentProgress += progressIncrement + Math.random() * 2
+        // زيادة التقدم تدريجياً مع التأكد من أن القيمة صالحة
+        const increment = progressIncrement + Math.random() * 2
+        currentProgress = Math.min(currentProgress + increment, 95)
+        
+        // التأكد من أن القيمة رقمية صالحة
+        if (isNaN(currentProgress) || !isFinite(currentProgress)) {
+          currentProgress = 0
+        }
         
         // معالجة السجلات الجديدة (0-45%)
         if (currentProgress <= 45 && analysisResult.newRecords > 0) {
-          stepProgress = (currentProgress / 45) * analysisResult.newRecords
-          setExecutionSteps(prev => prev.map(s => 
-            s.id === 'new' ? { 
-              ...s, 
-              status: currentProgress >= 45 ? 'completed' : 'processing',
-              details: `معالجة ${Math.floor(stepProgress)} من ${analysisResult.newRecords}`
-            } : s
-          ))
+          stepProgress = Math.max(0, (currentProgress / 45) * analysisResult.newRecords)
+          if (!isNaN(stepProgress) && isFinite(stepProgress)) {
+            setExecutionSteps(prev => prev.map(s => 
+              s.id === 'new' ? { 
+                ...s, 
+                status: currentProgress >= 45 ? 'completed' : 'processing',
+                details: `معالجة ${Math.floor(stepProgress)} من ${analysisResult.newRecords}`
+              } : s
+            ))
+          }
         }
         
         // معالجة السجلات المحدثة (45-85%)
@@ -357,15 +365,17 @@ export default function SmartImportPage() {
             ))
           }
           
-          stepProgress = ((currentProgress - 45) / 40) * analysisResult.updatedRecords
-          setCurrentExecutionStep('update')
-          setExecutionSteps(prev => prev.map(s => 
-            s.id === 'update' ? { 
-              ...s, 
-              status: currentProgress >= 85 ? 'completed' : 'processing',
-              details: `تحديث ${Math.floor(stepProgress)} من ${analysisResult.updatedRecords}`
-            } : s
-          ))
+          stepProgress = Math.max(0, ((currentProgress - 45) / 40) * analysisResult.updatedRecords)
+          if (!isNaN(stepProgress) && isFinite(stepProgress)) {
+            setCurrentExecutionStep('update')
+            setExecutionSteps(prev => prev.map(s => 
+              s.id === 'update' ? { 
+                ...s, 
+                status: currentProgress >= 85 ? 'completed' : 'processing',
+                details: `تحديث ${Math.floor(stepProgress)} من ${analysisResult.updatedRecords}`
+              } : s
+            ))
+          }
         }
         
         // الإنهاء (85-95%)
@@ -381,12 +391,13 @@ export default function SmartImportPage() {
           ))
         }
         
-        // إيقاف عند 95% وانتظار النتيجة الفعلية
-        if (currentProgress > 95) {
-          currentProgress = 95
+        // التأكد من أن القيمة النهائية صالحة
+        const finalProgress = Math.max(0, Math.min(currentProgress, 95))
+        if (!isNaN(finalProgress) && isFinite(finalProgress)) {
+          setExecutionProgress(finalProgress)
+        } else {
+          setExecutionProgress(0)
         }
-        
-        setExecutionProgress(Math.min(currentProgress, 95))
       }, 300)
 
       // انتظار النتيجة الفعلية

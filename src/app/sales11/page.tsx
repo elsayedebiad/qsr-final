@@ -702,6 +702,7 @@ export default function Sales11Page() {
       return matchesSearch && matchesStatus && matchesPosition && matchesNationality && 
              excludeDriversFromNationality && matchesAge && matchesSkill && matchesArabicLevel && 
              matchesEnglishLevel && matchesReligion && matchesEducation && matchesExperience &&
+             matchesMaritalStatus &&
              matchesContractPeriod && matchesPassportStatus && matchesHeight &&
              matchesWeight && matchesChildren && matchesLocation && matchesDriving
     })
@@ -773,6 +774,30 @@ export default function Sales11Page() {
   // دوال حساب عدد البيانات لكل فلتر
   const getCountForFilter = useCallback((filterType: string, filterValue: string): number => {
     if (!cvs || cvs.length === 0) return 0
+    
+    // معالجة خاصة لقيمة ALL لحساب العدد الفعلي بناءً على نوع الفلتر
+    if (filterValue === 'ALL') {
+      switch (filterType) {
+        case 'arabicLevel':
+        case 'englishLevel':
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          return cvs.filter(cv => {
+            const position = (cv.position || '').trim()
+            const isDriver = position.includes('سائق') || position.toLowerCase().includes('driver')
+            const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
+            return !isDriver && !isService
+          }).length
+        case 'education':
+        case 'religion':
+        case 'position':
+        case 'nationality':
+        case 'age':
+        case 'maritalStatus':
+          return cvs.length
+        default:
+          return cvs.length
+      }
+    }
     
     return cvs.filter(cv => {
       switch (filterType) {
@@ -863,6 +888,9 @@ export default function Sales11Page() {
           }
           const skillKey = skillMap[filterValue]
           return skillKey ? (cv[skillKey] === 'YES' || cv[skillKey] === 'WILLING') : false
+          
+        case 'maritalStatus':
+          return cv.maritalStatus === filterValue
           
         default:
           return false
@@ -1566,6 +1594,18 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 <option value="40-50">40-50 سنة ({getCountForFilter('age', '40-50')})</option>
               </select>
 
+              <select
+                className="flex-1 min-w-[160px] px-4 py-2.5 bg-pink-50 border border-pink-300 rounded-lg text-sm font-medium text-pink-700 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
+                value={maritalStatusFilter}
+                onChange={(e) => setMaritalStatusFilter(e.target.value)}
+              >
+                <option value="ALL">جميع الحالات ({getCountForFilter('maritalStatus', 'ALL')})</option>
+                <option value="SINGLE">أعزب/عزباء ({getCountForFilter('maritalStatus', 'SINGLE')})</option>
+                <option value="MARRIED">متزوج/متزوجة ({getCountForFilter('maritalStatus', 'MARRIED')})</option>
+                <option value="DIVORCED">مطلق/مطلقة ({getCountForFilter('maritalStatus', 'DIVORCED')})</option>
+                <option value="WIDOWED">أرمل/أرملة ({getCountForFilter('maritalStatus', 'WIDOWED')})</option>
+              </select>
+
               {/* زر المزيد من الفلاتر */}
               <button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -1784,6 +1824,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     setSkillFilters([])
                     setPositionFilter('ALL')
                     setAgeFilter('ALL')
+                    setMaritalStatusFilter('ALL')
                     setArabicLevelFilter('ALL')
                     setEnglishLevelFilter('ALL')
                     setEducationFilter('ALL')

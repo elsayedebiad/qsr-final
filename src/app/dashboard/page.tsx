@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { CVStatus, Priority, SkillLevel } from '@prisma/client'
@@ -305,9 +305,12 @@ export default function CVsPage() {
     if (ageFilter !== 'ALL') {
       filtered = filtered.filter((cv) => {
         if (!cv.age) return false
-        if (ageFilter === '21-30') return cv.age >= 21 && cv.age <= 30
-        if (ageFilter === '30-40') return cv.age >= 30 && cv.age <= 40
-        if (ageFilter === '40-50') return cv.age >= 40 && cv.age <= 50
+        if (ageFilter === '20-25') return cv.age >= 20 && cv.age <= 25
+        if (ageFilter === '25-30') return cv.age >= 25 && cv.age <= 30
+        if (ageFilter === '30-35') return cv.age >= 30 && cv.age <= 35
+        if (ageFilter === '35-40') return cv.age >= 35 && cv.age <= 40
+        if (ageFilter === '40-45') return cv.age >= 40 && cv.age <= 45
+        if (ageFilter === '45+') return cv.age >= 45
         return true
       })
     }
@@ -392,6 +395,123 @@ export default function CVsPage() {
 
     setFilteredCvs(filtered)
   }
+
+  const getCountForFilter = useCallback((filterType: string, filterValue: string): number => {
+    if (!cvs || cvs.length === 0) return 0
+    
+    // معالجة خاصة لقيمة ALL
+    if (filterValue === 'ALL') {
+      return cvs.length
+    }
+    
+    return cvs.filter(cv => {
+      switch (filterType) {
+        case 'religion':
+          if (filterValue === 'مسلمة') return cv.religion?.includes('مسلم') || cv.religion?.includes('MUSLIM')
+          if (filterValue === 'مسيحية') return cv.religion?.includes('مسيحي') || cv.religion?.includes('CHRISTIAN')
+          if (filterValue === 'أخرى') return cv.religion && !cv.religion.includes('مسلم') && !cv.religion.includes('مسيحي')
+          return false
+          
+        case 'nationality':
+          const nat = cv.nationality?.toLowerCase()
+          const val = filterValue.toLowerCase()
+          return nat === val || nat?.includes(val)
+          
+        case 'age':
+          if (!cv.age) return false
+          if (filterValue === '20-25') return cv.age >= 20 && cv.age <= 25
+          if (filterValue === '25-30') return cv.age >= 25 && cv.age <= 30
+          if (filterValue === '30-35') return cv.age >= 30 && cv.age <= 35
+          if (filterValue === '35-40') return cv.age >= 35 && cv.age <= 40
+          if (filterValue === '40-45') return cv.age >= 40 && cv.age <= 45
+          if (filterValue === '45+') return cv.age >= 45
+          return false
+          
+        case 'maritalStatus':
+          return cv.maritalStatus === filterValue
+          
+        case 'skill':
+          const skillMap: { [key: string]: keyof typeof cv } = {
+            'babySitting': 'babySitting',
+            'childrenCare': 'childrenCare',
+            'cleaning': 'cleaning',
+            'arabicCooking': 'arabicCooking',
+            'driving': 'driving',
+            'washing': 'washing',
+            'ironing': 'ironing'
+          }
+          const skillKey = skillMap[filterValue]
+          return skillKey ? (cv[skillKey] === 'YES' || cv[skillKey] === 'WILLING') : false
+          
+        case 'language':
+          const level = cv.arabicLevel || cv.englishLevel
+          return level === filterValue
+          
+        case 'experience':
+          const exp = (cv.experience || '').toLowerCase()
+          if (filterValue === '0-2' && (exp.includes('0') || exp.includes('1') || exp.includes('2') || exp === 'no' || exp === 'none')) return true
+          if (filterValue === '2-5' && (exp.includes('2') || exp.includes('3') || exp.includes('4') || exp.includes('5'))) return true
+          if (filterValue === '5-10' && (exp.includes('5') || exp.includes('6') || exp.includes('7') || exp.includes('8') || exp.includes('9') || exp.includes('10'))) return true
+          if (filterValue === '10+' && (exp.includes('10') || exp.includes('11') || exp.includes('12') || exp.includes('13') || exp.includes('14') || exp.includes('15'))) return true
+          return false
+          
+        case 'education':
+          const education = (cv.educationLevel || cv.education || '').toLowerCase()
+          if (filterValue === 'متعلم') return education.includes('نعم') || education.includes('yes') || education.includes('متعلم')
+          if (filterValue === 'غير متعلم') return education.includes('لا') || education.includes('no') || education.includes('غير') || education === ''
+          return false
+          
+        case 'salary':
+          const salary = parseInt(cv.monthlySalary || '0')
+          if (filterValue === '0-1000' && salary <= 1000) return true
+          if (filterValue === '1000-1500' && salary > 1000 && salary <= 1500) return true
+          if (filterValue === '1500-2000' && salary > 1500 && salary <= 2000) return true
+          if (filterValue === '2000+' && salary > 2000) return true
+          return false
+          
+        case 'contractPeriod':
+          const period = cv.contractPeriod || ''
+          if (filterValue === '1' && period.includes('1')) return true
+          if (filterValue === '2' && period.includes('2')) return true
+          if (filterValue === '3' && period.includes('3')) return true
+          if (filterValue === 'أكثر' && (period.includes('4') || period.includes('5'))) return true
+          return false
+          
+        case 'passportStatus':
+          const passport = (cv.passportStatus || '').toLowerCase()
+          if (filterValue === 'متوفر' && (passport.includes('متوفر') || passport.includes('available'))) return true
+          if (filterValue === 'غير متوفر' && (passport.includes('غير') || passport.includes('not'))) return true
+          if (filterValue === 'قيد الإنجاز' && (passport.includes('قيد') || passport.includes('processing'))) return true
+          return false
+          
+        case 'height':
+          const height = cv.height || 0
+          if (filterValue === '140-150' && height >= 140 && height <= 150) return true
+          if (filterValue === '150-160' && height >= 150 && height <= 160) return true
+          if (filterValue === '160-170' && height >= 160 && height <= 170) return true
+          if (filterValue === '170+' && height >= 170) return true
+          return false
+          
+        case 'weight':
+          const weight = cv.weight || 0
+          if (filterValue === '40-50' && weight >= 40 && weight <= 50) return true
+          if (filterValue === '50-60' && weight >= 50 && weight <= 60) return true
+          if (filterValue === '60-70' && weight >= 60 && weight <= 70) return true
+          if (filterValue === '70+' && weight >= 70) return true
+          return false
+          
+        case 'children':
+          const children = cv.children || 0
+          if (filterValue === 'NONE' && children === 0) return true
+          if (filterValue === 'FEW' && children >= 1 && children <= 2) return true
+          if (filterValue === 'MANY' && children > 2) return true
+          return false
+          
+        default:
+          return false
+      }
+    }).length
+  }, [cvs])
 
   const toggleCvSelection = (id: string) => {
     setSelectedCvs((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -1275,14 +1395,14 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             <div className="bg-card border border-border rounded-xl p-4 mb-6">
               <div className="flex flex-wrap gap-3">
                 <select
-                  className="flex-1 min-w-[160px] px-4 py-2.5 bg-muted border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+                  className="flex-1 min-w-[160px] px-4 py-2.5 bg-muted border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer transition-all hover:border-primary/50"
                   value={religionFilter}
                   onChange={(e) => setReligionFilter(e.target.value)}
                 >
-                  <option value="ALL">جميع الديانات</option>
-                  <option value="مسلمة">مسلمة</option>
-                  <option value="مسيحية">مسيحية</option>
-                  <option value="أخرى">أخرى</option>
+                  <option value="ALL">جميع الديانات ({getCountForFilter('religion', 'ALL')})</option>
+                  <option value="مسلمة">مسلمة ({getCountForFilter('religion', 'مسلمة')})</option>
+                  <option value="مسيحية">مسيحية ({getCountForFilter('religion', 'مسيحية')})</option>
+                  <option value="أخرى">أخرى ({getCountForFilter('religion', 'أخرى')})</option>
                 </select>
 
                 <select
@@ -1290,16 +1410,16 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   value={nationalityFilter}
                   onChange={(e) => setNationalityFilter(e.target.value)}
                 >
-                  <option value="ALL">جميع الجنسيات</option>
-                  <option value="فلبينية">فلبينية</option>
-                  <option value="هندية">هندية</option>
-                  <option value="بنغلاديشية">بنغلاديشية</option>
-                  <option value="إثيوبية">إثيوبية</option>
-                  <option value="كينية">كينية</option>
-                  <option value="أوغندية">أوغندية</option>
-                  <option value="نيبالية">نيبالية</option>
-                  <option value="سريلانكية">سريلانكية</option>
-                  <option value="إندونيسية">إندونيسية</option>
+                  <option value="ALL">جميع الجنسيات ({getCountForFilter('nationality', 'ALL')})</option>
+                  <option value="فلبينية">فلبينية ({getCountForFilter('nationality', 'فلبينية')})</option>
+                  <option value="هندية">هندية ({getCountForFilter('nationality', 'هندية')})</option>
+                  <option value="بنغلاديشية">بنغلاديشية ({getCountForFilter('nationality', 'بنغلاديشية')})</option>
+                  <option value="إثيوبية">إثيوبية ({getCountForFilter('nationality', 'إثيوبية')})</option>
+                  <option value="كينية">كينية ({getCountForFilter('nationality', 'كينية')})</option>
+                  <option value="أوغندية">أوغندية ({getCountForFilter('nationality', 'أوغندية')})</option>
+                  <option value="نيبالية">نيبالية ({getCountForFilter('nationality', 'نيبالية')})</option>
+                  <option value="سريلانكية">سريلانكية ({getCountForFilter('nationality', 'سريلانكية')})</option>
+                  <option value="إندونيسية">إندونيسية ({getCountForFilter('nationality', 'إندونيسية')})</option>
                 </select>
 
                 <select
@@ -1307,10 +1427,13 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   value={ageFilter}
                   onChange={(e) => setAgeFilter(e.target.value)}
                 >
-                  <option value="ALL">جميع الأعمار</option>
-                  <option value="21-30">21-30 سنة</option>
-                  <option value="30-40">30-40 سنة</option>
-                  <option value="40-50">40-50 سنة</option>
+                  <option value="ALL">جميع الأعمار ({getCountForFilter('age', 'ALL')})</option>
+                  <option value="20-25">20-25 سنة ({getCountForFilter('age', '20-25')})</option>
+                  <option value="25-30">25-30 سنة ({getCountForFilter('age', '25-30')})</option>
+                  <option value="30-35">30-35 سنة ({getCountForFilter('age', '30-35')})</option>
+                  <option value="35-40">35-40 سنة ({getCountForFilter('age', '35-40')})</option>
+                  <option value="40-45">40-45 سنة ({getCountForFilter('age', '40-45')})</option>
+                  <option value="45+">أكبر من 45 ({getCountForFilter('age', '45+')})</option>
                 </select>
 
                 {/* زر المزيد من الفلاتر */}
@@ -1343,15 +1466,15 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={skillFilter}
                       onChange={(e) => setSkillFilter(e.target.value)}
                     >
-                      <option value="ALL">جميع المهارات</option>
-                      <option value="babySitting">رعاية أطفال</option>
-                      <option value="childrenCare">عناية بالأطفال</option>
-                      <option value="cleaning">تنظيف</option>
-                      <option value="washing">غسيل</option>
-                      <option value="ironing">كي</option>
-                      <option value="arabicCooking">طبخ عربي</option>
-                      <option value="sewing">خياطة</option>
-                      <option value="driving">قيادة</option>
+                      <option value="ALL">جميع المهارات ({getCountForFilter('skill', 'ALL')})</option>
+                      <option value="babySitting">رعاية أطفال ({getCountForFilter('skill', 'babySitting')})</option>
+                      <option value="childrenCare">عناية بالأطفال ({getCountForFilter('skill', 'childrenCare')})</option>
+                      <option value="cleaning">التنظيف ({getCountForFilter('skill', 'cleaning')})</option>
+                      <option value="washing">الغسيل ({getCountForFilter('skill', 'washing')})</option>
+                      <option value="ironing">الكي ({getCountForFilter('skill', 'ironing')})</option>
+                      <option value="arabicCooking">الطبخ العربي ({getCountForFilter('skill', 'arabicCooking')})</option>
+                      <option value="sewing">الخياطة ({getCountForFilter('skill', 'sewing')})</option>
+                      <option value="driving">القيادة ({getCountForFilter('skill', 'driving')})</option>
                     </select>
                   </div>
 
@@ -1364,11 +1487,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={maritalStatusFilter}
                       onChange={(e) => setMaritalStatusFilter(e.target.value)}
                     >
-                      <option value="ALL">الكل</option>
-                      <option value="SINGLE">أعزب/عزباء</option>
-                      <option value="MARRIED">متزوج/متزوجة</option>
-                      <option value="DIVORCED">مطلق/مطلقة</option>
-                      <option value="WIDOWED">أرمل/أرملة</option>
+                      <option value="ALL">الكل ({getCountForFilter('maritalStatus', 'ALL')})</option>
+                      <option value="SINGLE">أعزب/عزباء ({getCountForFilter('maritalStatus', 'SINGLE')})</option>
+                      <option value="MARRIED">متزوج/متزوجة ({getCountForFilter('maritalStatus', 'MARRIED')})</option>
+                      <option value="DIVORCED">مطلق/مطلقة ({getCountForFilter('maritalStatus', 'DIVORCED')})</option>
+                      <option value="WIDOWED">أرمل/أرملة ({getCountForFilter('maritalStatus', 'WIDOWED')})</option>
                     </select>
                   </div>
 
@@ -1381,10 +1504,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={languageFilter}
                       onChange={(e) => setLanguageFilter(e.target.value)}
                     >
-                      <option value="ALL">جميع المستويات</option>
-                      <option value="EXCELLENT">ممتاز</option>
-                      <option value="GOOD">جيد</option>
-                      <option value="FAIR">متوسط</option>
+                      <option value="ALL">جميع المستويات ({getCountForFilter('language', 'ALL')})</option>
+                      <option value="YES">ممتاز ({getCountForFilter('language', 'YES')})</option>
+                      <option value="WILLING">جيد ({getCountForFilter('language', 'WILLING')})</option>
+                      <option value="NO">ضعيف ({getCountForFilter('language', 'NO')})</option>
                       <option value="POOR">ضعيف</option>
                     </select>
                   </div>
@@ -1398,17 +1521,17 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={experienceFilter}
                       onChange={(e) => setExperienceFilter(e.target.value)}
                     >
-                      <option value="ALL">جميع المستويات</option>
-                      <option value="0-1">أقل من سنة</option>
-                      <option value="1-3">1-3 سنوات</option>
-                      <option value="3-5">3-5 سنوات</option>
-                      <option value="5+">أكثر من 5 سنوات</option>
+                      <option value="ALL">جميع الخبرات ({getCountForFilter('experience', 'ALL')})</option>
+                      <option value="0-2">0-2 سنة ({getCountForFilter('experience', '0-2')})</option>
+                      <option value="2-5">2-5 سنوات ({getCountForFilter('experience', '2-5')})</option>
+                      <option value="5-10">5-10 سنوات ({getCountForFilter('experience', '5-10')})</option>
+                      <option value="10+">أكثر من 10 سنوات ({getCountForFilter('experience', '10+')})</option>
                     </select>
                   </div>
                 </div>
 
                 {/* صف إضافي للفلاتر الجديدة */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <label className="flex items-center text-sm font-semibold text-primary mb-2">
                       <BookOpen className="h-4 w-4 ml-2" /> المستوى التعليمي
@@ -1418,9 +1541,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={educationFilter}
                       onChange={(e) => setEducationFilter(e.target.value)}
                     >
-                      <option value="ALL">جميع المستويات</option>
-                      <option value="ابتدائي">ابتدائي</option>
-                      <option value="متوسط">متوسط</option>
+                      <option value="ALL">جميع المستويات ({getCountForFilter('education', 'ALL')})</option>
+                      <option value="متعلم">متعلم ({getCountForFilter('education', 'متعلم')})</option>
+                      <option value="غير متعلم">غير متعلم ({getCountForFilter('education', 'غير متعلم')})</option>
                       <option value="ثانوي">ثانوي</option>
                       <option value="جامعي">جامعي</option>
                       <option value="دراسات عليا">دراسات عليا</option>
@@ -1436,10 +1559,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={salaryFilter}
                       onChange={(e) => setSalaryFilter(e.target.value)}
                     >
-                      <option value="ALL">جميع الرواتب</option>
-                      <option value="LOW">أقل من 1000</option>
-                      <option value="MEDIUM">1000 - 2000</option>
-                      <option value="HIGH">أكثر من 2000</option>
+                      <option value="ALL">جميع الرواتب ({getCountForFilter('salary', 'ALL')})</option>
+                      <option value="0-1000">أقل من 1000 ({getCountForFilter('salary', '0-1000')})</option>
+                      <option value="1000-1500">1000-1500 ({getCountForFilter('salary', '1000-1500')})</option>
+                      <option value="1500-2000">1500-2000 ({getCountForFilter('salary', '1500-2000')})</option>
+                      <option value="2000+">أكثر من 2000 ({getCountForFilter('salary', '2000+')})</option>
                     </select>
                   </div>
 
@@ -1452,11 +1576,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={contractPeriodFilter}
                       onChange={(e) => setContractPeriodFilter(e.target.value)}
                     >
-                      <option value="ALL">جميع المدد</option>
-                      <option value="سنة">سنة واحدة</option>
-                      <option value="سنتان">سنتان</option>
-                      <option value="ثلاث سنوات">ثلاث سنوات</option>
-                      <option value="مفتوح">مفتوح</option>
+                      <option value="ALL">جميع المدد ({getCountForFilter('contractPeriod', 'ALL')})</option>
+                      <option value="1">سنة واحدة ({getCountForFilter('contractPeriod', '1')})</option>
+                      <option value="2">سنتان ({getCountForFilter('contractPeriod', '2')})</option>
+                      <option value="3">3 سنوات ({getCountForFilter('contractPeriod', '3')})</option>
+                      <option value="أكثر">أكثر من 3 ({getCountForFilter('contractPeriod', 'أكثر')})</option>
                     </select>
                   </div>
                 </div>
@@ -1472,10 +1596,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={passportStatusFilter}
                       onChange={(e) => setPassportStatusFilter(e.target.value)}
                     >
-                      <option value="ALL">جميع الحالات</option>
-                      <option value="VALID">ساري المفعول</option>
-                      <option value="EXPIRED">منتهي الصلاحية</option>
-                      <option value="MISSING">غير متوفر</option>
+                      <option value="ALL">جميع الحالات ({getCountForFilter('passportStatus', 'ALL')})</option>
+                      <option value="متوفر">متوفر ({getCountForFilter('passportStatus', 'متوفر')})</option>
+                      <option value="غير متوفر">غير متوفر ({getCountForFilter('passportStatus', 'غير متوفر')})</option>
+                      <option value="قيد الإنجاز">قيد الإنجاز ({getCountForFilter('passportStatus', 'قيد الإنجاز')})</option>
                     </select>
                   </div>
 
@@ -1488,10 +1612,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={heightFilter}
                       onChange={(e) => setHeightFilter(e.target.value)}
                     >
-                      <option value="ALL">جميع الأطوال</option>
-                      <option value="SHORT">قصير (أقل من 160)</option>
-                      <option value="MEDIUM">متوسط (160-170)</option>
-                      <option value="TALL">طويل (أكثر من 170)</option>
+                      <option value="ALL">جميع الأطوال ({getCountForFilter('height', 'ALL')})</option>
+                      <option value="140-150">140-150 سم ({getCountForFilter('height', '140-150')})</option>
+                      <option value="150-160">150-160 سم ({getCountForFilter('height', '150-160')})</option>
+                      <option value="160-170">160-170 سم ({getCountForFilter('height', '160-170')})</option>
+                      <option value="170+">أكثر من 170 ({getCountForFilter('height', '170+')})</option>
                     </select>
                   </div>
 
@@ -1504,10 +1629,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={weightFilter}
                       onChange={(e) => setWeightFilter(e.target.value)}
                     >
-                      <option value="ALL">جميع الأوزان</option>
-                      <option value="LIGHT">خفيف (أقل من 60)</option>
-                      <option value="MEDIUM">متوسط (60-80)</option>
-                      <option value="HEAVY">ثقيل (أكثر من 80)</option>
+                      <option value="ALL">جميع الأوزان ({getCountForFilter('weight', 'ALL')})</option>
+                      <option value="40-50">40-50 كجم ({getCountForFilter('weight', '40-50')})</option>
+                      <option value="50-60">50-60 كجم ({getCountForFilter('weight', '50-60')})</option>
+                      <option value="60-70">60-70 كجم ({getCountForFilter('weight', '60-70')})</option>
+                      <option value="70+">أكثر من 70 ({getCountForFilter('weight', '70+')})</option>
                     </select>
                   </div>
 
@@ -1520,10 +1646,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       value={childrenFilter}
                       onChange={(e) => setChildrenFilter(e.target.value)}
                     >
-                      <option value="ALL">الكل</option>
-                      <option value="NONE">بدون أطفال</option>
-                      <option value="FEW">1-2 أطفال</option>
-                      <option value="MANY">أكثر من 2</option>
+                      <option value="ALL">الكل ({getCountForFilter('children', 'ALL')})</option>
+                      <option value="NONE">بدون أطفال ({getCountForFilter('children', 'NONE')})</option>
+                      <option value="FEW">1-2 أطفال ({getCountForFilter('children', 'FEW')})</option>
+                      <option value="MANY">أكثر من 2 ({getCountForFilter('children', 'MANY')})</option>
                     </select>
                   </div>
                 </div>
