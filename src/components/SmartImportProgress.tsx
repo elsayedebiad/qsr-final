@@ -16,13 +16,17 @@ interface SmartImportProgressProps {
   currentStep: string
   steps: ProgressStep[]
   onClose?: () => void
+  executionProgress?: number
+  showTimeEstimate?: boolean
 }
 
 export default function SmartImportProgress({ 
   isVisible, 
   currentStep, 
   steps, 
-  onClose 
+  onClose,
+  executionProgress = 0,
+  showTimeEstimate = true
 }: SmartImportProgressProps) {
   const [progress, setProgress] = useState(0)
   const [startTime, setStartTime] = useState<number>(0)
@@ -96,11 +100,11 @@ export default function SmartImportProgress({
         {/* Progress Bar */}
         <div className="mb-6">
           <ProfessionalProgressBar
-            targetProgress={progress}
+            targetProgress={executionProgress > 0 ? executionProgress : progress}
             label="معالجة البيانات"
             subLabel={steps.find(s => s.id === currentStep)?.label || 'جاري التحليل...'}
             showPercentage={true}
-            showTimeRemaining={true}
+            showTimeRemaining={showTimeEstimate}
             variant="primary"
             size="lg"
             showIcon={true}
@@ -108,7 +112,7 @@ export default function SmartImportProgress({
             processedItems={processedSteps}
             totalItems={steps.length}
             animationStyle="smooth"
-            showDetails={false}
+            showDetails={true}
           />
         </div>
 

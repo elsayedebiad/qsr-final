@@ -13,11 +13,9 @@ import {
   Archive,
   SlidersHorizontal,
   Star,
-  Heart,
   Globe,
   Calendar,
   BookOpen,
-  DollarSign,
   X,
   ChevronDown,
   Share2,
@@ -671,40 +669,32 @@ export default function Sales1Page() {
         }
       })
 
-      // فلتر الخبرة - منطق منظم وفعال
+      // فلتر الخبرة - بناءً على البيانات الفعلية من DUKA.xlsx
       const matchesExperience = (() => {
         if (experienceFilter === 'ALL') return true
         
-        const experience = cv.experience || ''
-        const cleaned = experience.trim().toLowerCase()
+        const experience = (cv.experience || '').trim().toLowerCase()
         
         // استخراج الرقم من النص
-        const extractYears = (text: string): number => {
-          const match = text.match(/\d+/)
-          return match ? parseInt(match[0]) : 0
-        }
-        
-        const years = extractYears(cleaned)
+        const numbers = experience.match(/\d+/g)
+        const years = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 0
         
         switch (experienceFilter) {
-          case 'لا يوجد':
-            return years === 0 || cleaned.includes('لا يوجد') || cleaned.includes('لا') || cleaned.includes('بدون')
+          case 'NO_EXPERIENCE': // بدون خبرة
+            return experience === 'لا يوجد' || experience === '' || 
+                   experience === 'no' || experience === 'none' || years === 0
           
-          case 'سنة واحدة':
-            return years === 1 || cleaned.includes('سنة واحدة') || cleaned.includes('واحدة')
+          case '1-2': // 1-2 سنة
+            return years >= 1 && years <= 2
           
-          case 'سنتين':
-            return years === 2 || cleaned.includes('سنتين') || cleaned.includes('اثنين')
+          case '3-5': // 3-5 سنوات
+            return years >= 3 && years <= 5
           
-          case '3 سنوات':
-            return years === 3 || cleaned.includes('ثلاث') || cleaned.includes('3')
+          case '6-10': // 6-10 سنوات
+            return years >= 6 && years <= 10
           
-          case 'أكثر من 3 سنوات':
-            return years > 3 || cleaned.includes('خمس') || cleaned.includes('5') || 
-                   cleaned.includes('أربع') || cleaned.includes('4') || 
-                   cleaned.includes('ست') || cleaned.includes('6') ||
-                   cleaned.includes('سبع') || cleaned.includes('7') ||
-                   cleaned.includes('أكثر') || cleaned.includes('عديد')
+          case 'MORE_10': // أكثر من 10 سنوات
+            return years > 10
           
           default:
             return false
@@ -816,13 +806,13 @@ export default function Sales1Page() {
 
       return matchesSearch && matchesStatus && matchesPosition && matchesNationality && 
              excludeDriversFromNationality && matchesAge && matchesSkill && matchesArabicLevel && 
-             matchesEnglishLevel && matchesReligion && matchesEducation &&
+             matchesEnglishLevel && matchesReligion && matchesEducation && matchesExperience &&
              matchesContractPeriod && matchesPassportStatus && matchesHeight &&
              matchesWeight && matchesChildren && matchesLocation && matchesDriving
     })
   }, [cvs, searchTerm, statusFilter, positionFilter, nationalityFilter, ageFilter, 
       skillFilters, arabicLevelFilter, englishLevelFilter, religionFilter, educationFilter,
-      contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter,
+      experienceFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter,
       childrenFilter, locationFilter, drivingFilter])
 
   // عرض عدد محدود من السير لتحسين الأداء
@@ -972,6 +962,20 @@ export default function Sales1Page() {
                    educationLevel === '' || educationLevel === 'غير متعلم' || 
                    educationLevel === 'أمي' || educationLevel === 'none'
           }
+          return false
+          
+        case 'experience':
+          const exp = (cv.experience || '').trim().toLowerCase()
+          const nums = exp.match(/\d+/g)
+          const yrs = nums && nums.length > 0 ? parseInt(nums[0]) : 0
+          
+          if (filterValue === 'NO_EXPERIENCE') {
+            return exp === 'لا يوجد' || exp === '' || exp === 'no' || exp === 'none' || yrs === 0
+          }
+          if (filterValue === '1-2') return yrs >= 1 && yrs <= 2
+          if (filterValue === '3-5') return yrs >= 3 && yrs <= 5
+          if (filterValue === '6-10') return yrs >= 6 && yrs <= 10
+          if (filterValue === 'MORE_10') return yrs > 10
           return false
           
         case 'skill':
@@ -1882,7 +1886,24 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     <option value="غير متعلم">غير متعلم ({getCountForFilter('education', 'غير متعلم')})</option>
                   </select>
                 </div>
-
+                
+                <div className="space-y-2">
+                  <label className="flex items-center text-sm font-semibold text-purple-600 mb-2">
+                    <Calendar className="h-4 w-4 ml-2" /> سنوات الخبرة
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-purple-500 border border-gray-300"
+                    value={experienceFilter}
+                    onChange={(e) => setExperienceFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع مستويات الخبرة ({cvs.length})</option>
+                    <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
+                    <option value="1-2">1-2 سنة ({getCountForFilter('experience', '1-2')})</option>
+                    <option value="3-5">3-5 سنوات ({getCountForFilter('experience', '3-5')})</option>
+                    <option value="6-10">6-10 سنوات ({getCountForFilter('experience', '6-10')})</option>
+                    <option value="MORE_10">أكثر من 10 سنوات ({getCountForFilter('experience', 'MORE_10')})</option>
+                  </select>
+                </div>
 
               </div>
 
@@ -1897,6 +1918,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     setArabicLevelFilter('ALL')
                     setEnglishLevelFilter('ALL')
                     setEducationFilter('ALL')
+                    setExperienceFilter('ALL')
                     setSearchTerm('')
                   }}
                   className="px-6 py-2 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium hover:from-red-500 hover:to-pink-500"
