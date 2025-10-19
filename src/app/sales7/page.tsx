@@ -599,7 +599,7 @@ export default function Sales1Page() {
         // فلترة دقيقة حسب المستوى المطلوب
         if (arabicLevelFilter === 'لا' && arabicLevel === 'NO') return true
         if (arabicLevelFilter === 'ضعيف' && arabicLevel === 'NO') return true
-        if (arabicLevelFilter === 'جيد' && arabicLevel === 'WILLING') return true
+        if (arabicLevelFilter === 'جيد' && (arabicLevel === 'YES' || arabicLevel === 'WILLING')) return true
         if (arabicLevelFilter === 'ممتاز' && arabicLevel === 'YES') return true
         
         return false
@@ -614,7 +614,7 @@ export default function Sales1Page() {
         // فلترة دقيقة حسب المستوى المطلوب
         if (englishLevelFilter === 'لا' && englishLevel === 'NO') return true
         if (englishLevelFilter === 'ضعيف' && englishLevel === 'NO') return true
-        if (englishLevelFilter === 'جيد' && englishLevel === 'WILLING') return true
+        if (englishLevelFilter === 'جيد' && (englishLevel === 'YES' || englishLevel === 'WILLING')) return true
         if (englishLevelFilter === 'ممتاز' && englishLevel === 'YES') return true
         
         return false
@@ -1594,7 +1594,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
               value={religionFilter}
               onChange={(e) => setReligionFilter(e.target.value)}
             >
-                    <option value="ALL">اختر الديانة</option>
+              <option value="ALL">اختر الديانة</option>
               <option value="MUSLIM">مسلم 🕌</option>
               <option value="CHRISTIAN">مسيحي ✝️</option>
             </select>
@@ -1631,7 +1631,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
               value={ageFilter}
               onChange={(e) => setAgeFilter(e.target.value)}
             >
-                    <option value="ALL">جميع الأعمار</option>
+              <option value="ALL">جميع الأعمار</option>
               <option value="21-30">21-30 سنة</option>
               <option value="30-40">30-40 سنة</option>
               <option value="40-50">40-50 سنة</option>
@@ -1787,7 +1787,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     <option value="ALL">الكل ({cvs.length})</option>
                     <option value="لا">❌ لا ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'NO').length})</option>
                     <option value="ضعيف">⚠️ ضعيف ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'NO').length})</option>
-                    <option value="جيد">✅ جيد ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'WILLING').length})</option>
+                    <option value="جيد">✅ جيد ({cvs.filter(cv => { const lvl = (cv.arabicLevel || 'NO'); return lvl === 'YES' || lvl === 'WILLING' }).length})</option>
                     <option value="ممتاز">⭐ ممتاز ({cvs.filter(cv => (cv.arabicLevel || 'NO') === 'YES').length})</option>
                   </select>
                 </div>
