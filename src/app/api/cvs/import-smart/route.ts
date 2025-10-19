@@ -49,7 +49,20 @@ interface ExcelRow {
   'العمر'?: string
   'الإنجليزية'?: string
   'العربية'?: string
+  'مستوى الإنجليزية'?: string
+  'مستوى العربية'?: string
+  'English'?: string
+  'Arabic'?: string
+  'English Level'?: string
+  'Arabic Level'?: string
+  'انجليزي'?: string
+  'انجليزية'?: string
+  'عربي'?: string
+  'عربية'?: string
   'الدرجة العلمية'?: string
+  'المؤهل العلمي'?: string
+  'Education'?: string
+  'Education Level'?: string
   'رعاية الأطفال'?: string
   'كي الملابس'?: string
   'العناية بالوالدين'?: string
@@ -491,7 +504,8 @@ const processExcelRow = (row: ExcelRow, rowNumber: number): ProcessedCV => {
       complexion: cleanStringValue(row['لون البشرة']),
       age: cleanNumberValue(row['العمر']),
       englishLevel: (() => {
-        const rawValue = row['مستوى الإنجليزية']
+        // البحث عن عمود الإنجليزية بأسماء مختلفة
+        const rawValue = row['مستوى الإنجليزية'] || row['الإنجليزية'] || row['English'] || row['English Level'] || row['انجليزي'] || row['انجليزية']
         if (!rawValue) return undefined
         
         // تحويل القيم الفعلية من الشيت إلى YES/NO/WILLING
@@ -501,11 +515,13 @@ const processExcelRow = (row: ExcelRow, rowNumber: number): ProcessedCV => {
         if (normalized === 'ضعيف') return 'NO'
         if (normalized === 'متوسط' || normalized === 'مقبول') return 'WILLING'
         if (normalized === 'نعم' || normalized === 'ممتاز') return 'YES'
+        if (normalized === 'جيد') return 'WILLING'
         
         return 'NO' // افتراضي
       })(),
       arabicLevel: (() => {
-        const rawValue = row['مستوى العربية']
+        // البحث عن عمود العربية بأسماء مختلفة
+        const rawValue = row['مستوى العربية'] || row['العربية'] || row['Arabic'] || row['Arabic Level'] || row['عربي'] || row['عربية']
         if (!rawValue) return undefined
         
         // تحويل القيم الفعلية من الشيت إلى YES/NO/WILLING
@@ -515,10 +531,11 @@ const processExcelRow = (row: ExcelRow, rowNumber: number): ProcessedCV => {
         if (normalized === 'ضعيف') return 'NO'
         if (normalized === 'متوسط') return 'WILLING'
         if (normalized === 'نعم' || normalized === 'ممتاز') return 'YES'
+        if (normalized === 'جيد') return 'WILLING'
         
         return 'NO' // افتراضي
       })(),
-      educationLevel: cleanStringValue(row['الدرجة العلمية']),
+      educationLevel: cleanStringValue(row['الدرجة العلمية'] || row['التعليم'] || row['المؤهل العلمي'] || row['Education'] || row['Education Level']),
       babySitting: normalizeSkillLevel(row['رعاية الأطفال']),
       childrenCare: normalizeSkillLevel(row['رعاية الأطفال']),
       tutoring: normalizeSkillLevel(row['تعليم الأطفال']),

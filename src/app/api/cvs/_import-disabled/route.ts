@@ -34,8 +34,8 @@ const COLUMN_MAP = {
   age: ['العمر'],
 
   // اللغات
-  englishLevel: ['الإنجليزية'],
-  arabicLevel: ['العربية'],
+  englishLevel: ['الإنجليزية', 'مستوى الإنجليزية', 'English', 'English Level', 'انجليزي', 'انجليزية'],
+  arabicLevel: ['العربية', 'مستوى العربية', 'Arabic', 'Arabic Level', 'عربي', 'عربية'],
 
   // المهارات (YES/NO/WILLING)
   babySitting: ['عناية الرضع'],
@@ -83,9 +83,9 @@ const normalizePriority = (p: string) => {
 // تحويل المهارة لenum SkillLevel
 const toSkill = (v: string) => {
   const s = (v || '').toLowerCase().trim()
-  if (['yes', 'نعم', 'y'].includes(s)) return 'YES'
-  if (['no', 'لا', 'n'].includes(s)) return 'NO'
-  if (['willing', 'مستعد', 'مستعدة'].includes(s)) return 'WILLING'
+  if (['yes', 'نعم', 'y', 'ممتاز'].includes(s)) return 'YES'
+  if (['no', 'لا', 'n', 'ضعيف', 'غير متاح'].includes(s)) return 'NO'
+  if (['willing', 'مستعد', 'مستعدة', 'متوسط', 'مقبول', 'جيد'].includes(s)) return 'WILLING'
   return null // نتركها null لو غير معروفة
 }
 
