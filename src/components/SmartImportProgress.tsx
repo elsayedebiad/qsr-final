@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react'
-import SmoothProgressBar from './SmoothProgressBar'
+import ProfessionalProgressBar from './ProfessionalProgressBar'
 
 interface ProgressStep {
   id: string
@@ -25,21 +25,29 @@ export default function SmartImportProgress({
   onClose 
 }: SmartImportProgressProps) {
   const [progress, setProgress] = useState(0)
+  const [startTime, setStartTime] = useState<number>(0)
+  const [processedSteps, setProcessedSteps] = useState(0)
 
   useEffect(() => {
     const completedSteps = steps.filter(step => step.status === 'completed').length
     const processingSteps = steps.filter(step => step.status === 'processing').length
     const totalSteps = steps.length
     
+    // تتبع وقت البداية
+    if (!startTime && processingSteps > 0) {
+      setStartTime(Date.now())
+    }
+    
     // حساب التقدم بشكل أكثر دقة
     // كل خطوة مكتملة = 100% من حصتها
-    // كل خطوة قيد المعالجة = 50% من حصتها
+    // كل خطوة قيد المعالجة = 50% من حصتها  
     const stepValue = 100 / totalSteps
     const completedValue = completedSteps * stepValue
     const processingValue = processingSteps * (stepValue * 0.5)
     
     setProgress(completedValue + processingValue)
-  }, [steps])
+    setProcessedSteps(completedSteps)
+  }, [steps, startTime])
 
   if (!isVisible) return null
 
@@ -87,12 +95,20 @@ export default function SmartImportProgress({
 
         {/* Progress Bar */}
         <div className="mb-6">
-          <SmoothProgressBar 
+          <ProfessionalProgressBar
             targetProgress={progress}
-            duration={500}
+            label="معالجة البيانات"
+            subLabel={steps.find(s => s.id === currentStep)?.label || 'جاري التحليل...'}
             showPercentage={true}
-            height="12px"
-            color="bg-gradient-to-r from-primary to-primary/80"
+            showTimeRemaining={true}
+            variant="primary"
+            size="lg"
+            showIcon={true}
+            startTime={startTime}
+            processedItems={processedSteps}
+            totalItems={steps.length}
+            animationStyle="smooth"
+            showDetails={false}
           />
         </div>
 

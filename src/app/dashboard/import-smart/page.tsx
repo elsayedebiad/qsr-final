@@ -66,6 +66,10 @@ export default function SmartImportPage() {
   const [currentStep, setCurrentStep] = useState('')
   const [showStatistics, setShowStatistics] = useState(false)
   const [processingStartTime, setProcessingStartTime] = useState<number>(0)
+  const [executionProgress, setExecutionProgress] = useState(0)
+  const [executionSteps, setExecutionSteps] = useState<any[]>([])
+  const [currentExecutionStep, setCurrentExecutionStep] = useState('')
+  const [showExecutionProgress, setShowExecutionProgress] = useState(false)
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -228,7 +232,41 @@ export default function SmartImportPage() {
       return
     }
 
+    // إعداد خطوات التنفيذ
+    const totalItems = analysisResult.newRecords + analysisResult.updatedRecords
+    const steps = []
+    
+    if (analysisResult.newRecords > 0) {
+      steps.push({ 
+        id: 'new', 
+        label: `إضافة ${analysisResult.newRecords} سجل جديد`, 
+        status: 'pending',
+        count: analysisResult.newRecords
+      })
+    }
+    
+    if (analysisResult.updatedRecords > 0) {
+      steps.push({ 
+        id: 'update', 
+        label: `تحديث ${analysisResult.updatedRecords} سجل موجود`, 
+        status: 'pending',
+        count: analysisResult.updatedRecords
+      })
+    }
+    
+    steps.push({ 
+      id: 'finalize', 
+      label: 'إنهاء العملية', 
+      status: 'pending',
+      count: 0
+    })
+    
+    setExecutionSteps(steps)
+    setShowExecutionProgress(true)
+    setCurrentExecutionStep('new')
+    setExecutionProgress(0)
     setIsExecuting(true)
+    
     try {
       const formData = new FormData()
       formData.append('file', selectedFile)
@@ -241,6 +279,55 @@ export default function SmartImportPage() {
         return
       }
 
+      // تحديث حالة خطوة الإضافة
+      if (analysisResult.newRecords > 0) {
+        setExecutionSteps(prev => prev.map(s => 
+          s.id === 'new' ? { ...s, status: 'processing' } : s
+        ))
+        setCurrentExecutionStep('new')
+      } else if (analysisResult.updatedRecords > 0) {
+        setExecutionSteps(prev => prev.map(s => 
+          s.id === 'update' ? { ...s, status: 'processing' } : s
+        ))
+        setCurrentExecutionStep('update')
+      }
+
+      // محاكاة التقدم أثناء المعالجة
+      let progressInterval: NodeJS.Timeout | null = null
+      let currentProgress = 0
+      
+      progressInterval = setInterval(() => {
+        currentProgress += Math.random() * 10 + 5
+        if (currentProgress > 95) currentProgress = 95
+        setExecutionProgress(currentProgress)
+        
+        // تحديث الخطوات بناء على التقدم
+        if (currentProgress > 40 && analysisResult.newRecords > 0) {
+          setExecutionSteps(prev => prev.map(s => 
+            s.id === 'new' ? { ...s, status: 'completed' } : s
+          ))
+          if (analysisResult.updatedRecords > 0) {
+            setExecutionSteps(prev => prev.map(s => 
+              s.id === 'update' ? { ...s, status: 'processing' } : s
+            ))
+            setCurrentExecutionStep('update')
+          }
+        }
+        
+        if (currentProgress > 70 && analysisResult.updatedRecords > 0) {
+          setExecutionSteps(prev => prev.map(s => 
+            s.id === 'update' ? { ...s, status: 'completed' } : s
+          ))
+        }
+        
+        if (currentProgress > 85) {
+          setExecutionSteps(prev => prev.map(s => 
+            s.id === 'finalize' ? { ...s, status: 'processing' } : s
+          ))
+          setCurrentExecutionStep('finalize')
+        }
+      }, 400)
+
       const response = await fetch('/api/cvs/import-smart', {
         method: 'POST',
         headers: {
@@ -252,14 +339,30 @@ export default function SmartImportPage() {
       })
 
       const data = await response.json()
-
+      
+      // إيقاف محاكاة التقدم
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
+      
       if (response.ok) {
+        // إكمال التقدم
+        setExecutionProgress(100)
+        setExecutionSteps(prev => prev.map(s => 
+          ({ ...s, status: s.status === 'processing' ? 'completed' : s.status })
+        ))
+        
         if (data.executionErrors && data.executionErrors.length > 0) {
           toast.success(`تم الاستيراد جزئياً! ${data.newRecords} جديد، ${data.updatedRecords} محدث`)
           toast.error(`أخطاء: ${data.executionErrors.length} عملية فشلت`)
         } else {
           toast.success(`تم الاستيراد بنجاح! ${data.newRecords} جديد، ${data.updatedRecords} محدث`)
         }
+        
+        // إخفاء شريط التقدم بعد ثانيتين
+        setTimeout(() => {
+          setShowExecutionProgress(false)
+        }, 2000)
         
         // Show detailed results
         setTimeout(() => {
@@ -269,13 +372,25 @@ export default function SmartImportPage() {
           }
         }, 2000)
         
-        router.push('/dashboard')
+        // الانتقال للداشبورد بعد 3 ثواني
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 3000)
       } else {
+        // فشل التنفيذ
+        setExecutionSteps(prev => prev.map(s => 
+          ({ ...s, status: s.status === 'processing' ? 'error' : s.status })
+        ))
+        
         const errorMessage = data.error || 'فشل في استيراد البيانات'
         const errorDetails = data.details ? `\nالتفاصيل: ${data.details}` : ''
         const suggestion = data.suggestion ? `\nاقتراح: ${data.suggestion}` : ''
         
         toast.error(errorMessage)
+        
+        setTimeout(() => {
+          setShowExecutionProgress(false)
+        }, 3000)
         
         // Show detailed error in console
         console.error('خطأ في الاستيراد:', {
@@ -285,7 +400,13 @@ export default function SmartImportPage() {
         })
       }
     } catch (error) {
+      setExecutionSteps(prev => prev.map(s => 
+        ({ ...s, status: s.status === 'processing' ? 'error' : s.status })
+      ))
       toast.error('حدث خطأ أثناء الاستيراد')
+      setTimeout(() => {
+        setShowExecutionProgress(false)
+      }, 3000)
     } finally {
       setIsExecuting(false)
     }
@@ -677,12 +798,20 @@ export default function SmartImportPage() {
           </div>
         )}
 
-        {/* Progress Modal */}
+        {/* Analysis Progress Modal */}
         <SmartImportProgress
           isVisible={showProgress}
           currentStep={currentStep}
           steps={progressSteps}
           onClose={() => setShowProgress(false)}
+        />
+        
+        {/* Execution Progress Modal */}
+        <SmartImportProgress
+          isVisible={showExecutionProgress}
+          currentStep={currentExecutionStep}
+          steps={executionSteps}
+          onClose={() => setShowExecutionProgress(false)}
         />
 
         {/* Statistics */}

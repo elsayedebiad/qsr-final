@@ -743,22 +743,18 @@ export default function Sales1Page() {
       // فلتر التعليم - متعلم/غير متعلم
       const matchesEducation = (() => {
         if (educationFilter === 'ALL') return true
-        const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase()
+        const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
         
+        // البيانات الفعلية في DUKA.xlsx تحتوي على "نعم" أو "لا"
         if (educationFilter === 'متعلم') {
-          // يعتبر متعلم إذا كان لديه أي مستوى تعليمي أو لا يحتوي على "غير متعلم" أو "أمي"
-          return educationLevel !== '' && 
-                 !educationLevel.includes('غير متعلم') && 
-                 !educationLevel.includes('أمي') &&
-                 !educationLevel.includes('لا يقرأ') &&
-                 !educationLevel.includes('لا يكتب')
+          // يعتبر متعلم إذا كانت القيمة "نعم"
+          return educationLevel === 'نعم' || educationLevel === 'yes' || 
+                 educationLevel === 'متعلم' || educationLevel === 'educated'
         } else if (educationFilter === 'غير متعلم') {
-          // يعتبر غير متعلم إذا كان فارغ أو يحتوي على كلمات تدل على عدم التعلم
-          return educationLevel === '' || 
-                 educationLevel.includes('غير متعلم') || 
-                 educationLevel.includes('أمي') ||
-                 educationLevel.includes('لا يقرأ') ||
-                 educationLevel.includes('لا يكتب')
+          // يعتبر غير متعلم إذا كانت القيمة "لا" أو فارغة
+          return educationLevel === 'لا' || educationLevel === 'no' || 
+                 educationLevel === '' || educationLevel === 'غير متعلم' || 
+                 educationLevel === 'أمي' || educationLevel === 'none'
         }
         return false
       })()
@@ -894,6 +890,29 @@ export default function Sales1Page() {
   const getCountForFilter = useCallback((filterType: string, filterValue: string): number => {
     if (!cvs || cvs.length === 0) return 0
     
+    // معالجة خاصة لقيمة ALL لحساب العدد الفعلي بناءً على نوع الفلتر
+    if (filterValue === 'ALL') {
+      switch (filterType) {
+        case 'arabicLevel':
+        case 'englishLevel':
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          return cvs.filter(cv => {
+            const position = (cv.position || '').trim()
+            const isDriver = position.includes('سائق') || position.toLowerCase().includes('driver')
+            const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
+            return !isDriver && !isService
+          }).length
+        case 'education':
+        case 'religion':
+        case 'position':
+        case 'nationality':
+        case 'age':
+          return cvs.length
+        default:
+          return cvs.length
+      }
+    }
+    
     return cvs.filter(cv => {
       switch (filterType) {
         case 'religion':
@@ -942,12 +961,16 @@ export default function Sales1Page() {
           return englishLevel === filterValue
           
         case 'education':
-          const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase()
+          const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
+          // البيانات الفعلية تحتوي على "نعم" أو "لا"
           if (filterValue === 'متعلم') {
-            return educationLevel !== '' && !educationLevel.includes('غير متعلم') && !educationLevel.includes('أمي')
+            return educationLevel === 'نعم' || educationLevel === 'yes' || 
+                   educationLevel === 'متعلم' || educationLevel === 'educated'
           }
           if (filterValue === 'غير متعلم') {
-            return educationLevel === '' || educationLevel.includes('غير متعلم') || educationLevel.includes('أمي')
+            return educationLevel === 'لا' || educationLevel === 'no' || 
+                   educationLevel === '' || educationLevel === 'غير متعلم' || 
+                   educationLevel === 'أمي' || educationLevel === 'none'
           }
           return false
           
@@ -1629,7 +1652,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 value={religionFilter}
                 onChange={(e) => setReligionFilter(e.target.value)}
               >
-                <option value="ALL">جميع الديانات ({cvs.length})</option>
+                <option value="ALL">جميع الديانات ({getCountForFilter('religion', 'ALL')})</option>
                 <option value="مسلمة">مسلمة ({getCountForFilter('religion', 'مسلمة')})</option>
                 <option value="مسيحية">مسيحية ({getCountForFilter('religion', 'مسيحية')})</option>
                 <option value="أخرى">أخرى ({getCountForFilter('religion', 'أخرى')})</option>
@@ -1640,7 +1663,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 value={positionFilter}
                 onChange={(e) => setPositionFilter(e.target.value)}
               >
-                <option value="ALL">جميع الوظائف ({cvs.length})</option>
+                <option value="ALL">جميع الوظائف ({getCountForFilter('position', 'ALL')})</option>
                 {uniquePositions.map(position => (
                   <option key={position} value={position}>
                     {position} ({getCountForFilter('position', position)})
@@ -1653,7 +1676,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 value={nationalityFilter}
                 onChange={(e) => setNationalityFilter(e.target.value)}
               >
-                <option value="ALL">جميع الجنسيات ({cvs.length})</option>
+                <option value="ALL">جميع الجنسيات ({getCountForFilter('nationality', 'ALL')})</option>
                 {uniqueNationalities.map(nationality => (
                   <option key={nationality} value={nationality}>
                     {getNationalityArabic(nationality)} ({getCountForFilter('nationality', nationality)})
@@ -1666,7 +1689,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 value={ageFilter}
                 onChange={(e) => setAgeFilter(e.target.value)}
               >
-                <option value="ALL">جميع الأعمار ({cvs.length})</option>
+                <option value="ALL">جميع الأعمار ({getCountForFilter('age', 'ALL')})</option>
                 <option value="21-30">21-30 سنة ({getCountForFilter('age', '21-30')})</option>
                 <option value="30-40">30-40 سنة ({getCountForFilter('age', '30-40')})</option>
                 <option value="40-50">40-50 سنة ({getCountForFilter('age', '40-50')})</option>
@@ -1805,18 +1828,17 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     </div>
                   )}
                 </div>
-
-
+                
                 <div className="space-y-2">
-                  <label className="flex items-center text-sm font-semibold text-green-600 mb-2">
+                  <label className="flex items-center text-sm font-semibold text-gray-600 mb-2">
                     <Globe className="h-4 w-4 ml-2" /> مستوى العربية
                   </label>
                   <select
-                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-green-500 border border-gray-300"
+                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-gray-500 border border-gray-300"
                     value={arabicLevelFilter}
                     onChange={(e) => setArabicLevelFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات ({cvs.length})</option>
+                    <option value="ALL">جميع المستويات ({getCountForFilter('arabicLevel', 'ALL')})</option>
                     <option value="YES">ممتاز ({getCountForFilter('arabicLevel', 'YES')})</option>
                     <option value="WILLING">جيد ({getCountForFilter('arabicLevel', 'WILLING')})</option>
                     <option value="WEAK">ضعيف ({getCountForFilter('arabicLevel', 'WEAK')})</option>
@@ -1833,7 +1855,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     value={englishLevelFilter}
                     onChange={(e) => setEnglishLevelFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات ({cvs.length})</option>
+                    <option value="ALL">جميع المستويات ({getCountForFilter('englishLevel', 'ALL')})</option>
                     <option value="YES">ممتاز ({getCountForFilter('englishLevel', 'YES')})</option>
                     <option value="WILLING">جيد ({getCountForFilter('englishLevel', 'WILLING')})</option>
                     <option value="WEAK">ضعيف ({getCountForFilter('englishLevel', 'WEAK')})</option>
@@ -1855,7 +1877,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     value={educationFilter}
                     onChange={(e) => setEducationFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات ({cvs.length})</option>
+                    <option value="ALL">جميع المستويات ({getCountForFilter('education', 'ALL')})</option>
                     <option value="متعلم">متعلم ({getCountForFilter('education', 'متعلم')})</option>
                     <option value="غير متعلم">غير متعلم ({getCountForFilter('education', 'غير متعلم')})</option>
                   </select>
