@@ -367,6 +367,12 @@ export default function Sales1Page() {
         )
         
         setCvs(uniqueCvs)
+        
+        // تشخيص: طباعة الجنسيات الفعلية
+        const nationalities = uniqueCvs.map((cv: CV) => cv.nationality).filter((n: string | undefined) => n)
+        const uniqueNats = [...new Set(nationalities)]
+        console.log('الجنسيات الفعلية في البيانات:', uniqueNats)
+        
       } catch (error) {
         console.error('Error fetching CVs:', error)
         toast.error('فشل في جلب السير الذاتية')
@@ -465,25 +471,126 @@ export default function Sales1Page() {
     if (!nationality) return 'غير محدد'
     
     const nationalityArabicMap: { [key: string]: string } = {
-      'FILIPINO': 'الفلبين',
-      'INDIAN': 'الهند',
-      'BANGLADESHI': 'بنغلاديش',
-      'ETHIOPIAN': 'إثيوبيا',
-      'KENYAN': 'كينيا',
-      'UGANDAN': 'اوغندية'
+      'FILIPINO': 'فلبينية',
+      'INDIAN': 'هندية', 
+      'BANGLADESHI': 'بنغلاديشية',
+      'ETHIOPIAN': 'إثيوبية',
+      'KENYAN': 'كينية',
+      'UGANDAN': 'أوغندية',
+      'BURUNDIAN': 'بوروندية',
+      'RWANDAN': 'رواندية',
+      'TANZANIAN': 'تنزانية',
+      'MALAWIAN': 'مالاوية',
+      'ZAMBIAN': 'زامبية',
+      'ZIMBABWEAN': 'زيمبابوية',
+      'GHANAIAN': 'غانية',
+      'NIGERIAN': 'نيجيرية',
+      'CAMEROONIAN': 'كاميرونية',
+      'CONGOLESE': 'كونغولية',
+      'SUDANESE': 'سودانية',
+      'SOMALI': 'صومالية',
+      'ERITREAN': 'إريترية',
+      'DJIBOUTIAN': 'جيبوتية',
+      'MALAGASY': 'مدغشقرية',
+      'MAURITIAN': 'موريشيوسية',
+      'SEYCHELLOIS': 'سيشيلية',
+      'COMORAN': 'قمرية',
+      'CAPE_VERDEAN': 'رأس أخضر',
+      'SAO_TOMEAN': 'ساو تومية',
+      'GUINEAN': 'غينية',
+      'SIERRA_LEONEAN': 'سيراليونية',
+      'LIBERIAN': 'ليبيرية',
+      'IVORIAN': 'عاجية',
+      'BURKINABE': 'بوركينية',
+      'MALIAN': 'مالية',
+      'SENEGALESE': 'سنغالية',
+      'GAMBIAN': 'غامبية',
+      'GUINEA_BISSAUAN': 'غينيا بيساو',
+      'MOROCCAN': 'مغربية',
+      'ALGERIAN': 'جزائرية',
+      'TUNISIAN': 'تونسية',
+      'LIBYAN': 'ليبية',
+      'EGYPTIAN': 'مصرية',
+      'PAKISTANI': 'باكستانية',
+      'SRI_LANKAN': 'سريلانكية',
+      'NEPALESE': 'نيبالية',
+      'BURMESE': 'ميانمارية',
+      'THAI': 'تايلاندية',
+      'VIETNAMESE': 'فيتنامية',
+      'CAMBODIAN': 'كمبودية',
+      'LAOTIAN': 'لاوسية',
+      'INDONESIAN': 'إندونيسية',
+      'MALAYSIAN': 'ماليزية'
     }
     
-    return nationalityArabicMap[nationality] || nationality
+    return nationalityArabicMap[nationality.toUpperCase()] || nationality
   }
 
   // دالة مطابقة الجنسية - مطابقة مباشرة مع البيانات من الإكسل
-  const matchesNationalityFilter = (cvNationality: string | null | undefined, filter: string): boolean => {
+  const matchesNationalityFilter = useCallback((cvNationality: string | null | undefined, filter: string): boolean => {
     if (filter === 'ALL') return true
     if (!cvNationality) return false
     
+    // خريطة تحويل من العربية إلى الإنجليزية للمطابقة
+    const arabicToEnglishMap: { [key: string]: string } = {
+      'فلبينية': 'FILIPINO',
+      'هندية': 'INDIAN',
+      'بنغلاديشية': 'BANGLADESHI',
+      'إثيوبية': 'ETHIOPIAN',
+      'كينية': 'KENYAN',
+      'أوغندية': 'UGANDAN',
+      'بوروندية': 'BURUNDIAN',
+      'رواندية': 'RWANDAN',
+      'تنزانية': 'TANZANIAN',
+      'مالاوية': 'MALAWIAN',
+      'زامبية': 'ZAMBIAN',
+      'زيمبابوية': 'ZIMBABWEAN',
+      'غانية': 'GHANAIAN',
+      'نيجيرية': 'NIGERIAN',
+      'كاميرونية': 'CAMEROONIAN',
+      'كونغولية': 'CONGOLESE',
+      'سودانية': 'SUDANESE',
+      'صومالية': 'SOMALI',
+      'إريترية': 'ERITREAN',
+      'جيبوتية': 'DJIBOUTIAN',
+      'مدغشقرية': 'MALAGASY',
+      'موريشيوسية': 'MAURITIAN',
+      'سيشيلية': 'SEYCHELLOIS',
+      'قمرية': 'COMORAN',
+      'رأس أخضر': 'CAPE_VERDEAN',
+      'ساو تومية': 'SAO_TOMEAN',
+      'غينية': 'GUINEAN',
+      'سيراليونية': 'SIERRA_LEONEAN',
+      'ليبيرية': 'LIBERIAN',
+      'عاجية': 'IVORIAN',
+      'بوركينية': 'BURKINABE',
+      'مالية': 'MALIAN',
+      'سنغالية': 'SENEGALESE',
+      'غامبية': 'GAMBIAN',
+      'غينيا بيساو': 'GUINEA_BISSAUAN',
+      'مغربية': 'MOROCCAN',
+      'جزائرية': 'ALGERIAN',
+      'تونسية': 'TUNISIAN',
+      'ليبية': 'LIBYAN',
+      'مصرية': 'EGYPTIAN',
+      'باكستانية': 'PAKISTANI',
+      'سريلانكية': 'SRI_LANKAN',
+      'نيبالية': 'NEPALESE',
+      'ميانمارية': 'BURMESE',
+      'تايلاندية': 'THAI',
+      'فيتنامية': 'VIETNAMESE',
+      'كمبودية': 'CAMBODIAN',
+      'لاوسية': 'LAOTIAN',
+      'إندونيسية': 'INDONESIAN',
+      'ماليزية': 'MALAYSIAN'
+    }
+    
+    // إذا كان الفلتر بالعربية، حوله للإنجليزية
+    const englishFilter = arabicToEnglishMap[filter] || filter
+    
     // مطابقة مباشرة مع البيانات من ملف الإكسل
-    return cvNationality === filter || cvNationality.includes(filter)
-  }
+    return cvNationality === englishFilter || cvNationality.includes(englishFilter) || cvNationality === filter || cvNationality.includes(filter)
+  }, [])
 
   // فلترة السير الذاتية - تم تحسينها باستخدام useMemo للأداء
   const allFilteredCvs = useMemo(() => {
@@ -727,7 +834,9 @@ export default function Sales1Page() {
       .map(nationality => nationality.trim())
     
     // إزالة التكرارات
-    return Array.from(new Set(nationalities)).sort()
+    const unique = Array.from(new Set(nationalities)).sort()
+    console.log('الجنسيات الفريدة:', unique)
+    return unique
   }, [cvs])
 
 
@@ -1313,21 +1422,21 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             {/* فلتر الجنسية الالفلبين */}
             <div
               onClick={() => {
-                if (nationalityFilter === 'فلبينية') {
+                if (nationalityFilter === 'FILIPINO') {
                   setNationalityFilter('ALL');
                 } else {
-                  setNationalityFilter('فلبينية');
+                  setNationalityFilter('FILIPINO');
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                nationalityFilter === 'فلبينية'
+                nationalityFilter === 'FILIPINO'
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               {/* خلفية متدرجة */}
               <div className={`absolute inset-0 transition-all duration-300 ${
-                nationalityFilter === 'فلبينية'
+                nationalityFilter === 'FILIPINO'
                   ? 'bg-gradient-to-br from-slate-800 to-slate-900'
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
@@ -1338,12 +1447,17 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
-                    {cvs.filter(cv => {
-                      const position = (cv.position || '').trim()
-                      const isDriver = position.includes('سائق') || position.includes('driver')
-                      const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-                      return cv.nationality && cv.nationality.includes('فلبين') && !isDriver && !isService
-                    }).length}
+                    {(() => {
+                      const filtered = cvs.filter(cv => {
+                        const position = (cv.position || '').trim()
+                        const isDriver = position.includes('سائق') || position.includes('driver')
+                        const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
+                        const matches = cv.nationality && (cv.nationality.toUpperCase().includes('FILIPINO') || cv.nationality.includes('فلبين')) && !isDriver && !isService
+                        return matches
+                      })
+                      console.log('الفلبين - العدد المفلتر:', filtered.length, 'من أصل', cvs.length)
+                      return filtered.length
+                    })()}
                   </span>
                 </div>
               </div>
@@ -1352,20 +1466,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             {/* فلتر الجنسية السريلانكا */}
             <div
               onClick={() => {
-                if (nationalityFilter === 'سريلانكية') {
+                if (nationalityFilter === 'SRI_LANKAN') {
                   setNationalityFilter('ALL');
                 } else {
-                  setNationalityFilter('سريلانكية');
+                  setNationalityFilter('SRI_LANKAN');
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                nationalityFilter === 'سريلانكية'
+nationalityFilter === 'SRI_LANKAN'
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               <div className={`absolute inset-0 transition-all duration-300 ${
-                nationalityFilter === 'سريلانكية'
+nationalityFilter === 'SRI_LANKAN'
                   ? 'bg-gradient-to-br from-slate-800 to-slate-900'
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
@@ -1377,7 +1491,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       const position = (cv.position || '').trim()
                       const isDriver = position.includes('سائق') || position.includes('driver')
                       const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-                      return cv.nationality && cv.nationality.includes('سريلانك') && !isDriver && !isService
+                      return cv.nationality && (cv.nationality.toUpperCase().includes('SRI_LANKAN') || cv.nationality.includes('سريلانك')) && !isDriver && !isService
                     }).length}
                   </span>
                 </div>
@@ -1387,20 +1501,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             {/* فلتر الجنسية البنغلاديش */}
             <div
               onClick={() => {
-                if (nationalityFilter === 'بنغلاديشية') {
+                if (nationalityFilter === 'BANGLADESHI') {
                   setNationalityFilter('ALL');
                 } else {
-                  setNationalityFilter('بنغلاديشية');
+                  setNationalityFilter('BANGLADESHI');
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                nationalityFilter === 'بنغلاديشية'
+nationalityFilter === 'BANGLADESHI'
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               <div className={`absolute inset-0 transition-all duration-300 ${
-                nationalityFilter === 'بنغلاديشية'
+nationalityFilter === 'BANGLADESHI'
                   ? 'bg-gradient-to-br from-slate-800 to-slate-900'
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
@@ -1412,7 +1526,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       const position = (cv.position || '').trim()
                       const isDriver = position.includes('سائق') || position.includes('driver')
                       const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-                      return cv.nationality && (cv.nationality.includes('بنغلاديش') || cv.nationality.includes('بنجلاديش')) && !isDriver && !isService
+                      return cv.nationality && (cv.nationality.toUpperCase().includes('BANGLADESHI') || cv.nationality.includes('بنغلاديش') || cv.nationality.includes('بنجلاديش')) && !isDriver && !isService
                     }).length}
                   </span>
                 </div>
@@ -1422,20 +1536,42 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             {/* فلتر الجنسية الإثيوبيا */}
             <div
               onClick={() => {
-                if (nationalityFilter === 'إثيوبية') {
-                  setNationalityFilter('ALL');
-                } else {
-                  setNationalityFilter('إثيوبية');
+                // البحث عن الجنسية الإثيوبية في البيانات الفعلية
+                const ethiopianNationality = uniqueNationalities.find(nat => 
+                  nat.toLowerCase().includes('ethiopia') || 
+                  nat.toLowerCase().includes('إثيوبي') ||
+                  nat.toUpperCase().includes('ETHIOPIAN')
+                )
+                if (ethiopianNationality) {
+                  if (nationalityFilter === ethiopianNationality) {
+                    setNationalityFilter('ALL');
+                  } else {
+                    setNationalityFilter(ethiopianNationality);
+                  }
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                nationalityFilter === 'إثيوبية'
+                (() => {
+                  const ethiopianNationality = uniqueNationalities.find(nat => 
+                    nat.toLowerCase().includes('ethiopia') || 
+                    nat.toLowerCase().includes('إثيوبي') ||
+                    nat.toUpperCase().includes('ETHIOPIAN')
+                  )
+                  return ethiopianNationality && nationalityFilter === ethiopianNationality
+                })()
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               <div className={`absolute inset-0 transition-all duration-300 ${
-                nationalityFilter === 'إثيوبية'
+                (() => {
+                  const ethiopianNationality = uniqueNationalities.find(nat => 
+                    nat.toLowerCase().includes('ethiopia') || 
+                    nat.toLowerCase().includes('إثيوبي') ||
+                    nat.toUpperCase().includes('ETHIOPIAN')
+                  )
+                  return ethiopianNationality && nationalityFilter === ethiopianNationality
+                })()
                   ? 'bg-gradient-to-br from-slate-800 to-slate-900'
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
@@ -1443,12 +1579,16 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 <h3 className="text-white font-bold text-xl mb-3">إثيوبيا</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
-                    {cvs.filter(cv => {
-                      const position = (cv.position || '').trim()
-                      const isDriver = position.includes('سائق') || position.includes('driver')
-                      const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-                      return cv.nationality && cv.nationality.includes('إثيوبي') && !isDriver && !isService
-                    }).length}
+                    {(() => {
+                      // البحث عن الجنسية الإثيوبية في البيانات الفعلية
+                      const ethiopianNationality = uniqueNationalities.find(nat => 
+                        nat.toLowerCase().includes('ethiopia') || 
+                        nat.toLowerCase().includes('إثيوبي') ||
+                        nat.toUpperCase().includes('ETHIOPIAN')
+                      )
+                      console.log('الجنسية الإثيوبية الموجودة:', ethiopianNationality)
+                      return ethiopianNationality ? getCountForFilter('nationality', ethiopianNationality) : 0
+                    })()}
                   </span>
                 </div>
               </div>
@@ -1457,20 +1597,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             {/* فلتر الجنسية الكينيا */}
             <div
               onClick={() => {
-                if (nationalityFilter === 'كينية') {
+                if (nationalityFilter === 'KENYAN') {
                   setNationalityFilter('ALL');
                 } else {
-                  setNationalityFilter('كينية');
+                  setNationalityFilter('KENYAN');
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                nationalityFilter === 'كينية'
+nationalityFilter === 'KENYAN'
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               <div className={`absolute inset-0 transition-all duration-300 ${
-                nationalityFilter === 'كينية'
+nationalityFilter === 'KENYAN'
                   ? 'bg-gradient-to-br from-slate-800 to-slate-900'
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
@@ -1482,7 +1622,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       const position = (cv.position || '').trim()
                       const isDriver = position.includes('سائق') || position.includes('driver')
                       const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-                      return cv.nationality && cv.nationality.includes('كيني') && !isDriver && !isService
+                      return cv.nationality && (cv.nationality.toUpperCase().includes('KENYAN') || cv.nationality.includes('كيني')) && !isDriver && !isService
                     }).length}
                   </span>
                 </div>
@@ -1492,20 +1632,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             {/* فلتر الجنسية الأوغندا */}
             <div
               onClick={() => {
-                if (nationalityFilter === 'أوغندية') {
+                if (nationalityFilter === 'UGANDAN') {
                   setNationalityFilter('ALL');
                 } else {
-                  setNationalityFilter('أوغندية');
+                  setNationalityFilter('UGANDAN');
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                nationalityFilter === 'أوغندية'
+nationalityFilter === 'UGANDAN'
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               <div className={`absolute inset-0 transition-all duration-300 ${
-                nationalityFilter === 'أوغندية'
+nationalityFilter === 'UGANDAN'
                   ? 'bg-gradient-to-br from-slate-800 to-slate-900'
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
@@ -1513,7 +1653,12 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 <h3 className="text-white font-bold text-xl mb-3">أوغندا</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
-                    {cvs.filter(cv => cv.nationality && cv.nationality.includes('أوغند')).length}
+                    {cvs.filter(cv => {
+                      const position = (cv.position || '').trim()
+                      const isDriver = position.includes('سائق') || position.includes('driver')
+                      const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
+                      return cv.nationality && (cv.nationality.toUpperCase().includes('UGANDAN') || cv.nationality.includes('أوغند')) && !isDriver && !isService
+                    }).length}
                   </span>
                 </div>
               </div>
@@ -1658,7 +1803,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 <option value="ALL">جميع الجنسيات ({cvs.length})</option>
                 {uniqueNationalities.map(nationality => (
                   <option key={nationality} value={nationality}>
-                    {nationality} ({getCountForFilter('nationality', nationality)})
+                    {getNationalityArabic(nationality)} ({getCountForFilter('nationality', nationality)})
                   </option>
                 ))}
               </select>

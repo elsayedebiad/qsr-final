@@ -477,13 +477,25 @@ export default function sales2Page() {
   }
 
   // دالة مطابقة الجنسية - مطابقة مباشرة مع البيانات من الإكسل
-  const matchesNationalityFilter = (cvNationality: string | null | undefined, filter: string): boolean => {
+  const matchesNationalityFilter = useCallback((cvNationality: string | null | undefined, filter: string): boolean => {
     if (filter === 'ALL') return true
     if (!cvNationality) return false
     
+    // خريطة تحويل من العربية إلى الإنجليزية للمطابقة
+    const arabicToEnglishMap: { [key: string]: string } = {
+      'فلبينية': 'FILIPINO',
+      'هندية': 'INDIAN',
+      'بنغلاديشية': 'BANGLADESHI',
+      'إثيوبية': 'ETHIOPIAN',
+      'أوغندية': 'UGANDAN'
+    }
+    
+    // إذا كان الفلتر بالعربية، حوله للإنجليزية
+    const englishFilter = arabicToEnglishMap[filter] || filter
+    
     // مطابقة مباشرة مع البيانات من ملف الإكسل
-    return cvNationality === filter || cvNationality.includes(filter)
-  }
+    return cvNationality === englishFilter || cvNationality.includes(englishFilter) || cvNationality === filter || cvNationality.includes(filter)
+  }, [])
 
   // فلترة السير الذاتية - تم تحسينها باستخدام useMemo للأداء
   const allFilteredCvs = useMemo(() => {
