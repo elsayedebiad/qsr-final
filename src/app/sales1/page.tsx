@@ -698,7 +698,11 @@ export default function Sales1Page() {
       // فلتر اللغة العربية - يعمل مع قاعدة البيانات
       const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
         const arabicLevel = cv.arabicLevel || 'NO'
-        return arabicLevel === arabicLevelFilter
+        const matches = arabicLevel === arabicLevelFilter
+        if (arabicLevelFilter !== 'ALL' && cv.id === cvs[0]?.id) {
+          console.log(`فلتر العربية: البحث عن "${arabicLevelFilter}"، وُجد "${arabicLevel}"، المطابقة: ${matches}`)
+        }
+        return matches
       })()
 
       // فلتر اللغة الإنجليزية - يعمل مع قاعدة البيانات  
@@ -913,10 +917,7 @@ export default function Sales1Page() {
       .filter((level): level is SkillLevel => !!level)
     
     const unique = Array.from(new Set(levels))
-    // تسجيل فقط في بيئة التطوير وعند وجود بيانات
-    if (process.env.NODE_ENV === 'development' && unique.length > 0) {
-      console.log('Arabic levels in data:', unique)
-    }
+    console.log('مستويات العربية الفعلية:', unique)
     return unique
   }, [cvs])
 
@@ -928,10 +929,7 @@ export default function Sales1Page() {
       .filter((level): level is SkillLevel => !!level)
     
     const unique = Array.from(new Set(levels))
-    // تسجيل فقط في بيئة التطوير وعند وجود بيانات
-    if (process.env.NODE_ENV === 'development' && unique.length > 0) {
-      console.log('English levels in data:', unique)
-    }
+    console.log('مستويات الإنجليزية الفعلية:', unique)
     return unique
   }, [cvs])
 
@@ -1422,21 +1420,43 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             {/* فلتر الجنسية الالفلبين */}
             <div
               onClick={() => {
-                if (nationalityFilter === 'FILIPINO') {
-                  setNationalityFilter('ALL');
-                } else {
-                  setNationalityFilter('FILIPINO');
+                // البحث عن الجنسية الفلبينية في البيانات الفعلية
+                const filipinoNationality = uniqueNationalities.find(nat => 
+                  nat.toLowerCase().includes('filipin') || 
+                  nat.toLowerCase().includes('فلبين') ||
+                  nat.toUpperCase().includes('FILIPINO')
+                )
+                if (filipinoNationality) {
+                  if (nationalityFilter === filipinoNationality) {
+                    setNationalityFilter('ALL');
+                  } else {
+                    setNationalityFilter(filipinoNationality);
+                  }
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-                nationalityFilter === 'FILIPINO'
+                (() => {
+                  const filipinoNationality = uniqueNationalities.find(nat => 
+                    nat.toLowerCase().includes('filipin') || 
+                    nat.toLowerCase().includes('فلبين') ||
+                    nat.toUpperCase().includes('FILIPINO')
+                  )
+                  return filipinoNationality && nationalityFilter === filipinoNationality
+                })()
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               {/* خلفية متدرجة */}
               <div className={`absolute inset-0 transition-all duration-300 ${
-                nationalityFilter === 'FILIPINO'
+                (() => {
+                  const filipinoNationality = uniqueNationalities.find(nat => 
+                    nat.toLowerCase().includes('filipin') || 
+                    nat.toLowerCase().includes('فلبين') ||
+                    nat.toUpperCase().includes('FILIPINO')
+                  )
+                  return filipinoNationality && nationalityFilter === filipinoNationality
+                })()
                   ? 'bg-gradient-to-br from-slate-800 to-slate-900'
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
@@ -1448,15 +1468,13 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
                     {(() => {
-                      const filtered = cvs.filter(cv => {
-                        const position = (cv.position || '').trim()
-                        const isDriver = position.includes('سائق') || position.includes('driver')
-                        const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-                        const matches = cv.nationality && (cv.nationality.toUpperCase().includes('FILIPINO') || cv.nationality.includes('فلبين')) && !isDriver && !isService
-                        return matches
-                      })
-                      console.log('الفلبين - العدد المفلتر:', filtered.length, 'من أصل', cvs.length)
-                      return filtered.length
+                      // البحث عن الجنسية الفلبينية في البيانات الفعلية
+                      const filipinoNationality = uniqueNationalities.find(nat => 
+                        nat.toLowerCase().includes('filipin') || 
+                        nat.toLowerCase().includes('فلبين') ||
+                        nat.toUpperCase().includes('FILIPINO')
+                      )
+                      return filipinoNationality ? getCountForFilter('nationality', filipinoNationality) : 0
                     })()}
                   </span>
                 </div>
@@ -1466,20 +1484,42 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             {/* فلتر الجنسية السريلانكا */}
             <div
               onClick={() => {
-                if (nationalityFilter === 'SRI_LANKAN') {
-                  setNationalityFilter('ALL');
-                } else {
-                  setNationalityFilter('SRI_LANKAN');
+                // البحث عن الجنسية السريلانكية في البيانات الفعلية
+                const sriLankanNationality = uniqueNationalities.find(nat => 
+                  nat.toLowerCase().includes('sri') || 
+                  nat.toLowerCase().includes('سريلانك') ||
+                  nat.toUpperCase().includes('SRI_LANKAN')
+                )
+                if (sriLankanNationality) {
+                  if (nationalityFilter === sriLankanNationality) {
+                    setNationalityFilter('ALL');
+                  } else {
+                    setNationalityFilter(sriLankanNationality);
+                  }
                 }
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
-nationalityFilter === 'SRI_LANKAN'
+                (() => {
+                  const sriLankanNationality = uniqueNationalities.find(nat => 
+                    nat.toLowerCase().includes('sri') || 
+                    nat.toLowerCase().includes('سريلانك') ||
+                    nat.toUpperCase().includes('SRI_LANKAN')
+                  )
+                  return sriLankanNationality && nationalityFilter === sriLankanNationality
+                })()
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
               <div className={`absolute inset-0 transition-all duration-300 ${
-nationalityFilter === 'SRI_LANKAN'
+                (() => {
+                  const sriLankanNationality = uniqueNationalities.find(nat => 
+                    nat.toLowerCase().includes('sri') || 
+                    nat.toLowerCase().includes('سريلانك') ||
+                    nat.toUpperCase().includes('SRI_LANKAN')
+                  )
+                  return sriLankanNationality && nationalityFilter === sriLankanNationality
+                })()
                   ? 'bg-gradient-to-br from-slate-800 to-slate-900'
                   : 'bg-gradient-to-br from-slate-700 to-slate-800 group-hover:from-slate-600 group-hover:to-slate-700'
               }`}></div>
@@ -1487,12 +1527,15 @@ nationalityFilter === 'SRI_LANKAN'
                 <h3 className="text-white font-bold text-xl mb-3">سريلانكا</h3>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-8 py-2 min-w-[80px] flex items-center justify-center">
                   <span className="text-white font-bold text-3xl">
-                    {cvs.filter(cv => {
-                      const position = (cv.position || '').trim()
-                      const isDriver = position.includes('سائق') || position.includes('driver')
-                      const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-                      return cv.nationality && (cv.nationality.toUpperCase().includes('SRI_LANKAN') || cv.nationality.includes('سريلانك')) && !isDriver && !isService
-                    }).length}
+                    {(() => {
+                      // البحث عن الجنسية السريلانكية في البيانات الفعلية
+                      const sriLankanNationality = uniqueNationalities.find(nat => 
+                        nat.toLowerCase().includes('sri') || 
+                        nat.toLowerCase().includes('سريلانك') ||
+                        nat.toUpperCase().includes('SRI_LANKAN')
+                      )
+                      return sriLankanNationality ? getCountForFilter('nationality', sriLankanNationality) : 0
+                    })()}
                   </span>
                 </div>
               </div>
