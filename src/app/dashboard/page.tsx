@@ -2983,7 +2983,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             </button>
           </div>
           <div className="p-2 sm:p-4">
-            <div className="aspect-video w-full">
+            <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
               {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
                 <iframe
                   key={`youtube-${videoModalKey}`}
@@ -2998,7 +2998,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     }
                     return selectedVideo
                   })()}
-                  className="w-full h-full rounded-lg"
+                  className="absolute inset-0 w-full h-full rounded-lg object-contain"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -3021,7 +3021,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     console.log('🔗 Google Drive fallback URL:', fallbackUrl)
                     return fallbackUrl
                   })()}
-                  className="w-full h-full rounded-lg"
+                  className="absolute inset-0 w-full h-full rounded-lg object-contain"
                   frameBorder="0"
                   allow="autoplay"
                   allowFullScreen
@@ -3034,11 +3034,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   src={(() => {
                     // تحويل رابط Vimeo إلى embed
                     const videoId = selectedVideo.split('vimeo.com/')[1]?.split('?')[0]
-                    const embedUrl = `https://player.vimeo.com/video/${videoId}`
+                    const embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1`
                     console.log('🔗 Vimeo embed URL:', embedUrl)
                     return embedUrl
                   })()}
-                  className="w-full h-full rounded-lg"
+                  className="absolute inset-0 w-full h-full rounded-lg object-contain"
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture"
                   allowFullScreen
@@ -3053,7 +3053,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   controls
                   autoPlay
                   muted
-                  className="w-full h-full rounded-lg bg-black"
+                  playsInline
+                  className="absolute inset-0 w-full h-full rounded-lg bg-black object-contain"
                   preload="metadata"
                   onLoadedData={() => console.log('✅ Direct video loaded successfully:', selectedVideo)}
                   onError={(e) => {
