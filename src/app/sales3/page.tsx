@@ -2075,36 +2075,36 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
         </footer>
       </div>
       
-      {/* Video Modal - تصميم محسن */}
+      {/* Video Modal - محسن للهواتف */}
       {selectedVideo && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl transform animate-scaleIn">
-            <div className="flex justify-between items-center p-5 sm:p-6 border-b-2 border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
-              <div className="flex items-center gap-3">
-                <div className="bg-gradient-to-br from-red-500 to-red-600 p-2 rounded-lg">
-                  <Play className="h-5 w-5 text-white" />
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
+          <div className="bg-white rounded-lg sm:rounded-2xl w-full max-w-[95vw] sm:max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl transform animate-scaleIn">
+            <div className="flex justify-between items-center p-3 sm:p-5 border-b-2 border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="bg-gradient-to-br from-red-500 to-red-600 p-1.5 sm:p-2 rounded-lg">
+                  <Play className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">فيديو السيرة الذاتية</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">فيديو السيرة الذاتية</h3>
               </div>
               <button
                 onClick={() => setSelectedVideo(null)}
-                className="text-gray-500 hover:text-red-600 transition-all duration-300 hover:rotate-90 hover:scale-110 p-2 rounded-lg hover:bg-red-50"
+                className="text-gray-500 hover:text-red-600 transition-all duration-300 hover:rotate-90 hover:scale-110 p-1.5 sm:p-2 rounded-lg hover:bg-red-50"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6" />
               </button>
             </div>
-            <div className="p-4 sm:p-6 bg-gray-50">
-              <div className="aspect-video w-full rounded-xl overflow-hidden shadow-xl">
+            <div className="p-2 sm:p-4 lg:p-6 bg-gray-50">
+              <div className="aspect-video w-full rounded-lg sm:rounded-xl overflow-hidden shadow-xl">
                 {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
                   <iframe
                     src={(() => {
                       // تحويل روابط YouTube إلى embed
                       if (selectedVideo.includes('youtu.be/')) {
                         const videoId = selectedVideo.split('youtu.be/')[1]?.split('?')[0]
-                        return `https://www.youtube.com/embed/${videoId}`
+                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`
                       } else if (selectedVideo.includes('watch?v=')) {
                         const videoId = selectedVideo.split('watch?v=')[1]?.split('&')[0]
-                        return `https://www.youtube.com/embed/${videoId}`
+                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`
                       }
                       return selectedVideo
                     })()}
@@ -2147,6 +2147,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   <video
                     src={selectedVideo}
                     controls
+                    autoPlay
+                    muted
                     className="w-full h-full rounded-lg bg-black"
                     preload="metadata"
                   >

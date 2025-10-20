@@ -2966,31 +2966,31 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
       </div>
     )}
 
-    {/* Video Modal */}
+    {/* Video Modal - محسن للهواتف */}
     {selectedVideo && (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div className="bg-card rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-          <div className="flex justify-between items-center p-4 border-b">
-            <h3 className="text-lg font-semibold text-foreground">فيديو السيرة الذاتية</h3>
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-2 sm:p-4">
+        <div className="bg-card rounded-lg sm:rounded-xl w-full max-w-[95vw] sm:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+          <div className="flex justify-between items-center p-3 sm:p-4 border-b">
+            <h3 className="text-base sm:text-lg font-semibold text-foreground">فيديو السيرة الذاتية</h3>
             <button
               onClick={() => setSelectedVideo(null)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors p-1"
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
           </div>
-          <div className="p-4">
+          <div className="p-2 sm:p-4">
             <div className="aspect-video w-full">
               {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
                 <iframe
                   src={(() => {
-                    // تحويل روابط YouTube إلى embed
+                    // تحويل روابط YouTube إلى embed مع autoplay
                     if (selectedVideo.includes('youtu.be/')) {
                       const videoId = selectedVideo.split('youtu.be/')[1]?.split('?')[0]
-                      return `https://www.youtube.com/embed/${videoId}`
+                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`
                     } else if (selectedVideo.includes('watch?v=')) {
                       const videoId = selectedVideo.split('watch?v=')[1]?.split('&')[0]
-                      return `https://www.youtube.com/embed/${videoId}`
+                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`
                     }
                     return selectedVideo
                   })()}
@@ -3046,6 +3046,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 <video
                   src={selectedVideo}
                   controls
+                  autoPlay
+                  muted
                   className="w-full h-full rounded-lg bg-black"
                   preload="metadata"
                   onLoadedData={() => console.log('✅ Direct video loaded successfully:', selectedVideo)}

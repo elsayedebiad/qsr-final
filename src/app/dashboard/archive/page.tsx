@@ -50,6 +50,8 @@ export default function ArchivePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCvs, setSelectedCvs] = useState<string[]>([])
+  const [isRestoring, setIsRestoring] = useState(false)
+  const [restoreProgress, setRestoreProgress] = useState(0)
 
   useEffect(() => {
     fetchArchivedCVs()
@@ -126,24 +128,52 @@ export default function ArchivePage() {
       return
     }
 
+    setIsRestoring(true)
+    setRestoreProgress(0)
+
     try {
       const token = localStorage.getItem('token')
+      const totalCvs = selectedCvs.length
+      let completedCvs = 0
+
+      // إظهار toast مع التقدم
+      const progressToast = toast.loading(`جاري استعادة السير الذاتية... (0/${totalCvs})`)
+
       for (const cvId of selectedCvs) {
-        await fetch(`/api/cvs/${cvId}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ status: 'NEW' })
-        })
+        try {
+          await fetch(`/api/cvs/${cvId}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'NEW' })
+          })
+          
+          completedCvs++
+          const progress = Math.round((completedCvs / totalCvs) * 100)
+          setRestoreProgress(progress)
+          
+          // تحديث toast مع التقدم
+          toast.loading(`جاري استعادة السير الذاتية... (${completedCvs}/${totalCvs})`, {
+            id: progressToast
+          })
+        } catch (cvError) {
+          console.error(`فشل في استعادة السيرة ${cvId}:`, cvError)
+        }
       }
 
-      toast.success(`تم استعادة ${selectedCvs.length} سيرة ذاتية إلى قائمة الجديد`)
+      // إخفاء toast التقدم وإظهار رسالة النجاح
+      toast.dismiss(progressToast)
+      toast.success(`تم استعادة ${completedCvs} سيرة ذاتية إلى قائمة الجديد`)
+      
       setSelectedCvs([])
       fetchArchivedCVs()
     } catch (error) {
       toast.error('فشل في استعادة السير الذاتية')
+    } finally {
+      setIsRestoring(false)
+      setRestoreProgress(0)
     }
   }
 
@@ -241,18 +271,43 @@ export default function ArchivePage() {
                   <button
                     onClick={() => setSelectedCvs([])}
                     className="btn btn-secondary text-sm"
+                    disabled={isRestoring}
                   >
                     إلغاء التحديد
                   </button>
                   <button
                     onClick={handleRestoreSelected}
                     className="btn btn-primary text-sm flex items-center gap-2"
+                    disabled={isRestoring}
                   >
-                    <Undo2 className="h-4 w-4" />
-                    استعادة المحدد
+                    {isRestoring ? (
+                      <>
+                        <div className="spinner w-4 h-4"></div>
+                        جاري الاستعادة...
+                      </>
+                    ) : (
+                      <>
+                        <Undo2 className="h-4 w-4" />
+                        استعادة المحدد
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
+              {isRestoring && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-sm text-primary mb-2">
+                    <span>جاري استعادة السير الذاتية...</span>
+                    <span>{restoreProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${restoreProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
