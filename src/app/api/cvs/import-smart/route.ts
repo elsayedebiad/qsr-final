@@ -563,7 +563,7 @@ const processExcelRow = (row: ExcelRow, rowNumber: number): ProcessedCV => {
       elderCare: normalizeSkillLevel(row['رعاية المسنين']),
       housekeeping: normalizeSkillLevel(row['التدبير المنزلي']),
       cooking: normalizeSkillLevel(row['الطبخ']),
-      experience: cleanStringValue(row['الخبرة في الخارج']),
+      experience: cleanStringValue(row['الخبرة'] || row['الخبرة في الخارج'] || row['الخبرة السابقة']),
       education: cleanStringValue(row['التعليم']),
       skills: cleanStringValue(row['المهارات']),
       summary: cleanStringValue(row['الملخص']),
