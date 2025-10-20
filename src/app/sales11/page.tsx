@@ -194,6 +194,7 @@ export default function Sales11Page() {
   const [whatsappNumber, setWhatsappNumber] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
+  const [videoModalKey, setVideoModalKey] = useState(0)
   const [selectedCVForView, setSelectedCVForView] = useState<CV | null>(null)
   const [showSharePopup, setShowSharePopup] = useState(false)
   const [sharePopupMessage, setSharePopupMessage] = useState('')
@@ -2012,6 +2013,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                         <button
                           onClick={() => {
                             if (cv.videoLink && cv.videoLink.trim() !== '') {
+                              setVideoModalKey(prev => prev + 1);
                               setSelectedVideo(cv.videoLink);
                             } else {
                               toast.error('لا يوجد رابط فيديو لهذه السيرة');
@@ -2159,14 +2161,15 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
               <div className="aspect-video w-full rounded-lg sm:rounded-xl overflow-hidden shadow-xl">
                 {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
                   <iframe
+                    key={`youtube-${videoModalKey}`}
                     src={(() => {
                       // تحويل روابط YouTube إلى embed
                       if (selectedVideo.includes('youtu.be/')) {
                         const videoId = selectedVideo.split('youtu.be/')[1]?.split('?')[0]
-                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`
+                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1`
                       } else if (selectedVideo.includes('watch?v=')) {
                         const videoId = selectedVideo.split('watch?v=')[1]?.split('&')[0]
-                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`
+                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1`
                       }
                       return selectedVideo
                     })()}
@@ -2178,6 +2181,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   />
                 ) : selectedVideo.includes('drive.google.com') ? (
                   <iframe
+                    key={`youtube-${videoModalKey}`}
                     src={(() => {
                       // تحويل رابط Google Drive إلى embed
                       const fileIdMatch = selectedVideo.match(/\/file\/d\/([^\/]+)/)
@@ -2194,6 +2198,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   />
                 ) : selectedVideo.includes('vimeo.com') ? (
                   <iframe
+                    key={`youtube-${videoModalKey}`}
                     src={(() => {
                       // تحويل رابط Vimeo إلى embed
                       const videoId = selectedVideo.split('vimeo.com/')[1]?.split('?')[0]
@@ -2207,6 +2212,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   />
                 ) : (
                   <video
+                    key={`video-${videoModalKey}`}
                     src={selectedVideo}
                     controls
                     autoPlay

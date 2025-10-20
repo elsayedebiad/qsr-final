@@ -145,6 +145,7 @@ export default function CVsPage() {
   const [childrenFilter, setChildrenFilter] = useState<string>('ALL')
   const [locationFilter, setLocationFilter] = useState<string>('ALL')
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
+  const [videoModalKey, setVideoModalKey] = useState(0)
   const [viewingCv, setViewingCv] = useState<CV | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
   const [selectedCVForView, setSelectedCVForView] = useState<CV | null>(null)
@@ -2093,6 +2094,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       <button
                         onClick={() => {
                           if (cv.videoLink && cv.videoLink.trim() !== '') {
+                            setVideoModalKey(prev => prev + 1);
                             setSelectedVideo(cv.videoLink);
                           } else {
                             toast.error('لا يوجد رابط فيديو لهذه السيرة');
@@ -2256,6 +2258,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                             <button
                               onClick={() => {
                                 console.log('🎥 Video button clicked for CV:', cv.fullName, 'Video URL:', cv.videoLink)
+                                setVideoModalKey(prev => prev + 1);
                                 setSelectedVideo(cv.videoLink || null)
                               }}
                               className="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg"
@@ -2983,14 +2986,15 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             <div className="aspect-video w-full">
               {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
                 <iframe
+                  key={`youtube-${videoModalKey}`}
                   src={(() => {
                     // تحويل روابط YouTube إلى embed مع autoplay
                     if (selectedVideo.includes('youtu.be/')) {
                       const videoId = selectedVideo.split('youtu.be/')[1]?.split('?')[0]
-                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`
+                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1`
                     } else if (selectedVideo.includes('watch?v=')) {
                       const videoId = selectedVideo.split('watch?v=')[1]?.split('&')[0]
-                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`
+                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1`
                     }
                     return selectedVideo
                   })()}
@@ -3044,6 +3048,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 />
               ) : (
                 <video
+                  key={`video-${videoModalKey}`}
                   src={selectedVideo}
                   controls
                   autoPlay
