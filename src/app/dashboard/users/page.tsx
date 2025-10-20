@@ -1,27 +1,29 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+// import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { Role } from '@prisma/client'
 import { 
   User, 
   Plus, 
-  Edit, 
   Trash2, 
   Shield, 
-  UserCheck,
-  UserX,
-  Mail,
-  Calendar
+  Settings,
+  Key,
+  Lock,
+  Unlock
 } from 'lucide-react'
 import DashboardLayout from '../../../components/DashboardLayout'
+import PermissionsManager from '@/components/PermissionsManager'
+import { Permission, hasPermission } from '@/types/permissions'
 
 interface UserData {
   id: string
   email: string
   name: string
   role: Role
+  permissions: Permission[]
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -41,15 +43,17 @@ export default function UsersManagementPage() {
     email: string
     password: string
     role: Role
+    permissions: Permission[]
     isActive: boolean
   }>({
     name: '',
     email: '',
     password: '',
     role: Role.USER,
+    permissions: [],
     isActive: true
   })
-  const router = useRouter()
+  // const router = useRouter()
 
   useEffect(() => {
     fetchUsers()
@@ -72,7 +76,7 @@ export default function UsersManagementPage() {
       } else {
         toast.error('فشل في تحميل المستخدمين')
       }
-    } catch (error) {
+    } catch {
       toast.error('حدث خطأ أثناء تحميل المستخدمين')
     } finally {
       setIsLoading(false)
@@ -102,13 +106,13 @@ export default function UsersManagementPage() {
         toast.success(editingUser ? 'تم تحديث المستخدم بنجاح' : 'تم إنشاء المستخدم بنجاح')
         setIsModalOpen(false)
         setEditingUser(null)
-        setFormData({ name: '', email: '', password: '', role: Role.USER, isActive: true })
+        setFormData({ name: '', email: '', password: '', role: Role.USER, permissions: [], isActive: true })
         fetchUsers()
       } else {
         const error = await response.json()
         toast.error(error.message || 'حدث خطأ')
       }
-    } catch (error) {
+    } catch {
       toast.error('حدث خطأ أثناء حفظ المستخدم')
     }
   }
@@ -120,6 +124,7 @@ export default function UsersManagementPage() {
       email: user.email,
       password: '',
       role: user.role,
+      permissions: user.permissions || [],
       isActive: user.isActive
     })
     setIsModalOpen(true)
@@ -145,7 +150,7 @@ export default function UsersManagementPage() {
       } else {
         toast.error('فشل في حذف المستخدم')
       }
-    } catch (error) {
+    } catch {
       toast.error('حدث خطأ أثناء حذف المستخدم')
     }
   }
@@ -168,15 +173,15 @@ export default function UsersManagementPage() {
   const getRoleColor = (role: Role) => {
     switch (role) {
       case Role.ADMIN:
-        return 'bg-red-500 text-white'
+        return 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
       case Role.SUB_ADMIN:
-        return 'bg-yellow-500 text-white'
+        return 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20'
       case Role.CUSTOMER_SERVICE:
-        return 'bg-blue-500 text-white'
+        return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
       case Role.USER:
-        return 'bg-green-500 text-white'
+        return 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
       default:
-        return 'bg-gray-500 text-white'
+        return 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-500/20'
     }
   }
 
@@ -213,14 +218,14 @@ export default function UsersManagementPage() {
             </div>
         {/* Add User Button */}
         <div className="mb-6">
-          <button
-            onClick={() => {
-              setEditingUser(null)
-              setFormData({ name: '', email: '', password: '', role: Role.USER, isActive: true })
-              setIsModalOpen(true)
-            }}
-            className="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-colors flex items-center"
-          >
+              <button
+                onClick={() => {
+                  setEditingUser(null)
+                  setFormData({ name: '', email: '', password: '', role: Role.USER, permissions: [], isActive: true })
+                  setIsModalOpen(true)
+                }}
+                className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+              >
             <Plus className="h-4 w-4 ml-2" />
             إضافة مستخدم جديد
           </button>
@@ -234,6 +239,7 @@ export default function UsersManagementPage() {
                 <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">المستخدم</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">البريد الإلكتروني</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الدور</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الصلاحيات</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الحالة</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">تاريخ الإنشاء</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الإجراءات</th>
@@ -256,30 +262,61 @@ export default function UsersManagementPage() {
                     <div className="text-sm text-foreground">{user.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(user.role)}`}>
+                    <span className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${getRoleColor(user.role)}`}>
                       {getRoleText(user.role)}
                     </span>
                   </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      {user.permissions && user.permissions.length > 0 ? (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Key className="h-3.5 w-3.5 text-primary" />
+                            <span className="text-sm font-medium text-foreground">
+                              {user.permissions.length} صلاحية
+                            </span>
+                          </div>
+                          {hasPermission(user.permissions, Permission.ADMIN) && (
+                            <span className="px-2 py-1 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-xs rounded-md font-medium">
+                              كامل
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">لا توجد صلاحيات</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.isActive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
-                      {user.isActive ? 'نشط' : 'معطل'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {user.isActive ? (
+                        <>
+                          <Unlock className="h-4 w-4 text-green-500" />
+                          <span className="text-sm font-medium text-green-600 dark:text-green-400">نشط</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-4 w-4 text-red-500" />
+                          <span className="text-sm font-medium text-red-600 dark:text-red-400">معطل</span>
+                        </>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {new Date(user.createdAt).toLocaleDateString('ar-SA')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleEdit(user)}
-                        className="text-primary hover:text-indigo-900 p-1"
-                        title="تعديل"
+                        className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                        title="تعديل المستخدم والصلاحيات"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Settings className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(user.id)}
-                        className="text-destructive hover:text-red-900 p-1"
+                        className="p-2 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors"
                         title="حذف"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -302,79 +339,143 @@ export default function UsersManagementPage() {
 
             {/* Add/Edit User Modal */}
             {isModalOpen && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium mb-4 text-black">
-              {editingUser ? 'تعديل المستخدم' : 'إضافة مستخدم جديد'}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">الاسم</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full border border-border rounded-md px-3 py-2 focus:ring-ring focus:border-ring"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl shadow-2xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-border">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-lg bg-primary/10">
+                {editingUser ? (
+                  <Settings className="h-6 w-6 text-primary" />
+                ) : (
+                  <Plus className="h-6 w-6 text-primary" />
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">البريد الإلكتروني</label>
-                <input
-                  type="email"
-                  required
-                  className="w-full border border-border rounded-md px-3 py-2 focus:ring-ring focus:border-ring"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
+                <h3 className="text-xl font-bold text-foreground">
+                  {editingUser ? 'تعديل المستخدم والصلاحيات' : 'إضافة مستخدم جديد'}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {editingUser ? 'قم بتعديل بيانات وصلاحيات المستخدم' : 'أدخل بيانات المستخدم وحدد صلاحياته'}
+                </p>
               </div>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* قسم البيانات الأساسية */}
+              <div className="space-y-4 p-4 bg-secondary/30 rounded-lg">
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  البيانات الأساسية
+                </h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">الاسم</label>
+                    <input
+                      type="text"
+                      required
+                      className="w-full border border-border rounded-lg px-3 py-2 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">البريد الإلكتروني</label>
+                    <input
+                      type="email"
+                      required
+                      className="w-full border border-border rounded-lg px-3 py-2 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      كلمة المرور {editingUser && '(اتركها فارغة للحفاظ على الحالية)'}
+                    </label>
+                    <input
+                      type="password"
+                      required={!editingUser}
+                      className="w-full border border-border rounded-lg px-3 py-2 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">الدور الوظيفي</label>
+                    <select
+                      className="w-full border border-border rounded-lg px-3 py-2 bg-background focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as Role })}
+                    >
+                      <option value={Role.USER}>Sales</option>
+                      <option value={Role.CUSTOMER_SERVICE}>Customer Service</option>
+                      <option value={Role.SUB_ADMIN}>Operation Manager</option>
+                      <option value={Role.ADMIN}>مدير عام</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-primary border-border rounded focus:ring-primary"
+                      checked={formData.isActive}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    />
+                    <span className="text-sm font-medium text-foreground">حساب نشط</span>
+                  </label>
+                  {!formData.isActive && (
+                    <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                      لن يتمكن المستخدم من تسجيل الدخول
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              {/* قسم الصلاحيات */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  كلمة المرور {editingUser && '(اتركها فارغة للحفاظ على كلمة المرور الحالية)'}
-                </label>
-                <input
-                  type="password"
-                  required={!editingUser}
-                  className="w-full border border-border rounded-md px-3 py-2 focus:ring-ring focus:border-ring"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  الصلاحيات والأذونات
+                </h4>
+                <PermissionsManager
+                  selectedPermissions={formData.permissions}
+                  onChange={(permissions) => setFormData({ ...formData, permissions })}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">الدور</label>
-                <select
-                  className="w-full border border-border rounded-md px-3 py-2 focus:ring-ring focus:border-ring"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as Role })}
-                >
-                  <option value={Role.USER}>sales</option>
-                  <option value={Role.CUSTOMER_SERVICE}>Customer Service</option>
-                  <option value={Role.SUB_ADMIN}>Operation</option>
-                  <option value={Role.ADMIN}>مدير عام</option>
-                </select>
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-primary border-border rounded focus:ring-ring"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                />
-                <label className="mr-2 text-sm text-foreground">نشط</label>
-              </div>
-              <div className="flex justify-end space-x-2">
+              {/* الأزرار */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-gray-200 text-foreground rounded-md hover:bg-gray-300"
+                  onClick={() => {
+                    setIsModalOpen(false)
+                    setEditingUser(null)
+                    setFormData({ name: '', email: '', password: '', role: Role.USER, permissions: [], isActive: true })
+                  }}
+                  className="px-5 py-2.5 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg font-medium transition-colors"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:opacity-90"
+                  className="px-5 py-2.5 bg-gradient-to-r from-primary to-primary/80 hover:shadow-lg text-primary-foreground rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
                 >
-                  {editingUser ? 'تحديث' : 'إضافة'}
+                  {editingUser ? (
+                    <>
+                      <Settings className="h-4 w-4" />
+                      تحديث
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      إضافة مستخدم
+                    </>
+                  )}
                 </button>
               </div>
             </form>

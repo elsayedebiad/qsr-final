@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient, Role } from '@prisma/client'
 import { validateAuthFromRequest, requireAdmin } from '@/lib/middleware-auth'
 import bcrypt from 'bcryptjs'
+import { Permission } from '@/types/permissions'
 
 const prisma = new PrismaClient()
 
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
         email: true,
         name: true,
         role: true,
+        permissions: true,
         isActive: true,
         createdAt: true,
         updatedAt: true
@@ -61,7 +63,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
-    const { name, email, password, role, isActive } = await request.json()
+    const { name, email, password, role, permissions, isActive } = await request.json()
 
     // Validate required fields
     if (!name || !email || !password || !role) {
@@ -87,6 +89,7 @@ export async function POST(request: NextRequest) {
         email,
         password: hashedPassword,
         role: role as Role,
+        permissions: permissions || [],
         isActive: isActive !== undefined ? isActive : true
       },
       select: {
@@ -94,6 +97,7 @@ export async function POST(request: NextRequest) {
         email: true,
         name: true,
         role: true,
+        permissions: true,
         isActive: true,
         createdAt: true,
         updatedAt: true

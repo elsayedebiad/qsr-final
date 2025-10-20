@@ -98,10 +98,14 @@ interface CV {
   // خصائص إضافية للفلاتر المتقدمة
   religion?: string
   education?: string
+  educationLevel?: string
+  englishLevel?: SkillLevel
+  passportStatus?: string
+  height?: number | string
+  weight?: number | string
+  children?: string
   passportNumber?: string
   passportExpiryDate?: string
-  height?: string
-  weight?: string
   numberOfChildren?: number
   livingTown?: string
   placeOfBirth?: string
@@ -128,7 +132,8 @@ export default function CVsPage() {
   const [ageFilter, setAgeFilter] = useState<string>('ALL')
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [experienceFilter, setExperienceFilter] = useState<string>('ALL')
-  const [languageFilter, setLanguageFilter] = useState<string>('ALL')
+  const [arabicLevelFilter, setArabicLevelFilter] = useState<string>('ALL')
+  const [englishLevelFilter, setEnglishLevelFilter] = useState<string>('ALL')
   
   // فلاتر إضافية شاملة
   const [educationFilter, setEducationFilter] = useState<string>('ALL')
@@ -191,7 +196,7 @@ export default function CVsPage() {
   useEffect(() => {
     filterCVs()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cvs, searchTerm, religionFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, languageFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
+  }, [cvs, searchTerm, religionFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, arabicLevelFilter, englishLevelFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
 
   // Pagination effect
   useEffect(() => {
@@ -203,7 +208,7 @@ export default function CVsPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, religionFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, languageFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
+  }, [searchTerm, religionFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, arabicLevelFilter, englishLevelFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
 
   // إغلاق الـModal بزر Escape
   useEffect(() => {
@@ -316,19 +321,51 @@ export default function CVsPage() {
     }
     if (experienceFilter !== 'ALL') {
       filtered = filtered.filter((cv) => {
-        const experience = cv.workExperience ?? cv.experience ?? 0
-        if (typeof experience !== 'number') return false
-        if (experienceFilter === '0-1') return experience >= 0 && experience < 1
-        if (experienceFilter === '1-3') return experience >= 1 && experience <= 3
-        if (experienceFilter === '3-5') return experience >= 3 && experience <= 5
-        if (experienceFilter === '5+') return experience > 5
-        return true
+        const expValue = cv.experience || cv.previousEmployment || ''
+        const exp = typeof expValue === 'string' ? expValue.trim().toLowerCase() : String(expValue).trim().toLowerCase()
+        
+        // معالجة القيم الفارغة وغير المحددة
+        if (experienceFilter === 'NO_EXPERIENCE') {
+          // معالجة جميع الحالات الممكنة لـ "بدون خبرة"
+          if (!exp || exp === '') return true
+          if (exp === 'لا يوجد' || exp === 'لايوجد') return true
+          if (exp === 'غير محدد' || exp === 'غيرمحدد') return true
+          if (exp === 'no' || exp === 'none' || exp === 'null' || exp === 'undefined') return true
+          if (exp === '0' || exp === '0 سنة' || exp === '0 سنوات') return true
+          // التحقق إذا كانت تحتوي على "لا" أو "غير"
+          if (exp.includes('لا') || exp.includes('غير')) return true
+          return false
+        }
+        
+        // استخراج الأرقام من النص
+        const nums = exp.match(/\d+/g)
+        const yrs = nums && nums.length > 0 ? parseInt(nums[0]) : 0
+        
+        // في حالة وجود رقم صفر، اعتبره بدون خبرة
+        if (yrs === 0 && experienceFilter !== 'NO_EXPERIENCE') return false
+        
+        if (experienceFilter === '1-2') return yrs >= 1 && yrs <= 2
+        if (experienceFilter === '3-5') return yrs >= 3 && yrs <= 5
+        if (experienceFilter === '6-10') return yrs >= 6 && yrs <= 10
+        if (experienceFilter === 'MORE_10') return yrs > 10
+        
+        return false
       })
     }
-    if (languageFilter !== 'ALL') {
+    if (arabicLevelFilter !== 'ALL') {
       filtered = filtered.filter((cv) => {
         const arabicLevel = cv.arabicLevel ?? cv.languageLevel
-        return arabicLevel === languageFilter
+        if (arabicLevelFilter === 'WEAK') return arabicLevel === null || arabicLevel === undefined
+        if (arabicLevelFilter === 'NO') return arabicLevel === 'NO'
+        return arabicLevel === arabicLevelFilter
+      })
+    }
+    if (englishLevelFilter !== 'ALL') {
+      filtered = filtered.filter((cv) => {
+        const englishLevel = cv.englishLevel
+        if (englishLevelFilter === 'WEAK') return englishLevel === null || englishLevel === undefined
+        if (englishLevelFilter === 'NO') return englishLevel === 'NO'
+        return englishLevel === englishLevelFilter
       })
     }
 
@@ -358,17 +395,18 @@ export default function CVsPage() {
     
     if (heightFilter !== 'ALL') {
       filtered = filtered.filter((cv) => {
-        const height = parseInt(cv.height || '0')
-        if (heightFilter === 'SHORT') return height < 160
-        if (heightFilter === 'MEDIUM') return height >= 160 && height < 170
-        if (heightFilter === 'TALL') return height >= 170
+        const height = typeof cv.height === 'number' ? cv.height : parseInt(String(cv.height || '0'))
+        if (heightFilter === '<150') return height < 150
+        if (heightFilter === '150-160') return height >= 150 && height <= 160
+        if (heightFilter === '160-170') return height >= 160 && height <= 170
+        if (heightFilter === '170+') return height >= 170
         return true
       })
     }
     
     if (weightFilter !== 'ALL') {
       filtered = filtered.filter((cv) => {
-        const weight = parseInt(cv.weight || '0')
+        const weight = typeof cv.weight === 'number' ? cv.weight : parseInt(String(cv.weight || '0'))
         if (weightFilter === 'LIGHT') return weight < 60
         if (weightFilter === 'MEDIUM') return weight >= 60 && weight < 80
         if (weightFilter === 'HEAVY') return weight >= 80
@@ -443,16 +481,47 @@ export default function CVsPage() {
           const skillKey = skillMap[filterValue]
           return skillKey ? (cv[skillKey] === 'YES' || cv[skillKey] === 'WILLING') : false
           
-        case 'language':
-          const level = cv.arabicLevel || cv.englishLevel
-          return level === filterValue
+        case 'arabicLevel':
+          const arabicLevel = cv.arabicLevel ?? cv.languageLevel
+          if (filterValue === 'WEAK') return arabicLevel === null || arabicLevel === undefined
+          if (filterValue === 'NO') return arabicLevel === 'NO'
+          return arabicLevel === filterValue
+          
+        case 'englishLevel':
+          const englishLevel = cv.englishLevel
+          if (filterValue === 'WEAK') return englishLevel === null || englishLevel === undefined
+          if (filterValue === 'NO') return englishLevel === 'NO'
+          return englishLevel === filterValue
           
         case 'experience':
-          const exp = (cv.experience || '').toLowerCase()
-          if (filterValue === '0-2' && (exp.includes('0') || exp.includes('1') || exp.includes('2') || exp === 'no' || exp === 'none')) return true
-          if (filterValue === '2-5' && (exp.includes('2') || exp.includes('3') || exp.includes('4') || exp.includes('5'))) return true
-          if (filterValue === '5-10' && (exp.includes('5') || exp.includes('6') || exp.includes('7') || exp.includes('8') || exp.includes('9') || exp.includes('10'))) return true
-          if (filterValue === '10+' && (exp.includes('10') || exp.includes('11') || exp.includes('12') || exp.includes('13') || exp.includes('14') || exp.includes('15'))) return true
+          const expValue = cv.experience || cv.previousEmployment || ''
+          const exp = typeof expValue === 'string' ? expValue.trim().toLowerCase() : String(expValue).trim().toLowerCase()
+          
+          // معالجة القيم الفارغة وغير المحددة
+          if (filterValue === 'NO_EXPERIENCE') {
+            // معالجة جميع الحالات الممكنة لـ "بدون خبرة"
+            if (!exp || exp === '') return true
+            if (exp === 'لا يوجد' || exp === 'لايوجد') return true
+            if (exp === 'غير محدد' || exp === 'غيرمحدد') return true
+            if (exp === 'no' || exp === 'none' || exp === 'null' || exp === 'undefined') return true
+            if (exp === '0' || exp === '0 سنة' || exp === '0 سنوات') return true
+            // التحقق إذا كانت تحتوي على "لا" أو "غير"
+            if (exp.includes('لا') || exp.includes('غير')) return true
+            return false
+          }
+          
+          // استخراج الأرقام من النص
+          const nums = exp.match(/\d+/g)
+          const yrs = nums && nums.length > 0 ? parseInt(nums[0]) : 0
+          
+          // في حالة وجود رقم صفر، اعتبره بدون خبرة
+          if (yrs === 0 && filterValue !== 'NO_EXPERIENCE') return false
+          
+          if (filterValue === '1-2') return yrs >= 1 && yrs <= 2
+          if (filterValue === '3-5') return yrs >= 3 && yrs <= 5
+          if (filterValue === '6-10') return yrs >= 6 && yrs <= 10
+          if (filterValue === 'MORE_10') return yrs > 10
+          
           return false
           
         case 'education':
@@ -485,7 +554,7 @@ export default function CVsPage() {
           return false
           
         case 'height':
-          const height = cv.height || 0
+          const height = typeof cv.height === 'number' ? cv.height : parseInt(String(cv.height || '0'))
           if (filterValue === '140-150' && height >= 140 && height <= 150) return true
           if (filterValue === '150-160' && height >= 150 && height <= 160) return true
           if (filterValue === '160-170' && height >= 160 && height <= 170) return true
@@ -493,7 +562,7 @@ export default function CVsPage() {
           return false
           
         case 'weight':
-          const weight = cv.weight || 0
+          const weight = typeof cv.weight === 'number' ? cv.weight : parseInt(String(cv.weight || '0'))
           if (filterValue === '40-50' && weight >= 40 && weight <= 50) return true
           if (filterValue === '50-60' && weight >= 50 && weight <= 60) return true
           if (filterValue === '60-70' && weight >= 60 && weight <= 70) return true
@@ -501,7 +570,8 @@ export default function CVsPage() {
           return false
           
         case 'children':
-          const children = cv.children || 0
+          const childrenValue = cv.children || cv.numberOfChildren || 0
+          const children = typeof childrenValue === 'number' ? childrenValue : parseInt(String(childrenValue || '0'))
           if (filterValue === 'NONE' && children === 0) return true
           if (filterValue === 'FEW' && children >= 1 && children <= 2) return true
           if (filterValue === 'MANY' && children > 2) return true
@@ -1497,18 +1567,35 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
 
                   <div className="space-y-2">
                     <label className="flex items-center text-sm font-semibold text-success mb-2">
-                      <Globe className="h-4 w-4 ml-2" /> مستوى اللغة
+                      <Globe className="h-4 w-4 ml-2" /> اللغة العربية
                     </label>
                     <select
                       className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-success"
-                      value={languageFilter}
-                      onChange={(e) => setLanguageFilter(e.target.value)}
+                      value={arabicLevelFilter}
+                      onChange={(e) => setArabicLevelFilter(e.target.value)}
                     >
-                      <option value="ALL">جميع المستويات ({getCountForFilter('language', 'ALL')})</option>
-                      <option value="YES">ممتاز ({getCountForFilter('language', 'YES')})</option>
-                      <option value="WILLING">جيد ({getCountForFilter('language', 'WILLING')})</option>
-                      <option value="NO">ضعيف ({getCountForFilter('language', 'NO')})</option>
-                      <option value="POOR">ضعيف</option>
+                      <option value="ALL">جميع المستويات ({getCountForFilter('arabicLevel', 'ALL')})</option>
+                      <option value="YES">ممتاز ({getCountForFilter('arabicLevel', 'YES')})</option>
+                      <option value="WILLING">جيد ({getCountForFilter('arabicLevel', 'WILLING')})</option>
+                      <option value="WEAK">ضعيف ({getCountForFilter('arabicLevel', 'WEAK')})</option>
+                      <option value="NO">لا ({getCountForFilter('arabicLevel', 'NO')})</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="flex items-center text-sm font-semibold text-info mb-2">
+                      <Globe className="h-4 w-4 ml-2" /> اللغة الإنجليزية
+                    </label>
+                    <select
+                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-info"
+                      value={englishLevelFilter}
+                      onChange={(e) => setEnglishLevelFilter(e.target.value)}
+                    >
+                      <option value="ALL">جميع المستويات ({getCountForFilter('englishLevel', 'ALL')})</option>
+                      <option value="YES">ممتاز ({getCountForFilter('englishLevel', 'YES')})</option>
+                      <option value="WILLING">جيد ({getCountForFilter('englishLevel', 'WILLING')})</option>
+                      <option value="WEAK">ضعيف ({getCountForFilter('englishLevel', 'WEAK')})</option>
+                      <option value="NO">لا ({getCountForFilter('englishLevel', 'NO')})</option>
                     </select>
                   </div>
 
@@ -1522,10 +1609,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       onChange={(e) => setExperienceFilter(e.target.value)}
                     >
                       <option value="ALL">جميع الخبرات ({getCountForFilter('experience', 'ALL')})</option>
-                      <option value="0-2">0-2 سنة ({getCountForFilter('experience', '0-2')})</option>
-                      <option value="2-5">2-5 سنوات ({getCountForFilter('experience', '2-5')})</option>
-                      <option value="5-10">5-10 سنوات ({getCountForFilter('experience', '5-10')})</option>
-                      <option value="10+">أكثر من 10 سنوات ({getCountForFilter('experience', '10+')})</option>
+                      <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
+                      <option value="1-2">1-2 سنة ({getCountForFilter('experience', '1-2')})</option>
+                      <option value="3-5">3-5 سنوات ({getCountForFilter('experience', '3-5')})</option>
+                      <option value="6-10">6-10 سنوات ({getCountForFilter('experience', '6-10')})</option>
+                      <option value="MORE_10">أكثر من 10 سنوات ({getCountForFilter('experience', 'MORE_10')})</option>
                     </select>
                   </div>
                 </div>
@@ -1657,13 +1745,15 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 <div className="mt-4 flex justify-center">
                   <button
                     onClick={() => {
+                      setSearchTerm('')
                       setReligionFilter('ALL')
                       setNationalityFilter('ALL')
                       setSkillFilter('ALL')
                       setMaritalStatusFilter('ALL')
                       setAgeFilter('ALL')
                       setExperienceFilter('ALL')
-                      setLanguageFilter('ALL')
+                      setArabicLevelFilter('ALL')
+                      setEnglishLevelFilter('ALL')
                       setEducationFilter('ALL')
                       setSalaryFilter('ALL')
                       setContractPeriodFilter('ALL')
@@ -1672,7 +1762,6 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       setWeightFilter('ALL')
                       setChildrenFilter('ALL')
                       setLocationFilter('ALL')
-                      setSearchTerm('')
                     }}
                     className="px-6 py-2 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium hover:from-red-500 hover:to-pink-500"
                   >

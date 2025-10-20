@@ -24,7 +24,7 @@ export async function PUT(
 
     const { id: idParam } = params
     const id = parseInt(idParam)
-    const { name, email, password, role, isActive } = await request.json()
+    const { name, email, password, role, permissions, isActive } = await request.json()
 
     // Validate ID
     if (isNaN(id)) {
@@ -61,6 +61,7 @@ export async function PUT(
       name,
       email,
       role: role as Role,
+      permissions: permissions || [],
       isActive: isActive !== undefined ? isActive : true
     }
 
@@ -78,6 +79,7 @@ export async function PUT(
         email: true,
         name: true,
         role: true,
+        permissions: true,
         isActive: true,
         createdAt: true,
         updatedAt: true
