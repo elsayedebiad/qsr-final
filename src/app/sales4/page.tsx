@@ -2172,7 +2172,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
               </button>
             </div>
             <div className="p-2 sm:p-4 lg:p-6 bg-gray-50">
-              <div className="relative aspect-video w-full rounded-lg sm:rounded-xl overflow-hidden shadow-xl bg-black">
+              <div className="relative w-full rounded-lg sm:rounded-xl overflow-hidden shadow-xl bg-black" style={{ paddingBottom: '56.25%' }}>
                 {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
                   <iframe
                     key={`youtube-${videoModalKey}`}
@@ -2187,7 +2187,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       }
                       return selectedVideo
                     })()}
-                    className="absolute inset-0 w-full h-full rounded-lg object-contain"
+                    className="absolute top-0 left-0 w-full h-full rounded-lg"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -2204,7 +2204,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       }
                       return selectedVideo.replace('/view?usp=sharing', '/preview').replace('/view', '/preview')
                     })()}
-                    className="absolute inset-0 w-full h-full rounded-lg object-contain"
+                    className="absolute top-0 left-0 w-full h-full rounded-lg"
                     frameBorder="0"
                     allow="autoplay"
                     allowFullScreen
@@ -2218,7 +2218,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       const videoId = selectedVideo.split('vimeo.com/')[1]?.split('?')[0]
                       return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1`
                     })()}
-                    className="absolute inset-0 w-full h-full rounded-lg object-contain"
+                    className="absolute top-0 left-0 w-full h-full rounded-lg"
                     frameBorder="0"
                     allow="autoplay; fullscreen; picture-in-picture"
                     allowFullScreen
@@ -2233,7 +2233,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     muted
 
                     playsInline
-                    className="absolute inset-0 w-full h-full rounded-lg bg-black object-contain"
+                    className="absolute top-0 left-0 w-full h-full rounded-lg bg-black object-contain"
                     preload="metadata"
                   >
                     <source src={selectedVideo} type="video/mp4" />

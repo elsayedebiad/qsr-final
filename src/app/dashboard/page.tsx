@@ -2983,7 +2983,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             </button>
           </div>
           <div className="p-2 sm:p-4">
-            <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
+            <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%' }}>
               {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
                 <iframe
                   key={`youtube-${videoModalKey}`}
@@ -2998,7 +2998,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     }
                     return selectedVideo
                   })()}
-                  className="absolute inset-0 w-full h-full rounded-lg object-contain"
+                  className="absolute top-0 left-0 w-full h-full rounded-lg"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -3021,7 +3021,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     console.log('🔗 Google Drive fallback URL:', fallbackUrl)
                     return fallbackUrl
                   })()}
-                  className="absolute inset-0 w-full h-full rounded-lg object-contain"
+                  className="absolute top-0 left-0 w-full h-full rounded-lg"
                   frameBorder="0"
                   allow="autoplay"
                   allowFullScreen
@@ -3038,7 +3038,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     console.log('🔗 Vimeo embed URL:', embedUrl)
                     return embedUrl
                   })()}
-                  className="absolute inset-0 w-full h-full rounded-lg object-contain"
+                  className="absolute top-0 left-0 w-full h-full rounded-lg"
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture"
                   allowFullScreen
@@ -3054,7 +3054,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   autoPlay
                   muted
                   playsInline
-                  className="absolute inset-0 w-full h-full rounded-lg bg-black object-contain"
+                  className="absolute top-0 left-0 w-full h-full rounded-lg bg-black object-contain"
                   preload="metadata"
                   onLoadedData={() => console.log('✅ Direct video loaded successfully:', selectedVideo)}
                   onError={(e) => {
