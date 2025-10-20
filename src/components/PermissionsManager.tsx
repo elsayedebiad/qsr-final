@@ -33,10 +33,26 @@ export default function PermissionsManager({
   onChange, 
   disabled = false 
 }: PermissionsManagerProps) {
+  const [permissionMode, setPermissionMode] = useState<'full' | 'custom'>(
+    selectedPermissions.length === Object.values(Permission).length ? 'full' : 'custom'
+  )
   const [expandedCategories, setExpandedCategories] = useState<string[]>(
     Object.keys(PERMISSION_CATEGORIES)
   )
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+
+  // تحديث الوضع عند تغيير الصلاحيات
+  const handleModeChange = (mode: 'full' | 'custom') => {
+    setPermissionMode(mode)
+    if (mode === 'full') {
+      onChange(Object.values(Permission))
+      setSelectedPreset('ADMIN')
+    } else {
+      // عند اختيار تخصيص، نبدأ بصلاحيات فارغة
+      onChange([])
+      setSelectedPreset(null)
+    }
+  }
 
   // أيقونات الفئات
   const categoryIcons: Record<string, any> = {
@@ -99,18 +115,50 @@ export default function PermissionsManager({
 
   return (
     <div className="space-y-6">
-      {/* القوالب الجاهزة */}
+      {/* اختيار نوع الصلاحيات */}
       <div className="bg-card border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Shield className="h-4 w-4 text-primary" />
-          قوالب الصلاحيات الجاهزة
+        <h3 className="text-sm font-semibold text-foreground mb-3">
+          نوع الصلاحيات
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {Object.entries(PERMISSION_PRESETS).map(([key, preset]) => (
-            <button
-              key={key}
-              onClick={() => applyPreset(key)}
-              disabled={disabled}
+        <div className="flex gap-3">
+          <button
+            onClick={() => handleModeChange('full')}
+            className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              permissionMode === 'full'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'
+            }`}
+          >
+            <Lock className="h-4 w-4 inline ml-2" />
+            صلاحيات كاملة (دول)
+          </button>
+          <button
+            onClick={() => handleModeChange('custom')}
+            className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              permissionMode === 'custom'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'
+            }`}
+          >
+            <Settings className="h-4 w-4 inline ml-2" />
+            تخصيص الصلاحيات
+          </button>
+        </div>
+      </div>
+
+      {/* القوالب الجاهزة - تظهر فقط في وضع التخصيص */}
+      {permissionMode === 'custom' && (
+        <div className="bg-card border border-border rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-primary" />
+            قوالب الصلاحيات الجاهزة
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {Object.entries(PERMISSION_PRESETS).map(([key, preset]) => (
+              <button
+                key={key}
+                onClick={() => applyPreset(key)}
+                disabled={disabled}
               className={`px-3 py-2 rounded-lg text-sm transition-all ${
                 selectedPreset === key
                   ? 'bg-primary text-primary-foreground shadow-md'
@@ -125,8 +173,10 @@ export default function PermissionsManager({
           ))}
         </div>
       </div>
+      )}
 
-      {/* أزرار التحكم السريع */}
+      {/* أزرار التحكم السريع - تظهر فقط في وضع التخصيص */}
+      {permissionMode === 'custom' && (
       <div className="flex gap-2">
         <button
           onClick={() => toggleAll(true)}
@@ -148,8 +198,10 @@ export default function PermissionsManager({
           {selectedPermissions.length} من {Object.values(Permission).length} صلاحية محددة
         </div>
       </div>
+      )}
 
-      {/* الصلاحيات بالفئات */}
+      {/* الصلاحيات بالفئات - تظهر فقط في وضع التخصيص */}
+      {permissionMode === 'custom' && (
       <div className="space-y-3">
         {Object.entries(PERMISSION_CATEGORIES).map(([category, permissions]) => {
           const Icon = categoryIcons[category] || Shield
@@ -244,9 +296,10 @@ export default function PermissionsManager({
           )
         })}
       </div>
+      )}
 
-      {/* ملاحظة */}
-      {selectedPermissions.includes(Permission.ADMIN) && (
+      {/* ملاحظة - تظهر في وضع التخصيص فقط */}
+      {permissionMode === 'custom' && selectedPermissions.includes(Permission.ADMIN) && (
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
           <div className="flex items-start gap-2">
             <Shield className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />

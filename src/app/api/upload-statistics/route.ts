@@ -34,14 +34,17 @@ export async function GET(req: NextRequest) {
     // تحديد نطاق التاريخ حسب نوع الفلتر
     switch (filterType) {
       case 'daily':
-        const startOfDay = new Date(now.setHours(0, 0, 0, 0))
-        const endOfDay = new Date(now.setHours(23, 59, 59, 999))
+        // إصلاح مشكلة الفلتر اليومي - استخدام نسخ منفصلة من التاريخ
+        const today = new Date()
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0)
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999)
         dateFilter = {
           createdAt: {
             gte: startOfDay,
             lte: endOfDay
           }
         }
+        console.log('Daily filter range:', { startOfDay, endOfDay })
         break
       
       case 'weekly':
@@ -76,6 +79,8 @@ export async function GET(req: NextRequest) {
         break
     }
 
+    console.log('Using date filter:', dateFilter)
+    
     // جلب إحصائيات السير الذاتية المرفوعة
     const uploadedCVs = await prisma.cV.findMany({
       where: dateFilter,
@@ -92,6 +97,30 @@ export async function GET(req: NextRequest) {
         createdAt: 'desc'
       }
     })
+    
+    console.log(`Found ${uploadedCVs.length} uploaded CVs with current filter`)
+    
+    // إذا لم نجد بيانات في الفترة المحددة، نجلب آخر 100 سيرة ذاتية
+    let fallbackCVs: any[] = []
+    if (uploadedCVs.length === 0 && filterType === 'daily') {
+      console.log('No CVs found for today, fetching recent CVs as fallback...')
+      fallbackCVs = await prisma.cV.findMany({
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: 100
+      })
+      console.log(`Found ${fallbackCVs.length} recent CVs as fallback`)
+    }
 
     // جلب إحصائيات السير الذاتية المحدثة (السير التي updatedAt مختلف عن createdAt)
     const allCVs = await prisma.cV.findMany({
@@ -117,7 +146,7 @@ export async function GET(req: NextRequest) {
     // إحصائيات حسب المستخدم
     const userStats = await prisma.cV.groupBy({
       by: ['createdById'],
-      where: dateFilter,
+      where: uploadedCVs.length > 0 ? dateFilter : {}, // استخدام جميع البيانات إذا لم توجد بيانات في الفترة المحددة
       _count: {
         id: true
       }
@@ -153,43 +182,41 @@ export async function GET(req: NextRequest) {
       })
       .sort((a, b) => b.count - a.count)
 
-    // إحصائيات حسب الحالة
-    const statusStats = uploadedCVs.length > 0 ? await prisma.cV.groupBy({
+    // إحصائيات حسب الحالة - عرض البيانات حتى لو لم توجد بيانات حديثة
+    const statusStats = await prisma.cV.groupBy({
       by: ['status'],
-      where: dateFilter,
+      where: uploadedCVs.length > 0 ? dateFilter : {},
       _count: {
         id: true
       }
-    }) : []
+    })
 
-    // إحصائيات حسب الأولوية
-    const priorityStats = uploadedCVs.length > 0 ? await prisma.cV.groupBy({
+    // إحصائيات حسب الأولوية - عرض البيانات حتى لو لم توجد بيانات حديثة
+    const priorityStats = await prisma.cV.groupBy({
       by: ['priority'],
-      where: dateFilter,
+      where: uploadedCVs.length > 0 ? dateFilter : {},
       _count: {
         id: true
       }
-    }) : []
+    })
 
     // إحصائيات حسب الجنسية (فلترة البيانات الفارغة من النتائج)
     let nationalityStats: any[] = []
-    if (uploadedCVs.length > 0) {
-      try {
-        const rawNationalityStats = await prisma.cV.groupBy({
-          by: ['nationality'],
-          where: dateFilter,
-          _count: {
-            id: true
-          }
-        })
-        // فلترة القيم الفارغة أو null
-        nationalityStats = rawNationalityStats.filter(stat => 
-          stat.nationality && stat.nationality.trim() !== ''
-        )
-      } catch (error) {
-        console.error('Error grouping by nationality:', error)
-        nationalityStats = []
-      }
+    try {
+      const rawNationalityStats = await prisma.cV.groupBy({
+        by: ['nationality'],
+        where: uploadedCVs.length > 0 ? dateFilter : {}, // عرض جميع البيانات إذا لم توجد بيانات حديثة
+        _count: {
+          id: true
+        }
+      })
+      // فلترة القيم الفارغة أو null
+      nationalityStats = rawNationalityStats.filter(stat => 
+        stat.nationality && stat.nationality.trim() !== ''
+      )
+    } catch (error) {
+      console.error('Error grouping by nationality:', error)
+      nationalityStats = []
     }
 
     // إحصائيات يومية للرسم البياني (آخر 30 يوم)
@@ -229,15 +256,21 @@ export async function GET(req: NextRequest) {
       })
     }
 
+    // استخدام البيانات الاحتياطية إذا لم توجد بيانات في الفترة المحددة
+    const finalUploadedCVs = uploadedCVs.length > 0 ? uploadedCVs : fallbackCVs
+    const isUsingFallback = uploadedCVs.length === 0 && fallbackCVs.length > 0
+
     return NextResponse.json({
       summary: {
-        totalUploaded: uploadedCVs.length,
+        totalUploaded: finalUploadedCVs.length,
         totalUpdated: updatedCVs.length,
         filterType,
         startDate: dateFilter.createdAt?.gte || null,
-        endDate: dateFilter.createdAt?.lte || null
+        endDate: dateFilter.createdAt?.lte || null,
+        isUsingFallback,
+        fallbackMessage: isUsingFallback ? 'لا توجد بيانات لليوم الحالي، يتم عرض آخر البيانات المتاحة' : null
       },
-      uploadedCVs: uploadedCVs.map(cv => ({
+      uploadedCVs: finalUploadedCVs.map(cv => ({
         id: cv.id,
         fullName: cv.fullName,
         fullNameArabic: cv.fullNameArabic,

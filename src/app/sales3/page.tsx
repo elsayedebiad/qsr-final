@@ -22,7 +22,9 @@ import {
   ChevronDown,
   Share2,
   Play,
-  Image as ImageIcon
+  Image as ImageIcon,
+  AlertTriangle,
+  Camera
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
@@ -1775,21 +1777,58 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
               </div>
             </div>
           </div>
-        </div>
-
-        {/* ملاحظة حول الصور */}
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4 md:p-5 mb-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0">
-              <span className="text-2xl md:text-3xl leading-none">⭐</span>
+        </div>        {/* ملاحظات مهمة */}
+        <div className="relative mb-8">
+          {/* خلفية ديكورية */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-100/20 via-purple-100/20 to-pink-100/20 rounded-2xl blur-2xl"></div>
+          
+          <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            {/* رأس البطاقة */}
+            <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 p-3">
+              <div className="flex items-center justify-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-white animate-pulse" />
+                <h3 className="text-white font-bold text-lg">ملاحظات هامة</h3>
+                <AlertTriangle className="h-5 w-5 text-white animate-pulse" />
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="text-amber-900 font-semibold text-sm md:text-base leading-relaxed text-right m-0">
-                <span className="font-bold">ملاحظة:</span> صور العاملات الموجودة على هذا الموقع معدّلة باستخدام الذكاء الاصطناعي، وهي للعرض التوضيحي فقط.
-              </p>
+            
+            <div className="p-5 space-y-4">
+              {/* الملاحظة الأولى */}
+              <div className="flex items-start gap-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-2 shadow-md">
+                    <Camera className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-amber-900 font-bold text-sm mb-1">بخصوص الصور</h4>
+                  <p className="text-amber-800 text-sm leading-relaxed">
+                    صور العاملات الموجودة على هذا الموقع معدّلة باستخدام الذكاء الاصطناعي، وهي للعرض التوضيحي فقط
+                  </p>
+                </div>
+              </div>
+              
+              {/* الملاحظة الثانية */}
+              <div className="flex items-start gap-3 bg-gradient-to-r from-red-50 to-rose-50 rounded-xl p-4 border border-red-200 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-full p-2 shadow-md animate-pulse">
+                    <X className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-red-900 font-bold text-sm mb-1">خدماتنا</h4>
+                  <p className="text-red-800 text-sm leading-relaxed">
+                    لا يوجد لدينا إيجار عاملات - نحن نقدم خدمات الاستقدام فقط
+                  </p>
+                </div>
+              </div>
             </div>
+            
+            {/* شريط ديكوري في الأسفل */}
+            <div className="h-1 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600"></div>
           </div>
         </div>
+
 
         {/* عرض السير الذاتية */}
         <div ref={cvsContainerRef} className="min-h-[400px]">

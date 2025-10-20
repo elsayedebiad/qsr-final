@@ -405,15 +405,20 @@ export const ActivityCard: React.FC<{
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground text-sm font-bold">
                 {activity.userName?.charAt(0) || 'U'}
               </div>
-              <div>
-                <span className="text-sm font-medium text-foreground">{activity.action}</span>
-                <span className="text-sm text-muted-foreground">{activity.description}</span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-bold text-foreground">{activity.userName || 'مستخدم غير معروف'}</span>
+                  {activity.userRole && (
+                    <span className="px-2 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs rounded-full border border-purple-500/20">
+                      {activity.userRole}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-foreground">{activity.action}</span>
+                  <span className="text-sm text-muted-foreground ml-1">{activity.description}</span>
+                </div>
               </div>
-              {activity.userRole && (
-                <span className="px-2 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs rounded-full border border-purple-500/20">
-                  {activity.userRole}
-                </span>
-              )}
             </div>
             
             {/* معلومات الهدف */}

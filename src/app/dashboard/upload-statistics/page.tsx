@@ -53,6 +53,8 @@ interface UploadStatistics {
     filterType: string
     startDate: string | null
     endDate: string | null
+    isUsingFallback?: boolean
+    fallbackMessage?: string | null
   }
   uploadedCVs: CVData[]
   updatedCVs: CVData[]
@@ -84,7 +86,7 @@ interface UploadStatistics {
 export default function UploadStatisticsPage() {
   const [statistics, setStatistics] = useState<UploadStatistics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [filterType, setFilterType] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily')
+  const [filterType, setFilterType] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('monthly')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [activeTab, setActiveTab] = useState<'uploaded' | 'updated'>('uploaded')
@@ -453,6 +455,20 @@ export default function UploadStatisticsPage() {
 
                 {/* CV Statistics Card */}
                 <CVStatisticsCard />
+
+                {/* Fallback Message */}
+                {statistics.summary.isUsingFallback && (
+                  <div className="card p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="h-5 w-5 text-yellow-600 animate-pulse" />
+                      <div>
+                        <p className="text-yellow-800 font-semibold text-sm">
+                          {statistics.summary.fallbackMessage}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Additional Statistics Row */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
