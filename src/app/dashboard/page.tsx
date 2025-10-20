@@ -2991,14 +2991,14 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     // تحويل روابط YouTube إلى embed مع autoplay
                     if (selectedVideo.includes('youtu.be/')) {
                       const videoId = selectedVideo.split('youtu.be/')[1]?.split('?')[0]
-                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1`
+                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0&modestbranding=1`
                     } else if (selectedVideo.includes('watch?v=')) {
                       const videoId = selectedVideo.split('watch?v=')[1]?.split('&')[0]
-                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1`
+                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0&modestbranding=1`
                     }
                     return selectedVideo
                   })()}
-                  className="absolute top-0 left-0 w-full h-full rounded-lg"
+                  className="absolute inset-0 w-full h-full"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -3021,7 +3021,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     console.log('🔗 Google Drive fallback URL:', fallbackUrl)
                     return fallbackUrl
                   })()}
-                  className="absolute top-0 left-0 w-full h-full rounded-lg"
+                  className="absolute inset-0 w-full h-full"
                   frameBorder="0"
                   allow="autoplay"
                   allowFullScreen
@@ -3038,7 +3038,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     console.log('🔗 Vimeo embed URL:', embedUrl)
                     return embedUrl
                   })()}
-                  className="absolute top-0 left-0 w-full h-full rounded-lg"
+                  className="absolute inset-0 w-full h-full"
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture"
                   allowFullScreen
@@ -3054,7 +3054,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   autoPlay
                   muted
                   playsInline
-                  className="absolute top-0 left-0 w-full h-full rounded-lg bg-black object-contain"
+                  className="absolute inset-0 w-full h-full bg-black object-cover"
                   preload="metadata"
                   onLoadedData={() => console.log('✅ Direct video loaded successfully:', selectedVideo)}
                   onError={(e) => {

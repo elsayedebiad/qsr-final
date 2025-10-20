@@ -2172,7 +2172,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
               </button>
             </div>
             <div className="p-2 sm:p-4 lg:p-6 bg-gray-50">
-              <div className="relative w-full rounded-lg sm:rounded-xl overflow-hidden shadow-xl bg-black" style={{ paddingBottom: '56.25%' }}>
+              <div className="relative w-full aspect-video rounded-lg sm:rounded-xl overflow-hidden shadow-xl bg-black">
                 {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
                   <iframe
                     key={`youtube-${videoModalKey}`}
@@ -2180,14 +2180,14 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       // تحويل روابط YouTube إلى embed
                       if (selectedVideo.includes('youtu.be/')) {
                         const videoId = selectedVideo.split('youtu.be/')[1]?.split('?')[0]
-                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1`
+                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0&modestbranding=1`
                       } else if (selectedVideo.includes('watch?v=')) {
                         const videoId = selectedVideo.split('watch?v=')[1]?.split('&')[0]
-                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1`
+                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0&modestbranding=1`
                       }
                       return selectedVideo
                     })()}
-                    className="absolute top-0 left-0 w-full h-full rounded-lg"
+                    className="absolute inset-0 w-full h-full"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -2204,7 +2204,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       }
                       return selectedVideo.replace('/view?usp=sharing', '/preview').replace('/view', '/preview')
                     })()}
-                    className="absolute top-0 left-0 w-full h-full rounded-lg"
+                    className="absolute inset-0 w-full h-full"
                     frameBorder="0"
                     allow="autoplay"
                     allowFullScreen
@@ -2216,9 +2216,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     src={(() => {
                       // تحويل رابط Vimeo إلى embed
                       const videoId = selectedVideo.split('vimeo.com/')[1]?.split('?')[0]
-                      return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1`
+                      return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&playsinline=1`
                     })()}
-                    className="absolute top-0 left-0 w-full h-full rounded-lg"
+                    className="absolute inset-0 w-full h-full"
                     frameBorder="0"
                     allow="autoplay; fullscreen; picture-in-picture"
                     allowFullScreen
@@ -2233,7 +2233,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     muted
 
                     playsInline
-                    className="absolute top-0 left-0 w-full h-full rounded-lg bg-black object-contain"
+                    className="absolute inset-0 w-full h-full bg-black object-cover"
                     preload="metadata"
                   >
                     <source src={selectedVideo} type="video/mp4" />
