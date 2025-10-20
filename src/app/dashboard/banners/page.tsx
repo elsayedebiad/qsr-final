@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { Upload, Trash2, Eye, EyeOff, Monitor, Smartphone, Plus, Save } from 'lucide-react'
+import { Upload, Trash2, Eye, EyeOff, Monitor, Smartphone, Plus } from 'lucide-react'
 
 interface Banner {
   id: number
@@ -23,31 +23,57 @@ export default function BannersManagementPage() {
 
   const salesPages = ['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7', 'sales8', 'sales9', 'sales10', 'sales11']
 
-  // جلب جميع البنرات لجميع الصفحات
+  // جلب البنرات للصفحة المحددة فقط (تحسين الأداء)
+  const fetchBannersForPage = async (pageId: string) => {
+    try {
+      console.log(`🔄 جاري جلب البنرات لصفحة: ${pageId}`)
+      const response = await fetch(`/api/banners?salesPageId=${pageId}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log(`✅ تم جلب ${data.length} بنر من صفحة ${pageId}`)
+        setAllBanners(prev => ({
+          ...prev,
+          [pageId]: data
+        }))
+      } else {
+        const errorText = await response.text()
+        console.error(`❌ فشل جلب بنرات ${pageId}:`, response.status, errorText)
+        setAllBanners(prev => ({
+          ...prev,
+          [pageId]: []
+        }))
+      }
+    } catch (error) {
+      console.error('❌ Error fetching banners:', error)
+      toast.error(`فشل في جلب بنرات ${pageId}`)
+    }
+  }
+
+  // جلب جميع البنرات (للاستخدام عند الحاجة فقط)
   const fetchAllBanners = async () => {
     try {
       setIsLoading(true)
       console.log('🔄 جاري جلب البنرات من قاعدة البيانات...')
-      const bannersData: Record<string, Banner[]> = {}
       
-      for (const page of salesPages) {
-        console.log(`📍 جلب بنرات صفحة: ${page}`)
+      // جلب البنرات بشكل متوازي لتحسين الأداء
+      const promises = salesPages.map(async (page) => {
         const response = await fetch(`/api/banners?salesPageId=${page}`)
-        
         if (response.ok) {
           const data = await response.json()
-          console.log(`✅ تم جلب ${data.length} بنر من صفحة ${page}:`, data)
-          bannersData[page] = data
-        } else {
-          const errorText = await response.text()
-          console.error(`❌ فشل جلب بنرات ${page}:`, response.status, errorText)
-          bannersData[page] = []
+          return { page, data }
         }
-      }
+        return { page, data: [] }
+      })
+      
+      const results = await Promise.all(promises)
+      const bannersData: Record<string, Banner[]> = {}
+      
+      results.forEach(({ page, data }) => {
+        bannersData[page] = data
+      })
       
       console.log('📊 إجمالي البنرات المجلوبة:', bannersData)
-      console.log('📈 عدد البنرات لكل صفحة:', Object.keys(bannersData).map(k => `${k}: ${bannersData[k].length}`).join(', '))
-      
       setAllBanners(bannersData)
     } catch (error) {
       console.error('❌ Error fetching banners:', error)
@@ -57,8 +83,15 @@ export default function BannersManagementPage() {
     }
   }
 
+  // جلب البنرات للصفحة المحددة عند تغيير التبويب
   useEffect(() => {
-    fetchAllBanners()
+    fetchBannersForPage(selectedTab)
+  }, [selectedTab])
+
+  // جلب البنرات للصفحة الأولى عند التحميل
+  useEffect(() => {
+    setIsLoading(true)
+    fetchBannersForPage('sales1').finally(() => setIsLoading(false))
   }, [])
 
   // رفع بنر جديد
@@ -94,7 +127,7 @@ export default function BannersManagementPage() {
 
       if (response.ok) {
         toast.success('تم رفع البنر بنجاح')
-        fetchAllBanners()
+        fetchBannersForPage(salesPageId)
       } else {
         const errorData = await response.json()
         console.error('❌ Banner upload error:', errorData)
@@ -144,7 +177,7 @@ export default function BannersManagementPage() {
 
       if (response.ok) {
         toast.success('تم حذف البنر بنجاح')
-        fetchAllBanners()
+        fetchBannersForPage(selectedTab)
       } else {
         toast.error('فشل في حذف البنر')
       }
@@ -165,7 +198,7 @@ export default function BannersManagementPage() {
 
       if (response.ok) {
         toast.success(isActive ? 'تم تعطيل البنر' : 'تم تفعيل البنر')
-        fetchAllBanners()
+        fetchBannersForPage(selectedTab)
       } else {
         toast.error('فشل في تحديث البنر')
       }
@@ -186,7 +219,7 @@ export default function BannersManagementPage() {
 
       if (response.ok) {
         toast.success('تم تحديث الترتيب')
-        fetchAllBanners()
+        fetchBannersForPage(selectedTab)
       } else {
         toast.error('فشل في تحديث الترتيب')
       }
@@ -407,31 +440,70 @@ export default function BannersManagementPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            إدارة البنرات الإعلانية
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            قم بإضافة وحذف وترتيب البنرات لكل صفحة مبيعات
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                إدارة البنرات الإعلانية
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                قم بإضافة وحذف وترتيب البنرات لكل صفحة مبيعات
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setIsLoading(true)
+                  fetchAllBanners()
+                }}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                <Upload className="w-5 h-5" />
+                <span>تحميل جميع البنرات</span>
+              </button>
+              <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                📊 محملة: {Object.keys(allBanners).length}/{salesPages.length} صفحة
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Tabs للصفحات */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6">
           <div className="border-b border-gray-200 dark:border-gray-700">
             <div className="flex flex-wrap gap-2 p-4">
-              {salesPages.map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setSelectedTab(page)}
-                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                    selectedTab === page
-                      ? 'bg-blue-600 text-white shadow-lg scale-105'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {page.toUpperCase()}
-                </button>
-              ))}
+              {salesPages.map((page) => {
+                const isLoaded = allBanners[page] !== undefined
+                const bannerCount = allBanners[page]?.length || 0
+                
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setSelectedTab(page)}
+                    className={`relative px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                      selectedTab === page
+                        ? 'bg-blue-600 text-white shadow-lg scale-105'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{page.toUpperCase()}</span>
+                      {isLoaded && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          selectedTab === page 
+                            ? 'bg-white/20 text-white' 
+                            : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
+                          {bannerCount}
+                        </span>
+                      )}
+                      {!isLoaded && (
+                        <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" title="غير محملة"></span>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>
@@ -440,6 +512,25 @@ export default function BannersManagementPage() {
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : allBanners[selectedTab] === undefined ? (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
+            <div className="text-gray-400 mb-4">
+              <Upload className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              لم يتم تحميل بنرات هذه الصفحة بعد
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              اضغط على &quot;تحميل جميع البنرات&quot; أو انتظر التحميل التلقائي
+            </p>
+            <button
+              onClick={() => fetchBannersForPage(selectedTab)}
+              className="flex items-center gap-2 mx-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Upload className="w-5 h-5" />
+              <span>تحميل بنرات {selectedTab.toUpperCase()}</span>
+            </button>
           </div>
         ) : (
           renderPageBanners(selectedTab)
