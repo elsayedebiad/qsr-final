@@ -190,50 +190,75 @@
   animation: ai-glow 3s ease-in-out infinite;
 }
 
-/* Dark theme is now the default, light theme for media query */
-@media (prefers-color-scheme: light) {
-  :root {
-    --background: #fafafa;
-    --foreground: #1a1a1a;
-    --card: #ffffff;
-    --card-foreground: #1a1a1a;
-    --border: #e5e5e5;
-    --input: #ffffff;
-    --primary: #2563eb;
-    --primary-foreground: #ffffff;
-    --secondary: #f1f5f9;
-    --secondary-foreground: #0f172a;
-    --muted: #f8fafc;
-    --muted-foreground: #64748b;
-    --accent: #f1f5f9;
-    --accent-foreground: #0f172a;
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-    --ring: #2563eb;
-    --success: #10B981;
-    --warning: #F59E0B;
-    --info: #3B82F6;
-    --secondary-button: #374151;
-    --sidebar-background: #ffffff;
-    --sidebar-foreground: #0f172a;
-    --sidebar-primary: #2563eb;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #f1f5f9;
-    --sidebar-accent-foreground: #0f172a;
-    --sidebar-border: #e5e5e5;
-    --sidebar-ring: #2563eb;
-  }
-}
+/* Force Dark Theme - Remove light theme media query to keep consistent dark theme */
+/* System will always use dark theme regardless of device settings */
 
 * {
   border-color: var(--border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--background) !important;
+  color: var(--foreground) !important;
   font-family: var(--font-cairo), 'Cairo', 'Arial', sans-serif;
   line-height: 1.6;
+  /* Force dark theme colors */
+  color-scheme: dark !important;
+}
+
+/* Force dark theme on all elements */
+html {
+  color-scheme: dark !important;
+}
+
+/* Override any system preferences - Force dark theme always */
+@media (prefers-color-scheme: light) {
+  html, body {
+    color-scheme: dark !important;
+    background: #0D1117 !important;
+    color: #FFFFFF !important;
+  }
+  
+  /* Force all components to use dark theme variables */
+  :root {
+    --background: #0D1117 !important;
+    --foreground: #FFFFFF !important;
+    --card: #161B22 !important;
+    --card-foreground: #FFFFFF !important;
+    --border: #30363D !important;
+    --input: #21262D !important;
+    --primary: #2563EB !important;
+    --primary-foreground: #FFFFFF !important;
+    --secondary: #21262D !important;
+    --secondary-foreground: #F0F6FC !important;
+    --muted: #161B22 !important;
+    --muted-foreground: #9CA3AF !important;
+    --accent: #21262D !important;
+    --accent-foreground: #F0F6FC !important;
+    --destructive: #F85149 !important;
+    --destructive-foreground: #FFFFFF !important;
+    --ring: #3B82F6 !important;
+    --sidebar-background: #161B22 !important;
+    --sidebar-foreground: #F0F6FC !important;
+    --sidebar-primary: #2563EB !important;
+    --sidebar-primary-foreground: #FFFFFF !important;
+    --sidebar-accent: #21262D !important;
+    --sidebar-accent-foreground: #F0F6FC !important;
+    --sidebar-border: #30363D !important;
+    --sidebar-ring: #3B82F6 !important;
+  }
+}
+
+/* Force dark theme classes */
+html.dark,
+html[data-theme="dark"],
+.dark {
+  color-scheme: dark !important;
+}
+
+/* Ensure all elements respect dark theme */
+* {
+  color-scheme: inherit !important;
 }
 
 /* Modern Input Styling */

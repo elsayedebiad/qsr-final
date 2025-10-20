@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: ['class', '[data-theme="dark"]'], // Force dark mode with class or data attribute
   corePlugins: {
     // Disable the modern color format to fix html2canvas oklch error
     cssHasEnabled: false,

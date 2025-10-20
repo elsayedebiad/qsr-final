@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
 import { ToasterProvider } from '@/components/ToasterProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
+import ThemeForcer from '@/components/ThemeForcer';
 import Script from 'next/script';
 import "./globals.css";
 
@@ -25,8 +26,41 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
+    <html lang="ar" dir="rtl" suppressHydrationWarning data-theme="dark" className="dark">
       <head>
+        {/* Force Dark Theme Script - Must be first */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // فرض الوضع المظلم فوراً
+                document.documentElement.classList.add('dark');
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.documentElement.style.colorScheme = 'dark';
+                
+                // منع تغيير الوضع
+                const observer = new MutationObserver(function(mutations) {
+                  mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.target === document.documentElement) {
+                      if (!document.documentElement.classList.contains('dark')) {
+                        document.documentElement.classList.add('dark');
+                      }
+                      if (document.documentElement.getAttribute('data-theme') !== 'dark') {
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                      }
+                    }
+                  });
+                });
+                
+                observer.observe(document.documentElement, {
+                  attributes: true,
+                  attributeFilter: ['class', 'data-theme']
+                });
+              })();
+            `
+          }}
+        />
+        
         {/* Google Tag Manager */}
         <Script
           id="google-tag-manager"
@@ -95,6 +129,7 @@ fbq('track', 'PageView');`,
           />
         </noscript>
         
+        <ThemeForcer />
         <AuthProvider>
           {children}
         </AuthProvider>
