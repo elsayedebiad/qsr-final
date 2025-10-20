@@ -287,7 +287,72 @@ export default function CVsPage() {
       })
       console.log(`📊 نتائج فلتر الديانة: ${filtered.length} من أصل ${beforeCount}`)
     }
-    if (nationalityFilter !== 'ALL') filtered = filtered.filter((cv) => cv.nationality === nationalityFilter)
+    if (nationalityFilter !== 'ALL') {
+      filtered = filtered.filter((cv) => {
+        // خريطة تحويل من العربية إلى الإنجليزية للمطابقة
+        const arabicToEnglishMap: { [key: string]: string } = {
+          'الفلبين': 'FILIPINO',
+          'الهند': 'INDIAN',
+          'بنغلاديش': 'BANGLADESHI',
+          'إثيوبيا': 'ETHIOPIAN',
+          'كينيا': 'KENYAN',
+          'أوغندا': 'UGANDAN',
+          'بوروندي': 'BURUNDIAN',
+          'رواندا': 'RWANDAN',
+          'تنزانيا': 'TANZANIAN',
+          'مالاوي': 'MALAWIAN',
+          'زامبيا': 'ZAMBIAN',
+          'زيمبابوي': 'ZIMBABWEAN',
+          'غانا': 'GHANAIAN',
+          'نيجيريا': 'NIGERIAN',
+          'الكاميرون': 'CAMEROONIAN',
+          'الكونغو': 'CONGOLESE',
+          'السودان': 'SUDANESE',
+          'الصومال': 'SOMALI',
+          'إريتريا': 'ERITREAN',
+          'جيبوتي': 'DJIBOUTIAN',
+          'مدغشقر': 'MALAGASY',
+          'موريشيوس': 'MAURITIAN',
+          'سيشل': 'SEYCHELLOIS',
+          'جزر القمر': 'COMORAN',
+          'الرأس الأخضر': 'CAPE_VERDEAN',
+          'ساو تومي': 'SAO_TOMEAN',
+          'غينيا': 'GUINEAN',
+          'سيراليون': 'SIERRA_LEONEAN',
+          'ليبيريا': 'LIBERIAN',
+          'ساحل العاج': 'IVORIAN',
+          'بوركينا فاسو': 'BURKINABE',
+          'مالي': 'MALIAN',
+          'السنغال': 'SENEGALESE',
+          'غامبيا': 'GAMBIAN',
+          'غينيا بيساو': 'GUINEA_BISSAUAN',
+          'المغرب': 'MOROCCAN',
+          'الجزائر': 'ALGERIAN',
+          'تونس': 'TUNISIAN',
+          'ليبيا': 'LIBYAN',
+          'مصر': 'EGYPTIAN',
+          'باكستان': 'PAKISTANI',
+          'سريلانكا': 'SRI_LANKAN',
+          'نيبال': 'NEPALESE',
+          'ميانمار': 'BURMESE',
+          'تايلاند': 'THAI',
+          'فيتنام': 'VIETNAMESE',
+          'كمبوديا': 'CAMBODIAN',
+          'لاوس': 'LAOTIAN',
+          'إندونيسيا': 'INDONESIAN',
+          'ماليزيا': 'MALAYSIAN'
+        }
+        
+        // إذا كان الفلتر بالعربية، حوله للإنجليزية
+        const englishFilter = arabicToEnglishMap[nationalityFilter] || nationalityFilter
+        
+        // مطابقة مباشرة مع البيانات من ملف الإكسل
+        return cv.nationality === englishFilter || 
+               cv.nationality?.includes(englishFilter) || 
+               cv.nationality === nationalityFilter || 
+               cv.nationality?.includes(nationalityFilter)
+      })
+    }
     if (skillFilter !== 'ALL') {
       filtered = filtered.filter((cv) => {
         // Get skill value using bracket notation
@@ -321,7 +386,7 @@ export default function CVsPage() {
     }
     if (experienceFilter !== 'ALL') {
       filtered = filtered.filter((cv) => {
-        const expValue = cv.experience || cv.previousEmployment || ''
+        const expValue = cv.experience || ''
         const exp = typeof expValue === 'string' ? expValue.trim().toLowerCase() : String(expValue).trim().toLowerCase()
         
         // معالجة القيم الفارغة وغير المحددة
@@ -451,9 +516,68 @@ export default function CVsPage() {
           return false
           
         case 'nationality':
-          const nat = cv.nationality?.toLowerCase()
-          const val = filterValue.toLowerCase()
-          return nat === val || nat?.includes(val)
+          // خريطة تحويل من العربية إلى الإنجليزية للمطابقة
+          const arabicToEnglishMap: { [key: string]: string } = {
+            'الفلبين': 'FILIPINO',
+            'الهند': 'INDIAN',
+            'بنغلاديش': 'BANGLADESHI',
+            'إثيوبيا': 'ETHIOPIAN',
+            'كينيا': 'KENYAN',
+            'أوغندا': 'UGANDAN',
+            'بوروندي': 'BURUNDIAN',
+            'رواندا': 'RWANDAN',
+            'تنزانيا': 'TANZANIAN',
+            'مالاوي': 'MALAWIAN',
+            'زامبيا': 'ZAMBIAN',
+            'زيمبابوي': 'ZIMBABWEAN',
+            'غانا': 'GHANAIAN',
+            'نيجيريا': 'NIGERIAN',
+            'الكاميرون': 'CAMEROONIAN',
+            'الكونغو': 'CONGOLESE',
+            'السودان': 'SUDANESE',
+            'الصومال': 'SOMALI',
+            'إريتريا': 'ERITREAN',
+            'جيبوتي': 'DJIBOUTIAN',
+            'مدغشقر': 'MALAGASY',
+            'موريشيوس': 'MAURITIAN',
+            'سيشل': 'SEYCHELLOIS',
+            'جزر القمر': 'COMORAN',
+            'الرأس الأخضر': 'CAPE_VERDEAN',
+            'ساو تومي': 'SAO_TOMEAN',
+            'غينيا': 'GUINEAN',
+            'سيراليون': 'SIERRA_LEONEAN',
+            'ليبيريا': 'LIBERIAN',
+            'ساحل العاج': 'IVORIAN',
+            'بوركينا فاسو': 'BURKINABE',
+            'مالي': 'MALIAN',
+            'السنغال': 'SENEGALESE',
+            'غامبيا': 'GAMBIAN',
+            'غينيا بيساو': 'GUINEA_BISSAUAN',
+            'المغرب': 'MOROCCAN',
+            'الجزائر': 'ALGERIAN',
+            'تونس': 'TUNISIAN',
+            'ليبيا': 'LIBYAN',
+            'مصر': 'EGYPTIAN',
+            'باكستان': 'PAKISTANI',
+            'سريلانكا': 'SRI_LANKAN',
+            'نيبال': 'NEPALESE',
+            'ميانمار': 'BURMESE',
+            'تايلاند': 'THAI',
+            'فيتنام': 'VIETNAMESE',
+            'كمبوديا': 'CAMBODIAN',
+            'لاوس': 'LAOTIAN',
+            'إندونيسيا': 'INDONESIAN',
+            'ماليزيا': 'MALAYSIAN'
+          }
+          
+          // إذا كان الفلتر بالعربية، حوله للإنجليزية
+          const englishFilter = arabicToEnglishMap[filterValue] || filterValue
+          
+          // مطابقة مباشرة مع البيانات من ملف الإكسل
+          return cv.nationality === englishFilter || 
+                 cv.nationality?.includes(englishFilter) || 
+                 cv.nationality === filterValue || 
+                 cv.nationality?.includes(filterValue)
           
         case 'age':
           if (!cv.age) return false
@@ -494,7 +618,7 @@ export default function CVsPage() {
           return englishLevel === filterValue
           
         case 'experience':
-          const expValue = cv.experience || cv.previousEmployment || ''
+          const expValue = cv.experience || ''
           const exp = typeof expValue === 'string' ? expValue.trim().toLowerCase() : String(expValue).trim().toLowerCase()
           
           // معالجة القيم الفارغة وغير المحددة
@@ -1481,15 +1605,15 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   onChange={(e) => setNationalityFilter(e.target.value)}
                 >
                   <option value="ALL">جميع الجنسيات ({getCountForFilter('nationality', 'ALL')})</option>
-                  <option value="فلبينية">فلبينية ({getCountForFilter('nationality', 'فلبينية')})</option>
-                  <option value="هندية">هندية ({getCountForFilter('nationality', 'هندية')})</option>
-                  <option value="بنغلاديشية">بنغلاديشية ({getCountForFilter('nationality', 'بنغلاديشية')})</option>
-                  <option value="إثيوبية">إثيوبية ({getCountForFilter('nationality', 'إثيوبية')})</option>
-                  <option value="كينية">كينية ({getCountForFilter('nationality', 'كينية')})</option>
-                  <option value="أوغندية">أوغندية ({getCountForFilter('nationality', 'أوغندية')})</option>
-                  <option value="نيبالية">نيبالية ({getCountForFilter('nationality', 'نيبالية')})</option>
-                  <option value="سريلانكية">سريلانكية ({getCountForFilter('nationality', 'سريلانكية')})</option>
-                  <option value="إندونيسية">إندونيسية ({getCountForFilter('nationality', 'إندونيسية')})</option>
+                  <option value="الفلبين">الفلبين ({getCountForFilter('nationality', 'الفلبين')})</option>
+                  <option value="الهند">الهند ({getCountForFilter('nationality', 'الهند')})</option>
+                  <option value="بنغلاديش">بنغلاديش ({getCountForFilter('nationality', 'بنغلاديش')})</option>
+                  <option value="إثيوبيا">إثيوبيا ({getCountForFilter('nationality', 'إثيوبيا')})</option>
+                  <option value="كينيا">كينيا ({getCountForFilter('nationality', 'كينيا')})</option>
+                  <option value="أوغندا">أوغندا ({getCountForFilter('nationality', 'أوغندا')})</option>
+                  <option value="نيبال">نيبال ({getCountForFilter('nationality', 'نيبال')})</option>
+                  <option value="سريلانكا">سريلانكا ({getCountForFilter('nationality', 'سريلانكا')})</option>
+                  <option value="إندونيسيا">إندونيسيا ({getCountForFilter('nationality', 'إندونيسيا')})</option>
                 </select>
 
                 <select
