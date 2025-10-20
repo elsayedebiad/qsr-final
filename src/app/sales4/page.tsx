@@ -748,7 +748,8 @@ export default function Sales4Page() {
 
   // خريطة تحويل الجنسيات من الإنجليزية للعربية
   const nationalityDisplayMap: { [key: string]: string } = {
-    'FILIPINO': 'الفلبين',
+    '
+import VideoPlayer from '@/components/VideoPlayer'FILIPINO': 'الفلبين',
     'SRI_LANKAN': 'سريلانكا', 
     'BANGLADESHI': 'بنغلاديش',
     'ETHIOPIAN': 'إثيوبيا',
@@ -2028,7 +2029,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                           onClick={() => {
                             if (cv.videoLink && cv.videoLink.trim() !== '') {
                               setVideoModalKey(prev => prev + 1);
-                              setSelectedVideo(cv.videoLink);
+                              setVideoModalKey((prev: number) => prev + 1); setSelectedVideo(cv.videoLink);
                             } else {
                               toast.error('لا يوجد رابط فيديو لهذه السيرة');
                             }
@@ -2154,99 +2155,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
       </div>
       
       {/* Video Modal - محسن للهواتف */}
-      {selectedVideo && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
-          <div className="bg-white rounded-lg sm:rounded-2xl w-full max-w-[95vw] sm:max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl transform animate-scaleIn">
-            <div className="flex justify-between items-center p-3 sm:p-5 border-b-2 border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="bg-gradient-to-br from-red-500 to-red-600 p-1.5 sm:p-2 rounded-lg">
-                  <Play className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">فيديو السيرة الذاتية</h3>
-              </div>
-              <button
-                onClick={() => setSelectedVideo(null)}
-                className="text-gray-500 hover:text-red-600 transition-all duration-300 hover:rotate-90 hover:scale-110 p-1.5 sm:p-2 rounded-lg hover:bg-red-50"
-              >
-                <X className="h-5 w-5 sm:h-6 sm:w-6" />
-              </button>
-            </div>
-            <div className="p-2 sm:p-4 lg:p-6 bg-gray-50">
-              <div className="relative w-full aspect-video rounded-lg sm:rounded-xl overflow-hidden shadow-xl bg-black">
-                {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
-                  <iframe
-                    key={`youtube-${videoModalKey}`}
-                    src={(() => {
-                      // تحويل روابط YouTube إلى embed
-                      if (selectedVideo.includes('youtu.be/')) {
-                        const videoId = selectedVideo.split('youtu.be/')[1]?.split('?')[0]
-                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0&modestbranding=1`
-                      } else if (selectedVideo.includes('watch?v=')) {
-                        const videoId = selectedVideo.split('watch?v=')[1]?.split('&')[0]
-                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0&modestbranding=1`
-                      }
-                      return selectedVideo
-                    })()}
-                    className="absolute inset-0 w-full h-full"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    title="فيديو السيرة الذاتية"
-                  />
-                ) : selectedVideo.includes('drive.google.com') ? (
-                  <iframe
-                    key={`youtube-${videoModalKey}`}
-                    src={(() => {
-                      // تحويل رابط Google Drive إلى embed
-                      const fileIdMatch = selectedVideo.match(/\/file\/d\/([^\/]+)/)
-                      if (fileIdMatch && fileIdMatch[1]) {
-                        return `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`
-                      }
-                      return selectedVideo.replace('/view?usp=sharing', '/preview').replace('/view', '/preview')
-                    })()}
-                    className="absolute inset-0 w-full h-full"
-                    frameBorder="0"
-                    allow="autoplay"
-                    allowFullScreen
-                    title="فيديو السيرة الذاتية"
-                  />
-                ) : selectedVideo.includes('vimeo.com') ? (
-                  <iframe
-                    key={`youtube-${videoModalKey}`}
-                    src={(() => {
-                      // تحويل رابط Vimeo إلى embed
-                      const videoId = selectedVideo.split('vimeo.com/')[1]?.split('?')[0]
-                      return `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&playsinline=1`
-                    })()}
-                    className="absolute inset-0 w-full h-full"
-                    frameBorder="0"
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowFullScreen
-                    title="فيديو السيرة الذاتية"
-                  />
-                ) : (
-                  <video
-                    key={`video-${videoModalKey}`}
-                    src={selectedVideo}
-                    controls
-                    autoPlay
-                    muted
-
-                    playsInline
-                    className="absolute inset-0 w-full h-full bg-black object-cover"
-                    preload="metadata"
-                  >
-                    <source src={selectedVideo} type="video/mp4" />
-                    <source src={selectedVideo} type="video/webm" />
-                    <source src={selectedVideo} type="video/ogg" />
-                    متصفحك لا يدعم تشغيل الفيديو
-                  </video>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <VideoPlayer 
+        videoUrl={selectedVideo} 
+        onClose={() => setSelectedVideo(null)}
+        videoModalKey={videoModalKey}
+      />
 
       {/* Share Popup - Popup احترافي للمشاركة */}
       {showSharePopup && (
@@ -2370,7 +2283,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 {selectedCVForView.videoLink && (
                   <button
                     onClick={() => {
-                      setSelectedVideo(selectedCVForView.videoLink || null);
+                      setVideoModalKey((prev: number) => prev + 1); setSelectedVideo(selectedCVForView.videoLink || null);
                       setSelectedCVForView(null);
                     }}
                     className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"

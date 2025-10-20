@@ -1447,7 +1447,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
               <div className="relative card p-8 w-full max-w-md text-center animate-fade-in">
                 <div className="mx-auto mb-4 rounded-xl w-16 h-16 flex items-center justify-center bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 animate-pulse">
-                  <Download className="h-8 w-8 text-white animate-bounce" />
+                  <Download className="
+import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bounce" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-2">جاري تحميل الصور المحددة</h3>
                 <p className="text-sm text-muted-foreground mb-2">شكراً لانتظارك، سننتهي خلال لحظات</p>
@@ -2095,7 +2096,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                         onClick={() => {
                           if (cv.videoLink && cv.videoLink.trim() !== '') {
                             setVideoModalKey(prev => prev + 1);
-                            setSelectedVideo(cv.videoLink);
+                            setVideoModalKey((prev: number) => prev + 1); setSelectedVideo(cv.videoLink);
                           } else {
                             toast.error('لا يوجد رابط فيديو لهذه السيرة');
                           }
@@ -2259,7 +2260,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                               onClick={() => {
                                 console.log('🎥 Video button clicked for CV:', cv.fullName, 'Video URL:', cv.videoLink)
                                 setVideoModalKey(prev => prev + 1);
-                                setSelectedVideo(cv.videoLink || null)
+                                setVideoModalKey((prev: number) => prev + 1); setSelectedVideo(cv.videoLink || null)
                               }}
                               className="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg"
                               title="مشاهدة الفيديو"
@@ -2970,120 +2971,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
     )}
 
     {/* Video Modal - محسن للهواتف */}
-    {selectedVideo && (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-2 sm:p-4">
-        <div className="bg-card rounded-lg sm:rounded-xl w-full max-w-[95vw] sm:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
-          <div className="flex justify-between items-center p-3 sm:p-4 border-b">
-            <h3 className="text-base sm:text-lg font-semibold text-foreground">فيديو السيرة الذاتية</h3>
-            <button
-              onClick={() => setSelectedVideo(null)}
-              className="text-muted-foreground hover:text-foreground transition-colors p-1"
-            >
-              <X className="h-5 w-5 sm:h-6 sm:w-6" />
-            </button>
-          </div>
-          <div className="p-2 sm:p-4">
-            <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%' }}>
-              {selectedVideo.includes('youtube.com') || selectedVideo.includes('youtu.be') ? (
-                <iframe
-                  key={`youtube-${videoModalKey}`}
-                  src={(() => {
-                    // تحويل روابط YouTube إلى embed مع autoplay
-                    if (selectedVideo.includes('youtu.be/')) {
-                      const videoId = selectedVideo.split('youtu.be/')[1]?.split('?')[0]
-                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0&modestbranding=1`
-                    } else if (selectedVideo.includes('watch?v=')) {
-                      const videoId = selectedVideo.split('watch?v=')[1]?.split('&')[0]
-                      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0&modestbranding=1`
-                    }
-                    return selectedVideo
-                  })()}
-                  className="absolute inset-0 w-full h-full"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title="فيديو السيرة الذاتية"
-                  onLoad={() => console.log('✅ YouTube video loaded successfully:', selectedVideo)}
-                  onError={() => console.error('❌ YouTube video failed to load:', selectedVideo)}
-                />
-              ) : selectedVideo.includes('drive.google.com') ? (
-                <iframe
-                  src={(() => {
-                    // تحويل رابط Google Drive إلى embed
-                    const fileIdMatch = selectedVideo.match(/\/file\/d\/([^\/]+)/)
-                    if (fileIdMatch && fileIdMatch[1]) {
-                      const embedUrl = `https://drive.google.com/file/d/${fileIdMatch[1]}/preview`
-                      console.log('🔗 Google Drive embed URL:', embedUrl)
-                      return embedUrl
-                    }
-                    // إذا كان الرابط بصيغة أخرى، حاول استخدامه كما هو
-                    const fallbackUrl = selectedVideo.replace('/view?usp=sharing', '/preview').replace('/view', '/preview')
-                    console.log('🔗 Google Drive fallback URL:', fallbackUrl)
-                    return fallbackUrl
-                  })()}
-                  className="absolute inset-0 w-full h-full"
-                  frameBorder="0"
-                  allow="autoplay"
-                  allowFullScreen
-                  title="فيديو السيرة الذاتية"
-                  onLoad={() => console.log('✅ Google Drive video loaded successfully:', selectedVideo)}
-                  onError={() => console.error('❌ Google Drive video failed to load:', selectedVideo)}
-                />
-              ) : selectedVideo.includes('vimeo.com') ? (
-                <iframe
-                  src={(() => {
-                    // تحويل رابط Vimeo إلى embed
-                    const videoId = selectedVideo.split('vimeo.com/')[1]?.split('?')[0]
-                    const embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1`
-                    console.log('🔗 Vimeo embed URL:', embedUrl)
-                    return embedUrl
-                  })()}
-                  className="absolute inset-0 w-full h-full"
-                  frameBorder="0"
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                  title="فيديو السيرة الذاتية"
-                  onLoad={() => console.log('✅ Vimeo video loaded successfully:', selectedVideo)}
-                  onError={() => console.error('❌ Vimeo video failed to load:', selectedVideo)}
-                />
-              ) : (
-                <video
-                  key={`video-${videoModalKey}`}
-                  src={selectedVideo}
-                  controls
-                  autoPlay
-                  muted
-                  playsInline
-                  className="absolute inset-0 w-full h-full bg-black object-cover"
-                  preload="metadata"
-                  onLoadedData={() => console.log('✅ Direct video loaded successfully:', selectedVideo)}
-                  onError={(e) => {
-                    console.error('❌ Direct video failed to load:', selectedVideo)
-                    console.error('Video error details:', e)
-                  }}
-                >
-                  <source src={selectedVideo} type="video/mp4" />
-                  <source src={selectedVideo} type="video/webm" />
-                  <source src={selectedVideo} type="video/ogg" />
-                  متصفحك لا يدعم تشغيل الفيديو
-                </video>
-              )}
-            </div>
-            
-            {/* Debug Information - Only in development */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-3 p-3 bg-muted rounded-lg">
-                <p className="text-xs font-mono text-muted-foreground">
-                  <strong>🔍 Debug Info:</strong>
-                </p>
-                <p className="text-xs font-mono text-muted-foreground break-all">
-                  <strong>Video URL:</strong> {selectedVideo}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Check browser console for detailed loading information
-                </p>
-              </div>
-            )}
+      <VideoPlayer 
+        videoUrl={selectedVideo} 
+        onClose={() => setSelectedVideo(null)}
+        videoModalKey={videoModalKey}
+      />
           </div>
         </div>
       </div>
@@ -3299,7 +3191,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 {selectedCVForView.videoLink && (
                   <button
                     onClick={() => {
-                      setSelectedVideo(selectedCVForView.videoLink || null);
+                      setVideoModalKey((prev: number) => prev + 1); setSelectedVideo(selectedCVForView.videoLink || null);
                       setSelectedCVForView(null);
                     }}
                     className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
