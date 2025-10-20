@@ -47,6 +47,7 @@ import {
 import DashboardLayout from '../../components/DashboardLayout'
 import BulkImageDownloader from '../../components/BulkImageDownloader'
 import CountryFlag from '../../components/CountryFlag'
+import VideoPlayer from '@/components/VideoPlayer'
 import { BulkActivityLogger, CVActivityLogger, ContractActivityLogger } from '../../lib/activity-logger'
 import { getCountryInfo } from '../../lib/country-utils';
 import { extractGoogleDriveFileId } from '../../lib/google-drive-utils';
@@ -2976,10 +2977,6 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
         onClose={() => setSelectedVideo(null)}
         videoModalKey={videoModalKey}
       />
-          </div>
-        </div>
-      </div>
-    )}
 
       {/* Image Viewer Modal - للموبايل */}
       {showImageModal && viewingCv && (

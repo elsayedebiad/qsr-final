@@ -31,6 +31,7 @@ import { processImageUrl } from '@/lib/url-utils'
 import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 import ImageWithFallback from '@/components/ImageWithFallback'
+import VideoPlayer from '@/components/VideoPlayer'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -766,8 +767,7 @@ export default function Sales2Page() {
 
   // خريطة تحويل الجنسيات من الإنجليزية للعربية
   const nationalityDisplayMap: { [key: string]: string } = {
-    '
-import VideoPlayer from '@/components/VideoPlayer'FILIPINO': 'الفلبين',
+    'FILIPINO': 'الفلبين',
     'SRI_LANKAN': 'سريلانكا', 
     'BANGLADESHI': 'بنغلاديش',
     'ETHIOPIAN': 'إثيوبيا',

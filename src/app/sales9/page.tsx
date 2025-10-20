@@ -36,7 +36,8 @@ import ImageWithFallback from '@/components/ImageWithFallback'
 const customStyles = `
   @keyframes fadeIn {
     from {
-      opacity: 0;
+      opacity: 0
+import VideoPlayer from '@/components/VideoPlayer';
     }
     to {
       opacity: 1;
@@ -748,8 +749,7 @@ export default function Sales9Page() {
 
   // خريطة تحويل الجنسيات من الإنجليزية للعربية
   const nationalityDisplayMap: { [key: string]: string } = {
-    '
-import VideoPlayer from '@/components/VideoPlayer'FILIPINO': 'الفلبين',
+    'FILIPINO': 'الفلبين',
     'SRI_LANKAN': 'سريلانكا', 
     'BANGLADESHI': 'بنغلاديش',
     'ETHIOPIAN': 'إثيوبيا',
