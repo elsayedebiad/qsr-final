@@ -24,7 +24,8 @@ async function resetSystem() {
   console.log('  • All Contracts and Bookings')
   console.log('  • All Activities and Notifications')
   console.log('  • All Banners and Settings')
-  console.log('  • All Users (except admin and developer)')
+  console.log('')
+  console.log('✅ Users will be KEPT (not deleted)')
   console.log('')
   
   rl.question('Type "DELETE ALL" to confirm: ', async (answer) => {
@@ -74,22 +75,16 @@ async function resetSystem() {
       console.log('Deleting system settings...')
       await prisma.systemSettings.deleteMany({})
       
-      console.log('Deleting users (except admin and developer)...')
-      await prisma.user.deleteMany({
-        where: {
-          AND: [
-            { email: { not: 'developer@system.local' } },
-            { email: { not: 'admin@qsr.com' } },
-            { role: { not: 'DEVELOPER' } }
-          ]
-        }
-      })
+      console.log('Keeping users (user deletion disabled)...')
+      // لا نحذف المستخدمين
+      // await prisma.user.deleteMany({...})
 
       // Reset sequences
       console.log('Resetting ID sequences...')
       try {
         await prisma.$executeRaw`ALTER SEQUENCE "CV_id_seq" RESTART WITH 1`
-        await prisma.$executeRaw`ALTER SEQUENCE "User_id_seq" RESTART WITH 3`
+        // لا نعيد تعيين User_id_seq لأننا لا نحذف المستخدمين
+        // await prisma.$executeRaw`ALTER SEQUENCE "User_id_seq" RESTART WITH 3`
         await prisma.$executeRaw`ALTER SEQUENCE "ActivityLog_id_seq" RESTART WITH 1`
         await prisma.$executeRaw`ALTER SEQUENCE "Notification_id_seq" RESTART WITH 1`
         await prisma.$executeRaw`ALTER SEQUENCE "Contract_id_seq" RESTART WITH 1`

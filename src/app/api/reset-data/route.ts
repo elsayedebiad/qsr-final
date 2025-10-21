@@ -23,16 +23,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    // التحقق من الصلاحيات - معطل مؤقتاً للاختبار
-    console.log(`🧪 TEST MODE: User ${user.email} (${user.role}) attempting reset - ALLOWED FOR TESTING`)
-    
-    // TODO: إعادة تفعيل هذا التحقق بعد الاختبار
-    // if (user.role !== 'DEVELOPER' && user.role !== 'ADMIN' && user.email !== 'developer@system.local') {
-    //   return NextResponse.json({ 
-    //     error: 'غير مصرح لك بإعادة تعيين النظام. هذه العملية متاحة فقط للمطورين والمدراء.',
-    //     code: 'INSUFFICIENT_PERMISSIONS'
-    //   }, { status: 403 })
-    // }
+    // التحقق من الصلاحيات - فقط DEVELOPER و ADMIN
+    if (user.role !== 'DEVELOPER' && user.role !== 'ADMIN' && user.email !== 'developer@system.local') {
+      return NextResponse.json({ 
+        error: 'غير مصرح لك بإعادة تعيين النظام. هذه العملية متاحة فقط للمطورين والمدير العام.',
+        code: 'INSUFFICIENT_PERMISSIONS'
+      }, { status: 403 })
+    }
     
     console.log(`✅ User ${user.email} (${user.role}) is authorized to reset system`)
 
@@ -60,7 +57,7 @@ export async function POST(request: Request) {
               'All Notifications',
               'All Banners',
               'All Settings',
-              'All Users except admin/developer'
+              'Users are KEPT (not deleted)'
             ]
           }
         }
@@ -117,22 +114,14 @@ export async function POST(request: Request) {
     await prisma.systemSettings.deleteMany({})
     console.log('✅ System settings deleted')
 
-    // حذف المستخدمين (ما عدا المطور والمدير)
-    await prisma.user.deleteMany({
-      where: {
-        AND: [
-          { email: { not: 'developer@system.local' } },
-          { email: { not: 'admin@qsr.com' } },
-          { role: { not: 'DEVELOPER' } }
-        ]
-      }
-    })
-    console.log('✅ Users deleted (except developer and admin)')
+    // لا نحذف المستخدمين - تم تعطيل حذف المستخدمين بناءً على طلب المستخدم
+    console.log('ℹ️ Users kept - User deletion is disabled')
 
     // إعادة تعيين الـ auto-increment sequences
     try {
       await prisma.$executeRaw`ALTER SEQUENCE "CV_id_seq" RESTART WITH 1`
-      await prisma.$executeRaw`ALTER SEQUENCE "User_id_seq" RESTART WITH 3`
+      // لا نعيد تعيين User_id_seq لأننا لا نحذف المستخدمين
+      // await prisma.$executeRaw`ALTER SEQUENCE "User_id_seq" RESTART WITH 3`
       await prisma.$executeRaw`ALTER SEQUENCE "ActivityLog_id_seq" RESTART WITH 1`
       await prisma.$executeRaw`ALTER SEQUENCE "Notification_id_seq" RESTART WITH 1`
       await prisma.$executeRaw`ALTER SEQUENCE "Contract_id_seq" RESTART WITH 1`

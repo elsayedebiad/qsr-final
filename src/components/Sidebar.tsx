@@ -68,14 +68,11 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   }
 
   const handleResetData = async () => {
-    // مؤقتاً للاختبار - السماح للجميع
-    console.log('✅ Attempting reset - User:', user?.email, 'Role:', user?.role)
-    
-    // التحقق من الصلاحيات - معطل مؤقتاً للاختبار
-    // if (!user || (user.role !== 'DEVELOPER' && user.role !== 'ADMIN' && user.email !== 'developer@system.local')) {
-    //   toast.error('غير مسموح لك بإعادة تعيين البيانات. هذه العملية متاحة فقط للمطورين والمدراء.')
-    //   return
-    // }
+    // التحقق من الصلاحيات - فقط DEVELOPER و ADMIN
+    if (!user || (user.role !== 'DEVELOPER' && user.role !== 'ADMIN' && user.email !== 'developer@system.local')) {
+      toast.error('غير مسموح لك بإعادة تعيين البيانات. هذه العملية متاحة فقط للمطورين والمدير العام.')
+      return
+    }
 
     setShowResetModal(false)
 
@@ -541,19 +538,19 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
         {/* ===== الجزء السفلي الثابت ===== */}
         <div className="flex-shrink-0">
           
-          {/* زر إعادة التعيين - في أسفل القائمة */}
-          {!isCollapsed && user && (
+          {/* زر إعادة التعيين - للمدير العام والمطور فقط */}
+          {!isCollapsed && user && (user.role === 'DEVELOPER' || user.role === 'ADMIN' || user.email === 'developer@system.local') && (
             <div className="p-4 border-t border-border border-b">
               <button
                 onClick={() => setShowResetModal(true)}
-                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xl transform hover:scale-105 hover:shadow-2xl animate-pulse-slow"
+                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xl transform hover:scale-105 hover:shadow-2xl"
               >
                 <AlertTriangle className="h-6 w-6 animate-pulse" />
-                <span className="text-base">🔥 إعادة تعيين النظام</span>
+                <span className="text-base">إعادة تعيين النظام</span>
                 <RotateCcw className="h-6 w-6" />
               </button>
               <p className="text-muted-foreground text-xs mt-2 text-center font-medium">
-                حذف كل البيانات والبدء من جديد
+                للمدير العام والمطور فقط
               </p>
             </div>
           )}
@@ -627,10 +624,10 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                     <span className="text-destructive mt-1">✗</span>
                     <span className="text-foreground">جميع إعدادات النظام</span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-destructive mt-1">✗</span>
-                    <span className="text-foreground">جميع المستخدمين (عدا المطور والمدير)</span>
-                  </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-success mt-1">✓</span>
+                          <span className="text-success font-semibold">المستخدمون سيبقون (لن يتم حذفهم)</span>
+                        </li>
                 </ul>
               </div>
 

@@ -15,7 +15,9 @@ import {
   Crown,
   Settings,
   Copy,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle,
+  RotateCcw
 } from 'lucide-react'
 import DashboardLayout from '../../../components/DashboardLayout'
 
@@ -40,6 +42,8 @@ export default function SuperAdminPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   const [formData, setFormData] = useState<{
     name: string
     email: string
@@ -139,6 +143,41 @@ export default function SuperAdminPage() {
     toast.success('تم نسخ الكود')
   }
 
+  const handleResetData = async () => {
+    setShowResetModal(false)
+    setIsResetting(true)
+    toast.loading('جاري إعادة تعيين البيانات...', { id: 'reset-data' })
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/reset-data', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        toast.success('تم إعادة تعيين النظام بنجاح! 🎉', { 
+          id: 'reset-data',
+          duration: 5000
+        })
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } else {
+        toast.error(result.error || 'فشل في إعادة تعيين البيانات', { id: 'reset-data' })
+      }
+    } catch (error) {
+      console.error('Error resetting data:', error)
+      toast.error('حدث خطأ أثناء إعادة تعيين البيانات', { id: 'reset-data' })
+    } finally {
+      setIsResetting(false)
+    }
+  }
 
   return (
     <DashboardLayout>
@@ -279,6 +318,53 @@ export default function SuperAdminPage() {
                   </table>
                 </div>
               )}
+            </div>
+
+            {/* Reset System Card */}
+            <div className="mt-8 bg-gradient-to-r from-orange-500/10 via-red-500/10 to-pink-500/10 border-2 border-orange-500/30 rounded-xl shadow-2xl overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-start justify-between flex-wrap gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-orange-500/20 p-4 rounded-xl animate-pulse flex-shrink-0">
+                      <AlertTriangle className="h-8 w-8 text-orange-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-foreground flex items-center gap-2 mb-2">
+                        🔥 إعادة تعيين النظام
+                      </h3>
+                      <p className="text-muted-foreground mb-3">
+                        حذف جميع البيانات التجريبية والبدء من جديد بقاعدة بيانات نظيفة
+                      </p>
+                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-3">
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                          <span>⚠️ تحذير: هذا الإجراء نهائي ولا يمكن التراجع عنه!</span>
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                          <RotateCcw className="h-4 w-4" />
+                          <span className="font-medium">سيتم حذف:</span>
+                        </div>
+                        <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded text-xs">السير الذاتية</span>
+                        <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded text-xs">العقود</span>
+                        <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded text-xs">الحجوزات</span>
+                        <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded text-xs">الأنشطة</span>
+                        <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded text-xs">✓ المستخدمون محفوظون</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowResetModal(true)}
+                    disabled={isResetting}
+                    className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-8 py-4 rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center gap-3 text-lg whitespace-nowrap"
+                  >
+                    <AlertTriangle className="h-6 w-6 animate-pulse" />
+                    <span>إعادة تعيين الآن</span>
+                    <RotateCcw className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Create User Modal */}
@@ -434,6 +520,95 @@ export default function SuperAdminPage() {
                     >
                       إغلاق
                     </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Reset Confirmation Modal */}
+            {showResetModal && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                <div className="bg-card border-2 border-destructive rounded-2xl max-w-lg w-full shadow-2xl transform animate-fadeIn">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 rounded-t-2xl">
+                    <div className="flex items-center justify-center gap-3">
+                      <AlertTriangle className="h-10 w-10 text-white animate-pulse" />
+                      <h2 className="text-2xl font-bold text-white">تحذير خطير!</h2>
+                      <AlertTriangle className="h-10 w-10 text-white animate-pulse" />
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6">
+                    <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-6">
+                      <p className="text-lg font-semibold text-foreground mb-4">
+                        سيتم حذف البيانات التالية بشكل نهائي:
+                      </p>
+                      <ul className="space-y-2 mr-4">
+                        <li className="flex items-start gap-2">
+                          <span className="text-destructive mt-1">✗</span>
+                          <span className="text-foreground">جميع السير الذاتية المرفوعة</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-destructive mt-1">✗</span>
+                          <span className="text-foreground">جميع العقود والحجوزات</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-destructive mt-1">✗</span>
+                          <span className="text-foreground">جميع الأنشطة وسجلات النظام</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-destructive mt-1">✗</span>
+                          <span className="text-foreground">جميع الإشعارات والتنبيهات</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-destructive mt-1">✗</span>
+                          <span className="text-foreground">جميع البنرات الإعلانية</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-destructive mt-1">✗</span>
+                          <span className="text-foreground">جميع إعدادات النظام</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-success mt-1">✓</span>
+                          <span className="text-success font-semibold">المستخدمون سيبقون (لن يتم حذفهم)</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+                      <p className="text-sm text-muted-foreground flex items-start gap-2">
+                        <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
+                        <span>هذا الإجراء لا يمكن التراجع عنه! تأكد من أخذ نسخة احتياطية إذا كنت تحتاج البيانات الحالية.</span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        onClick={handleResetData}
+                        disabled={isResetting}
+                        className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                      >
+                        {isResetting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                            <span>جاري الحذف...</span>
+                          </>
+                        ) : (
+                          <>
+                            <RotateCcw className="h-5 w-5" />
+                            <span>نعم، احذف كل شيء</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setShowResetModal(false)}
+                        disabled={isResetting}
+                        className="flex-1 bg-muted hover:bg-muted/80 text-foreground font-bold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        إلغاء
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
