@@ -57,7 +57,16 @@ export async function PUT(
     }
 
     // Prepare update data
-    const updateData: any = {
+    interface UpdateData {
+      name: string
+      email: string
+      role: Role
+      permissions: string[]
+      isActive: boolean
+      password?: string
+    }
+    
+    const updateData: UpdateData = {
       name,
       email,
       role: role as Role,
@@ -128,13 +137,50 @@ export async function DELETE(
     }
 
     // Prevent admin from deleting themselves
-    if (authResult.user.id === id) {
+    if (authResult.user && authResult.user.id === id) {
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
     }
 
-    // Delete user
-    await prisma.user.delete({
-      where: { id }
+    // Delete all related records first to avoid foreign key constraints
+    // Use transaction to ensure all deletions happen together or none at all
+    await prisma.$transaction(async (tx) => {
+      // Delete activity logs
+      await tx.activityLog.deleteMany({
+        where: { userId: id }
+      })
+      
+      // Delete notifications
+      await tx.notification.deleteMany({
+        where: { userId: id }
+      })
+      
+      // Delete sessions
+      await tx.session.deleteMany({
+        where: { userId: id }
+      })
+      
+      // Try to delete user sessions if table exists
+      try {
+        await tx.userSession.deleteMany({
+          where: { userId: id }
+        })
+      } catch {
+        // Table might not exist, ignore
+      }
+      
+      // Try to delete login activations if table exists  
+      try {
+        await tx.loginActivation.deleteMany({
+          where: { userId: id }
+        })
+      } catch {
+        // Table might not exist, ignore
+      }
+      
+      // Finally delete the user
+      await tx.user.delete({
+        where: { id }
+      })
     })
 
     return NextResponse.json({ message: 'User deleted successfully' })
