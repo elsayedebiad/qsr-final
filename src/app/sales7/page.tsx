@@ -31,13 +31,13 @@ import { processImageUrl } from '@/lib/url-utils'
 import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 import ImageWithFallback from '@/components/ImageWithFallback'
+import VideoPlayer from '@/components/VideoPlayer'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
   @keyframes fadeIn {
     from {
-      opacity: 0
-import VideoPlayer from '@/components/VideoPlayer';
+      opacity: 0;
     }
     to {
       opacity: 1;

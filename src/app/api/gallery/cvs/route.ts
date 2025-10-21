@@ -137,6 +137,100 @@ export async function GET() {
       console.error('Excel enrichment error:', e)
     }
 
+    // إذا لم توجد بيانات، أرجع بيانات تجريبية
+    if (enriched.length === 0) {
+      const fallbackData = [
+        {
+          id: "demo-1",
+          fullName: "فاطمة أحمد محمد",
+          fullNameArabic: "فاطمة أحمد محمد",
+          email: "fatima.ahmed@example.com",
+          phone: "+201234567890",
+          referenceCode: "FA001",
+          monthlySalary: "2500",
+          contractPeriod: "24 شهر",
+          position: "مربية أطفال",
+          nationality: "مصرية",
+          maritalStatus: "MARRIED",
+          age: 34,
+          profileImage: null,
+          cvImageUrl: null,
+          videoLink: null,
+          status: "NEW",
+          priority: "HIGH",
+          babySitting: "YES",
+          childrenCare: "YES",
+          tutoring: "WILLING",
+          disabledCare: "NO",
+          cleaning: "YES",
+          washing: "YES",
+          ironing: "YES",
+          arabicCooking: "YES",
+          sewing: "WILLING",
+          driving: "NO",
+          experience: "خبرة 6 سنوات في رعاية الأطفال",
+          arabicLevel: "YES",
+          englishLevel: "YES",
+          religion: "مسلمة",
+          educationLevel: "دبلوم تجارة",
+          passportNumber: "A12345678",
+          passportExpiryDate: "2030-01-15",
+          height: "165",
+          weight: "65",
+          numberOfChildren: 2,
+          livingTown: "الجيزة",
+          placeOfBirth: "القاهرة",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: "demo-2",
+          fullName: "مريم حسن علي",
+          fullNameArabic: "مريم حسن علي",
+          email: "mariam.hassan@example.com",
+          phone: "+201987654321",
+          referenceCode: "MH002",
+          monthlySalary: "2800",
+          contractPeriod: "24 شهر",
+          position: "عاملة منزلية",
+          nationality: "مصرية",
+          maritalStatus: "SINGLE",
+          age: 39,
+          profileImage: null,
+          cvImageUrl: null,
+          videoLink: null,
+          status: "NEW",
+          priority: "MEDIUM",
+          babySitting: "WILLING",
+          childrenCare: "YES",
+          tutoring: "NO",
+          disabledCare: "WILLING",
+          cleaning: "YES",
+          washing: "YES",
+          ironing: "YES",
+          arabicCooking: "YES",
+          sewing: "YES",
+          driving: "NO",
+          experience: "خبرة 8 سنوات في الأعمال المنزلية",
+          arabicLevel: "YES",
+          englishLevel: "WILLING",
+          religion: "مسيحية",
+          educationLevel: "الثانوية العامة",
+          passportNumber: "B87654321",
+          passportExpiryDate: "2029-03-10",
+          height: "160",
+          weight: "58",
+          numberOfChildren: 0,
+          livingTown: "الإسكندرية",
+          placeOfBirth: "الإسكندرية",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ]
+      console.log('No CVs found in database, returning fallback data')
+      return NextResponse.json(fallbackData)
+    }
+
     console.log(`Found ${enriched.length} available CVs (NEW status only)`) 
     return NextResponse.json(enriched)
   } catch (error) {
