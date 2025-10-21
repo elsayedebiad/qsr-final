@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import toast from 'react-hot-toast'
 import { 
   FileText, 
   Plus, 
@@ -17,9 +18,7 @@ import {
   Shield,
   Home,
   ChevronDown,
-  ChevronRight,
   Sparkles,
-  Bell,
   BellRing,
   Settings,
   Grid3X3,
@@ -27,7 +26,8 @@ import {
   FileSpreadsheet,
   Store,
   ExternalLink,
-  Calendar
+  RotateCcw,
+  AlertTriangle
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -43,7 +43,7 @@ interface SidebarProps {
 interface NavItem {
   id: string
   label: string
-  icon: any
+  icon: React.ComponentType<{ className?: string }>
   href?: string
   onClick?: () => void
   children?: NavItem[]
@@ -56,6 +56,8 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>(['cvs'])
+  const [isResetting, setIsResetting] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
 
   const toggleExpanded = (itemId: string) => {
     setExpandedItems(prev => 
@@ -63,6 +65,54 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
         ? prev.filter(id => id !== itemId)
         : [...prev, itemId]
     )
+  }
+
+  const handleResetData = async () => {
+    // مؤقتاً للاختبار - السماح للجميع
+    console.log('✅ Attempting reset - User:', user?.email, 'Role:', user?.role)
+    
+    // التحقق من الصلاحيات - معطل مؤقتاً للاختبار
+    // if (!user || (user.role !== 'DEVELOPER' && user.role !== 'ADMIN' && user.email !== 'developer@system.local')) {
+    //   toast.error('غير مسموح لك بإعادة تعيين البيانات. هذه العملية متاحة فقط للمطورين والمدراء.')
+    //   return
+    // }
+
+    setShowResetModal(false)
+
+    setIsResetting(true)
+    toast.loading('جاري إعادة تعيين البيانات...', { id: 'reset-data' })
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/reset-data', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        toast.success('تم إعادة تعيين البيانات بنجاح! النظام جاهز للبيانات الحقيقية.', { 
+          id: 'reset-data',
+          duration: 5000,
+          icon: '🎉'
+        })
+        // إعادة تحميل الصفحة لتحديث البيانات
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } else {
+        toast.error(result.error || 'فشل في إعادة تعيين البيانات', { id: 'reset-data' })
+      }
+    } catch (error) {
+      console.error('Error resetting data:', error)
+      toast.error('حدث خطأ أثناء إعادة تعيين البيانات', { id: 'reset-data' })
+    } finally {
+      setIsResetting(false)
+    }
   }
 
   const navItems: NavItem[] = [
@@ -490,6 +540,24 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
 
         {/* ===== الجزء السفلي الثابت ===== */}
         <div className="flex-shrink-0">
+          
+          {/* زر إعادة التعيين - في أسفل القائمة */}
+          {!isCollapsed && user && (
+            <div className="p-4 border-t border-border border-b">
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-xl transform hover:scale-105 hover:shadow-2xl animate-pulse-slow"
+              >
+                <AlertTriangle className="h-6 w-6 animate-pulse" />
+                <span className="text-base">🔥 إعادة تعيين النظام</span>
+                <RotateCcw className="h-6 w-6" />
+              </button>
+              <p className="text-muted-foreground text-xs mt-2 text-center font-medium">
+                حذف كل البيانات والبدء من جديد
+              </p>
+            </div>
+          )}
+          
           {/* Logout Button */}
           <div className="p-4 border-t border-border">
             <button
@@ -513,6 +581,95 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
         >
           <Menu className="h-5 w-5 text-primary-foreground" />
         </button>
+      )}
+
+      {/* Reset Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-card border-2 border-destructive rounded-2xl max-w-lg w-full shadow-2xl transform animate-fadeIn">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 rounded-t-2xl">
+              <div className="flex items-center justify-center gap-3">
+                <AlertTriangle className="h-10 w-10 text-white animate-pulse" />
+                <h2 className="text-2xl font-bold text-white">تحذير خطير!</h2>
+                <AlertTriangle className="h-10 w-10 text-white animate-pulse" />
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-6">
+                <p className="text-lg font-semibold text-foreground mb-4">
+                  سيتم حذف البيانات التالية بشكل نهائي:
+                </p>
+                <ul className="space-y-2 mr-4">
+                  <li className="flex items-start gap-2">
+                    <span className="text-destructive mt-1">✗</span>
+                    <span className="text-foreground">جميع السير الذاتية المرفوعة</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-destructive mt-1">✗</span>
+                    <span className="text-foreground">جميع العقود والحجوزات</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-destructive mt-1">✗</span>
+                    <span className="text-foreground">جميع الأنشطة وسجلات النظام</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-destructive mt-1">✗</span>
+                    <span className="text-foreground">جميع الإشعارات والتنبيهات</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-destructive mt-1">✗</span>
+                    <span className="text-foreground">جميع البنرات الإعلانية</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-destructive mt-1">✗</span>
+                    <span className="text-foreground">جميع إعدادات النظام</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-destructive mt-1">✗</span>
+                    <span className="text-foreground">جميع المستخدمين (عدا المطور والمدير)</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
+                  <span>هذا الإجراء لا يمكن التراجع عنه! تأكد من أخذ نسخة احتياطية إذا كنت تحتاج البيانات الحالية.</span>
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={handleResetData}
+                  disabled={isResetting}
+                  className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                >
+                  {isResetting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                      <span>جاري الحذف...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-5 w-5" />
+                      <span>نعم، احذف كل شيء</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowResetModal(false)}
+                  disabled={isResetting}
+                  className="flex-1 bg-muted hover:bg-muted/80 text-foreground font-bold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )

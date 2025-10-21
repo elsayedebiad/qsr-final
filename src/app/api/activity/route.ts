@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseInt(searchParams.get('limit') || '100')
     const action = searchParams.get('action')
     const targetType = searchParams.get('targetType')
     const userId = searchParams.get('userId')
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     // Get total count
     const totalCount = await db.activityLog.count({ where })
 
-    // Get activities with pagination
+    // Get activities with pagination - fetch more data
     const activities = await db.activityLog.findMany({
       where,
       include: {
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
         createdAt: 'desc'
       },
       skip: (page - 1) * limit,
-      take: limit
+      take: Math.min(limit, 500) // Max 500 activities at once
     })
 
     console.log(`Found ${activities.length} activities out of ${totalCount} total`)
@@ -124,6 +124,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           activities: newActivities.map(activity => ({
             id: activity.id.toString(),
+            type: activity.action, // Add type field for ActivityTypeConfig
             action: activity.action,
             description: activity.description,
             targetType: activity.targetType,
@@ -132,10 +133,15 @@ export async function GET(request: NextRequest) {
             userId: activity.userId,
             userName: activity.user?.name || 'مستخدم غير معروف',
             userEmail: activity.user?.email || '',
+            userRole: activity.user?.role || 'USER',
             ipAddress: activity.ipAddress,
             userAgent: activity.userAgent,
-            metadata: activity.metadata && typeof activity.metadata === 'string' ? JSON.parse(activity.metadata) : null,
-            createdAt: activity.createdAt.toISOString()
+            metadata: activity.metadata && typeof activity.metadata === 'string' ? 
+              JSON.parse(activity.metadata) : 
+              { importance: activity.targetType === 'CONTRACT' || activity.targetType === 'BOOKING' ? 'high' : 'medium' },
+            createdAt: activity.createdAt.toISOString(),
+            isNew: new Date(activity.createdAt).getTime() > Date.now() - 86400000, // New if less than 24 hours
+            isRead: false
           })),
           pagination: {
             page,
@@ -153,22 +159,53 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Format and return activities
-    const formattedActivities = activities.map(activity => ({
-      id: activity.id.toString(),
-      action: activity.action,
-      description: activity.description,
-      targetType: activity.targetType,
-      targetId: activity.targetId,
-      targetName: activity.targetName,
-      userId: activity.userId,
-      userName: activity.user?.name || 'مستخدم غير معروف',
-      userEmail: activity.user?.email || '',
-      ipAddress: activity.ipAddress,
-      userAgent: activity.userAgent,
-      metadata: activity.metadata && typeof activity.metadata === 'string' ? JSON.parse(activity.metadata) : null,
-      createdAt: activity.createdAt.toISOString()
-    }))
+    // Format and return activities with proper types
+    const formattedActivities = activities.map(activity => {
+      // Map action to ActivityType
+      let activityType = activity.action
+      
+      // Map contract and booking activities
+      if (activity.action.includes('CONTRACT')) {
+        activityType = activity.action
+      } else if (activity.action.includes('BOOKING')) {
+        activityType = activity.action.replace('BOOKING', 'CONTRACT')
+      } else if (activity.action.includes('CV_')) {
+        activityType = activity.action
+      } else if (activity.action.includes('USER_')) {
+        activityType = activity.action
+      } else if (activity.action.includes('SYSTEM')) {
+        if (activity.action === 'SYSTEM_ACCESS') {
+          activityType = 'SYSTEM_UPDATE'
+        } else {
+          activityType = activity.action
+        }
+      } else {
+        // Default mapping for other actions
+        activityType = 'OTHER'
+      }
+      
+      return {
+        id: activity.id.toString(),
+        type: activityType, // Add type field for ActivityTypeConfig
+        action: activity.action,
+        description: activity.description,
+        targetType: activity.targetType,
+        targetId: activity.targetId,
+        targetName: activity.targetName,
+        userId: activity.userId,
+        userName: activity.user?.name || 'مستخدم غير معروف',
+        userEmail: activity.user?.email || '',
+        userRole: activity.user?.role || 'USER',
+        ipAddress: activity.ipAddress,
+        userAgent: activity.userAgent,
+        metadata: activity.metadata && typeof activity.metadata === 'string' ? 
+          JSON.parse(activity.metadata) : 
+          { importance: activity.targetType === 'CONTRACT' || activity.targetType === 'BOOKING' ? 'high' : 'medium' },
+        createdAt: activity.createdAt.toISOString(),
+        isNew: new Date(activity.createdAt).getTime() > Date.now() - 86400000, // New if less than 24 hours
+        isRead: false
+      }
+    })
 
     // Calculate CV statistics
     const cvCreatedCount = await db.activityLog.count({

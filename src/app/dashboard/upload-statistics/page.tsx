@@ -367,87 +367,144 @@ export default function UploadStatisticsPage() {
               </div>
             ) : statistics ? (
               <>
-                {/* Summary Cards - Enhanced */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="card-gradient-primary p-6 rounded-lg shadow-lg hover:shadow-xl transition-all group">
-                    <div className="flex justify-between items-start mb-3">
-                      <Upload className="h-8 w-8 opacity-90 group-hover:scale-110 transition-transform" />
-                      <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-full">
-                        {filterType === 'daily' ? 'اليوم' : filterType === 'weekly' ? 'الأسبوع' : filterType === 'monthly' ? 'الشهر' : 'مخصص'}
-                      </span>
-                    </div>
-                    <div className="text-4xl font-bold mb-2">{statistics.summary.totalUploaded}</div>
-                    <div className="text-sm font-medium opacity-90">سيرة ذاتية مرفوعة</div>
-                    <div className="text-xs opacity-75 mt-1">في الفترة المحددة</div>
-                    {statistics.summary.totalUploaded > 0 && (
-                      <div className="mt-3 pt-3 border-t border-white/20">
-                        <div className="flex items-center gap-1 text-xs">
-                          <TrendingUp className="h-3 w-3" />
-                          <span className="font-bold">
-                            {Math.round((statistics.summary.totalUploaded / (statistics.summary.totalUploaded + statistics.summary.totalUpdated)) * 100)}%
-                          </span>
-                          <span className="opacity-75">من الإجمالي</span>
+                {/* Summary Cards - Enhanced with Animations */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {/* Card 1 - السير المرفوعة */}
+                  <div className="relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl transform rotate-1 group-hover:rotate-2 transition-transform duration-300"></div>
+                    <div className="relative bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all text-white">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl group-hover:scale-110 transition-transform">
+                          <Upload className="h-8 w-8" />
                         </div>
+                        <span className="px-3 py-1 bg-white/25 backdrop-blur-sm rounded-full text-xs font-bold">
+                          {filterType === 'daily' ? '📅 اليوم' : filterType === 'weekly' ? '📆 الأسبوع' : filterType === 'monthly' ? '📈 الشهر' : '⚙️ مخصص'}
+                        </span>
                       </div>
-                    )}
+                      <div className="space-y-2">
+                        <div className="text-5xl font-bold drop-shadow-md">
+                          {statistics.summary.totalUploaded.toLocaleString('ar-SA')}
+                        </div>
+                        <div className="text-base font-semibold opacity-95">سيرة ذاتية مرفوعة</div>
+                        <div className="text-sm opacity-80">في الفترة المحددة</div>
+                      </div>
+                      {statistics.summary.totalUploaded > 0 && (
+                        <div className="mt-4 pt-4 border-t border-white/30">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1 bg-green-400/30 rounded">
+                                <TrendingUp className="h-4 w-4 text-green-100" />
+                              </div>
+                              <span className="text-green-100 font-bold text-lg">
+                                {Math.round((statistics.summary.totalUploaded / (statistics.summary.totalUploaded + statistics.summary.totalUpdated)) * 100)}%
+                              </span>
+                            </div>
+                            <span className="text-sm opacity-80">من الإجمالي</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="card-gradient-success p-6 rounded-lg shadow-lg hover:shadow-xl transition-all group">
-                    <div className="flex justify-between items-start mb-3">
-                      <RefreshCw className="h-8 w-8 opacity-90 group-hover:rotate-180 transition-transform duration-500" />
-                      <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-full">
-                        محدث
-                      </span>
-                    </div>
-                    <div className="text-4xl font-bold mb-2">{statistics.summary.totalUpdated}</div>
-                    <div className="text-sm font-medium opacity-90">سيرة ذاتية محدثة</div>
-                    <div className="text-xs opacity-75 mt-1">تم تعديلها</div>
-                    {statistics.summary.totalUpdated > 0 && (
-                      <div className="mt-3 pt-3 border-t border-white/20">
-                        <div className="flex items-center gap-1 text-xs">
-                          <Percent className="h-3 w-3" />
-                          <span className="font-bold">
-                            {Math.round((statistics.summary.totalUpdated / (statistics.summary.totalUploaded + statistics.summary.totalUpdated)) * 100)}%
-                          </span>
-                          <span className="opacity-75">نسبة التحديث</span>
+                  {/* Card 2 - السير المحدثة */}
+                  <div className="relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-600 to-green-800 rounded-2xl transform -rotate-1 group-hover:-rotate-2 transition-transform duration-300"></div>
+                    <div className="relative bg-gradient-to-br from-green-500 to-green-700 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all text-white">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl group-hover:rotate-180 transition-transform duration-500">
+                          <RefreshCw className="h-8 w-8" />
                         </div>
+                        <span className="px-3 py-1 bg-white/25 backdrop-blur-sm rounded-full text-xs font-bold">
+                          ✨ محدث
+                        </span>
                       </div>
-                    )}
+                      <div className="space-y-2">
+                        <div className="text-5xl font-bold drop-shadow-md">
+                          {statistics.summary.totalUpdated.toLocaleString('ar-SA')}
+                        </div>
+                        <div className="text-base font-semibold opacity-95">سيرة ذاتية محدثة</div>
+                        <div className="text-sm opacity-80">تم تعديلها</div>
+                      </div>
+                      {statistics.summary.totalUpdated > 0 && (
+                        <div className="mt-4 pt-4 border-t border-white/30">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1 bg-yellow-400/30 rounded">
+                                <Percent className="h-4 w-4 text-yellow-100" />
+                              </div>
+                              <span className="text-yellow-100 font-bold text-lg">
+                                {Math.round((statistics.summary.totalUpdated / (statistics.summary.totalUploaded + statistics.summary.totalUpdated)) * 100)}%
+                              </span>
+                            </div>
+                            <span className="text-sm opacity-80">نسبة التحديث</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="card p-6 rounded-lg shadow-lg hover:shadow-xl transition-all bg-gradient-to-br from-purple-600/20 to-purple-700/20 border-purple-500/30 group">
-                    <div className="flex justify-between items-start mb-3">
-                      <Users className="h-8 w-8 text-purple-400 group-hover:scale-110 transition-transform" />
-                      <Award className="h-4 w-4 text-yellow-400" />
-                    </div>
-                    <div className="text-4xl font-bold mb-2 text-foreground">{statistics.userStats.length}</div>
-                    <div className="text-sm font-medium text-purple-300">مستخدم نشط</div>
-                    <div className="text-xs text-purple-400 mt-1">قام بالرفع</div>
-                    {statistics.userStats.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-purple-500/20">
-                        <div className="text-xs text-purple-300">
-                          <span className="font-bold">أعلى مستخدم: </span>
-                          <span className="opacity-75">{statistics.userStats[0]?.userName}</span>
+                  {/* Card 3 - المستخدمون النشطون */}
+                  <div className="relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl transform rotate-1 group-hover:rotate-2 transition-transform duration-300"></div>
+                    <div className="relative bg-gradient-to-br from-purple-500 to-purple-700 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all text-white">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl group-hover:scale-110 transition-transform">
+                          <Users className="h-8 w-8" />
+                        </div>
+                        <div className="p-2 bg-yellow-400/30 backdrop-blur-sm rounded-lg">
+                          <Award className="h-5 w-5 text-yellow-300" />
                         </div>
                       </div>
-                    )}
+                      <div className="space-y-2">
+                        <div className="text-5xl font-bold drop-shadow-md">
+                          {statistics.userStats.length}
+                        </div>
+                        <div className="text-base font-semibold opacity-95">مستخدم نشط</div>
+                        <div className="text-sm opacity-80">قام بالرفع</div>
+                      </div>
+                      {statistics.userStats.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-white/30">
+                          <div className="p-2 bg-white/10 rounded-lg">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-yellow-200">🏆</span>
+                              <span className="font-bold">الأعلى:</span>
+                              <span className="text-yellow-100">{statistics.userStats[0]?.userName}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="card-gradient-warning p-6 rounded-lg shadow-lg hover:shadow-xl transition-all group">
-                    <div className="flex justify-between items-start mb-3">
-                      <ChartLine className="h-8 w-8 opacity-90 group-hover:scale-110 transition-transform" />
-                      <Target className="h-4 w-4 opacity-90" />
-                    </div>
-                    <div className="text-4xl font-bold mb-2">
-                      {Math.round(statistics.summary.totalUploaded / Math.max(statistics.chartData.filter(d => d.count > 0).length, 1))}
-                    </div>
-                    <div className="text-sm font-medium opacity-90">متوسط يومي</div>
-                    <div className="text-xs opacity-75 mt-1">للرفع</div>
-                    <div className="mt-3 pt-3 border-t border-white/20">
-                      <div className="flex items-center gap-1 text-xs">
-                        <Timer className="h-3 w-3" />
-                        <span className="font-bold">{statistics.chartData.filter(d => d.count > 0).length}</span>
-                        <span className="opacity-75">يوم نشط</span>
+                  {/* Card 4 - المتوسط اليومي */}
+                  <div className="relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-600 to-orange-800 rounded-2xl transform -rotate-1 group-hover:-rotate-2 transition-transform duration-300"></div>
+                    <div className="relative bg-gradient-to-br from-orange-500 to-orange-700 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all text-white">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl group-hover:scale-110 transition-transform">
+                          <ChartLine className="h-8 w-8" />
+                        </div>
+                        <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                          <Target className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="text-5xl font-bold drop-shadow-md">
+                          {Math.round(statistics.summary.totalUploaded / Math.max(statistics.chartData.filter(d => d.count > 0).length, 1))}
+                        </div>
+                        <div className="text-base font-semibold opacity-95">متوسط يومي</div>
+                        <div className="text-sm opacity-80">للرفع</div>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-white/30">
+                        <div className="p-2 bg-white/10 rounded-lg">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <Timer className="h-4 w-4 text-yellow-200" />
+                              <span className="font-bold text-yellow-100">{statistics.chartData.filter(d => d.count > 0).length}</span>
+                            </div>
+                            <span className="opacity-80">يوم نشط</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -470,53 +527,109 @@ export default function UploadStatisticsPage() {
                   </div>
                 )}
 
-                {/* Additional Statistics Row */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="card p-4 border-2 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-2xl font-bold text-foreground">
-                          {statistics.summary.totalUploaded + statistics.summary.totalUpdated}
+                {/* Additional Statistics Row - Redesigned */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {/* إجمالي العمليات */}
+                  <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/10 via-blue-600/10 to-blue-700/10 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="p-3 bg-blue-500/20 rounded-xl group-hover:scale-110 transition-transform">
+                          <Activity className="h-6 w-6 text-blue-500" />
                         </div>
-                        <div className="text-xs text-muted-foreground">إجمالي العمليات</div>
+                        <span className="text-xs font-bold text-blue-500 bg-blue-500/10 px-2 py-1 rounded-full">
+                          📊 إجمالي
+                        </span>
                       </div>
-                      <DollarSign className="h-8 w-8 text-blue-500 opacity-50" />
+                      <div className="space-y-1">
+                        <div className="text-3xl font-bold text-foreground">
+                          {(statistics.summary.totalUploaded + statistics.summary.totalUpdated).toLocaleString('ar-SA')}
+                        </div>
+                        <div className="text-sm text-muted-foreground font-medium">إجمالي العمليات</div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 h-1 bg-blue-500/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" style={{width: '100%'}}></div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="card p-4 border-2 border-green-500/30 bg-green-500/10 hover:bg-green-500/20 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-2xl font-bold text-foreground">
+                  {/* الجنسيات */}
+                  <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500/10 via-green-600/10 to-green-700/10 border border-green-500/20 hover:border-green-500/40 transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="p-3 bg-green-500/20 rounded-xl group-hover:scale-110 transition-transform">
+                          <Globe className="h-6 w-6 text-green-500" />
+                        </div>
+                        <span className="text-xs font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full">
+                          🌍 دولي
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-3xl font-bold text-foreground">
                           {statistics.nationalityStats.length}
                         </div>
-                        <div className="text-xs text-muted-foreground">جنسية مختلفة</div>
+                        <div className="text-sm text-muted-foreground font-medium">جنسية مختلفة</div>
+                        <div className="mt-2 flex items-center gap-1">
+                          {[...Array(Math.min(statistics.nationalityStats.length, 5))].map((_, i) => (
+                            <div key={i} className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: `${i * 100}ms`}}></div>
+                          ))}
+                        </div>
                       </div>
-                      <Globe className="h-8 w-8 text-green-500 opacity-50" />
                     </div>
                   </div>
                   
-                  <div className="card p-4 border-2 border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-2xl font-bold text-foreground">
+                  {/* الحالات */}
+                  <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500/10 via-purple-600/10 to-purple-700/10 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="p-3 bg-purple-500/20 rounded-xl group-hover:scale-110 transition-transform">
+                          <CheckCircle className="h-6 w-6 text-purple-500" />
+                        </div>
+                        <span className="text-xs font-bold text-purple-500 bg-purple-500/10 px-2 py-1 rounded-full">
+                          ✅ حالات
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-3xl font-bold text-foreground">
                           {statistics.statusStats.length}
                         </div>
-                        <div className="text-xs text-muted-foreground">حالات مختلفة</div>
+                        <div className="text-sm text-muted-foreground font-medium">حالات مختلفة</div>
+                        <div className="mt-2 flex gap-1">
+                          {statistics.statusStats.slice(0, 3).map((_, i) => (
+                            <div key={i} className="flex-1 h-1 bg-purple-500/30 rounded-full"></div>
+                          ))}
+                        </div>
                       </div>
-                      <CheckCircle className="h-8 w-8 text-purple-500 opacity-50" />
                     </div>
                   </div>
                   
-                  <div className="card p-4 border-2 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-2xl font-bold text-foreground">
+                  {/* الأولويات */}
+                  <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500/10 via-orange-600/10 to-orange-700/10 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                    <div className="relative p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="p-3 bg-orange-500/20 rounded-xl group-hover:scale-110 transition-transform">
+                          <Award className="h-6 w-6 text-orange-500" />
+                        </div>
+                        <span className="text-xs font-bold text-orange-500 bg-orange-500/10 px-2 py-1 rounded-full">
+                          ⭐ أولويات
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-3xl font-bold text-foreground">
                           {statistics.priorityStats.length}
                         </div>
-                        <div className="text-xs text-muted-foreground">أولويات</div>
+                        <div className="text-sm text-muted-foreground font-medium">مستويات أولوية</div>
+                        <div className="mt-2 flex items-center gap-1">
+                          <div className="w-3 h-3 bg-red-500 rounded-full" title="عالية"></div>
+                          <div className="w-3 h-3 bg-yellow-500 rounded-full" title="متوسطة"></div>
+                          <div className="w-3 h-3 bg-green-500 rounded-full" title="منخفضة"></div>
+                        </div>
                       </div>
-                      <Award className="h-8 w-8 text-orange-500 opacity-50" />
                     </div>
                   </div>
                 </div>
@@ -566,41 +679,129 @@ export default function UploadStatisticsPage() {
                   </div>
                 </div>
 
-                {/* Chart View */}
+                {/* Chart View - Enhanced */}
                 {viewMode === 'chart' && (
-                  <div className="card p-6">
-                    <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                      <BarChart3 className="h-6 w-6 text-primary" />
-                      الإحصائيات اليومية - آخر 30 يوم
-                    </h2>
-                    <div className="overflow-x-auto pb-2">
-                    <div className="flex items-end gap-1 h-48 min-w-[700px]">
-                      {statistics.chartData.map((data) => {
-                        const maxCount = Math.max(...statistics.chartData.map(d => d.count), 1)
-                        const height = (data.count / maxCount) * 100
-                        return (
-                          <div key={data.date} className="flex-1 flex flex-col items-center gap-2 group">
-                            <div className={`text-xs font-bold transition-all ${data.count > 0 ? 'text-primary group-hover:scale-125' : 'text-muted-foreground'}`}>
-                              {data.count > 0 ? data.count : ''}
-                            </div>
-                            <div
-                              className={`w-full rounded-t-lg transition-all cursor-pointer ${
-                                data.count > 0 
-                                  ? 'bg-gradient-to-t from-primary via-primary/90 to-primary/70 hover:from-primary/90 hover:via-primary/80 hover:to-primary/60 shadow-lg hover:shadow-xl group-hover:scale-105' 
-                                  : 'bg-border hover:bg-border/80'
-                              }`}
-                              style={{ height: `${height}%`, minHeight: data.count > 0 ? '16px' : '4px' }}
-                              title={`${formatShortDate(data.date)}: ${data.count} سيرة ذاتية`}
-                            ></div>
-                            <div className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
-                              {new Date(data.date).getDate()}
-                            </div>
-                          </div>
-                        )
-                      })}
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 shadow-2xl">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-8">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+                          <BarChart3 className="h-7 w-7 text-white" />
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-bold text-foreground">الإحصائيات اليومية</h2>
+                          <p className="text-sm text-muted-foreground mt-1">آخر 30 يوم من النشاط</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-lg">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                          <span className="text-sm font-medium text-blue-600 dark:text-blue-400">مباشر</span>
+                        </div>
+                      </div>
                     </div>
+                    
+                    {/* Chart Container */}
+                    <div className="relative bg-white dark:bg-gray-950 rounded-xl p-6 shadow-inner">
+                      <div className="overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
+                        <div className="flex items-end gap-2 h-64 min-w-[800px]">
+                          {statistics.chartData.map((data, index) => {
+                            const maxCount = Math.max(...statistics.chartData.map(d => d.count), 1)
+                            const height = (data.count / maxCount) * 100
+                            const isToday = index === statistics.chartData.length - 1
+                            const isActive = data.count > 0
+                            
+                            return (
+                              <div key={data.date} className="flex-1 flex flex-col items-center gap-2 group relative">
+                                {/* Value Label */}
+                                {isActive && (
+                                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="bg-gray-900 text-white px-2 py-1 rounded text-xs font-bold whitespace-nowrap">
+                                      {data.count} سيرة
+                                    </div>
+                                    <div className="w-2 h-2 bg-gray-900 transform rotate-45 -mt-1 mx-auto"></div>
+                                  </div>
+                                )}
+                                
+                                {/* Bar */}
+                                <div className="w-full flex items-end" style={{ height: '200px' }}>
+                                  <div
+                                    className={`w-full rounded-t-xl transition-all duration-500 relative overflow-hidden ${
+                                      isToday
+                                        ? 'bg-gradient-to-t from-green-500 via-green-400 to-green-300 shadow-lg shadow-green-500/30'
+                                        : isActive
+                                        ? 'bg-gradient-to-t from-blue-600 via-blue-500 to-blue-400 hover:from-blue-700 hover:via-blue-600 hover:to-blue-500 shadow-md hover:shadow-lg'
+                                        : 'bg-gray-200 dark:bg-gray-800'
+                                    } cursor-pointer group-hover:scale-105`}
+                                    style={{ 
+                                      height: `${height}%`, 
+                                      minHeight: isActive ? '20px' : '4px',
+                                      animation: isActive ? 'slideUp 0.5s ease-out' : 'none',
+                                      animationDelay: `${index * 30}ms`
+                                    }}
+                                  >
+                                    {isActive && (
+                                      <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Date Label */}
+                                <div className="text-center mt-2">
+                                  <div className={`text-xs font-bold ${
+                                    isToday ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'
+                                  }`}>
+                                    {new Date(data.date).getDate()}
+                                  </div>
+                                  {(index % 5 === 0 || isToday) && (
+                                    <div className="text-[10px] text-muted-foreground mt-1">
+                                      {new Date(data.date).toLocaleDateString('ar-SA', { month: 'short' })}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      
+                      {/* Chart Footer Stats */}
+                      <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {statistics.chartData.reduce((sum, d) => sum + d.count, 0)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">إجمالي الشهر</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            {Math.max(...statistics.chartData.map(d => d.count))}
+                          </div>
+                          <div className="text-xs text-muted-foreground">أعلى يوم</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                            {Math.round(statistics.chartData.reduce((sum, d) => sum + d.count, 0) / statistics.chartData.length)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">المتوسط</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Animation Styles */}
+                    <style jsx>{`
+                      @keyframes slideUp {
+                        from {
+                          transform: scaleY(0);
+                          transform-origin: bottom;
+                        }
+                        to {
+                          transform: scaleY(1);
+                          transform-origin: bottom;
+                        }
+                      }
+                    `}</style>
                   </div>
-                </div>
                 )}
 
                 {/* Table View */}

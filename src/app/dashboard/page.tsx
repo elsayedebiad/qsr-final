@@ -43,6 +43,7 @@ import {
   Share2,
   Grid3X3,
   List,
+  RotateCcw,
 } from 'lucide-react'
 import DashboardLayout from '../../components/DashboardLayout'
 import BulkImageDownloader from '../../components/BulkImageDownloader'
@@ -164,6 +165,10 @@ export default function CVsPage() {
   const [downloadProgress, setDownloadProgress] = useState(0)
   // View mode for SALES accounts
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  
+  // Reset system states
+  const [showResetModal, setShowResetModal] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)

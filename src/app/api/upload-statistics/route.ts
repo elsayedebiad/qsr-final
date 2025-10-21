@@ -59,10 +59,13 @@ export async function GET(req: NextRequest) {
         break
       
       case 'monthly':
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        // تغيير من أول الشهر إلى آخر 30 يوم
+        const thirtyDaysAgo = new Date(now)
+        thirtyDaysAgo.setDate(now.getDate() - 30)
+        thirtyDaysAgo.setHours(0, 0, 0, 0)
         dateFilter = {
           createdAt: {
-            gte: startOfMonth
+            gte: thirtyDaysAgo
           }
         }
         break

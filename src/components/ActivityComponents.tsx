@@ -106,37 +106,37 @@ export const ActivityTypeConfig: Record<ActivityType, {
   CONTRACT_CREATED: { 
     icon: FileSignature, 
     color: 'text-purple-700 dark:text-purple-400', 
-    bgColor: 'bg-purple-500/10 dark:bg-purple-400/10',
-    label: 'إنشاء عقد', 
-    priority: 'high' 
+    bgColor: 'bg-gradient-to-br from-purple-500/20 to-purple-600/20 dark:from-purple-400/20 dark:to-purple-500/20',
+    label: '🎯 إنشاء عقد جديد', 
+    priority: 'critical' 
   },
   CONTRACT_UPDATED: { 
     icon: Edit, 
     color: 'text-blue-700 dark:text-blue-400', 
-    bgColor: 'bg-blue-500/10 dark:bg-blue-400/10',
-    label: 'تحديث عقد', 
-    priority: 'medium' 
+    bgColor: 'bg-gradient-to-br from-blue-500/20 to-blue-600/20 dark:from-blue-400/20 dark:to-blue-500/20',
+    label: '✏️ تحديث عقد', 
+    priority: 'high' 
   },
   CONTRACT_DELETED: { 
     icon: Trash2, 
     color: 'text-red-700 dark:text-red-400', 
-    bgColor: 'bg-red-500/10 dark:bg-red-400/10',
-    label: 'حذف عقد', 
-    priority: 'high' 
+    bgColor: 'bg-gradient-to-br from-red-500/20 to-red-600/20 dark:from-red-400/20 dark:to-red-500/20',
+    label: '❌ حذف عقد', 
+    priority: 'critical' 
   },
   CONTRACT_SIGNED: { 
     icon: CheckCircle, 
     color: 'text-green-700 dark:text-green-400', 
-    bgColor: 'bg-green-500/10 dark:bg-green-400/10',
-    label: 'توقيع عقد', 
-    priority: 'high' 
+    bgColor: 'bg-gradient-to-br from-green-500/20 to-green-600/20 dark:from-green-400/20 dark:to-green-500/20',
+    label: '✅ توقيع عقد', 
+    priority: 'critical' 
   },
   CONTRACT_CANCELLED: { 
     icon: XCircle, 
     color: 'text-red-700 dark:text-red-400', 
-    bgColor: 'bg-red-500/10 dark:bg-red-400/10',
-    label: 'إلغاء عقد', 
-    priority: 'high' 
+    bgColor: 'bg-gradient-to-br from-red-500/20 to-red-600/20 dark:from-red-400/20 dark:to-red-500/20',
+    label: '⛔ إلغاء عقد', 
+    priority: 'critical' 
   },
   
   // أنشطة المستخدمين
@@ -342,13 +342,57 @@ export const ActivityTypeConfig: Record<ActivityType, {
   }
 }
 
+// إضافة أنواع حجوزات
+export const BookingActivityTypes = {
+  BOOKING_CREATED: { 
+    icon: ShoppingCart, 
+    color: 'text-amber-700 dark:text-amber-400', 
+    bgColor: 'bg-gradient-to-br from-amber-500/20 to-amber-600/20 dark:from-amber-400/20 dark:to-amber-500/20',
+    label: '🎊 حجز جديد', 
+    priority: 'critical' 
+  },
+  BOOKING_UPDATED: { 
+    icon: Edit2, 
+    color: 'text-indigo-700 dark:text-indigo-400', 
+    bgColor: 'bg-gradient-to-br from-indigo-500/20 to-indigo-600/20 dark:from-indigo-400/20 dark:to-indigo-500/20',
+    label: '📝 تحديث حجز', 
+    priority: 'high' 
+  },
+  BOOKING_CANCELLED: { 
+    icon: XCircle, 
+    color: 'text-red-700 dark:text-red-400', 
+    bgColor: 'bg-gradient-to-br from-red-500/20 to-red-600/20 dark:from-red-400/20 dark:to-red-500/20',
+    label: '🚫 إلغاء حجز', 
+    priority: 'critical' 
+  },
+  BOOKING_CONFIRMED: { 
+    icon: CheckCircle, 
+    color: 'text-emerald-700 dark:text-emerald-400', 
+    bgColor: 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 dark:from-emerald-400/20 dark:to-emerald-500/20',
+    label: '💚 تأكيد حجز', 
+    priority: 'critical' 
+  },
+  ...ActivityTypeConfig
+}
+
 // مكون بطاقة النشاط
 export const ActivityCard: React.FC<{
   activity: any
   isExpanded: boolean
   onToggle: () => void
 }> = ({ activity, isExpanded, onToggle }) => {
-  const config = ActivityTypeConfig[activity.type as ActivityType] || ActivityTypeConfig.CV_VIEWED
+  // Check for booking activities
+  const isBookingActivity = activity.action?.includes('BOOKING') || activity.targetType === 'BOOKING'
+  const isContractActivity = activity.action?.includes('CONTRACT') || activity.targetType === 'CONTRACT'
+  
+  // Get config based on activity type
+  let config = ActivityTypeConfig[activity.type as ActivityType] || ActivityTypeConfig.CV_VIEWED
+  
+  // Override config for booking activities
+  if (isBookingActivity && activity.action) {
+    config = BookingActivityTypes[activity.action as keyof typeof BookingActivityTypes] || config
+  }
+  
   const Icon = config.icon
   
   const relativeTime = formatDistanceToNow(new Date(activity.createdAt), {
@@ -356,9 +400,20 @@ export const ActivityCard: React.FC<{
     locale: ar
   })
   
+  // Special styling for contracts and bookings
+  const getSpecialStyling = () => {
+    if (isContractActivity) {
+      return 'bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 border-2 border-purple-400 dark:border-purple-600 shadow-purple-200 dark:shadow-purple-900/50'
+    }
+    if (isBookingActivity) {
+      return 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/20 dark:to-amber-900/20 border-2 border-amber-400 dark:border-amber-600 shadow-amber-200 dark:shadow-amber-900/50'
+    }
+    return ''
+  }
+  
   return (
     <div
-      className={`bg-card rounded-xl shadow-md hover:shadow-lg transition-all duration-200 border border-border ${
+      className={`bg-card rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-border ${
         activity.isNew ? 'ring-2 ring-primary ring-opacity-50 animate-pulse-once' : ''
       } ${
         activity.metadata?.importance === 'critical' 
@@ -366,7 +421,7 @@ export const ActivityCard: React.FC<{
           : activity.metadata?.importance === 'high' 
           ? 'border-yellow-500/50' 
           : ''
-      }`}
+      } ${getSpecialStyling()}`}
     >
       {/* شريط الحالة للأنشطة الجديدة */}
       {activity.isNew && (

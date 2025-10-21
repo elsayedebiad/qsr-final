@@ -193,6 +193,32 @@ export default function EnhancedActivityLogPage() {
     setFilteredActivities(filtered)
   }, [activities, searchTerm, selectedTypes, selectedUsers, selectedImportance, dateFilter, showOnlyNew])
 
+  // الحصول على قائمة المستخدمين الفريدة
+  interface UniqueUser {
+    id: string
+    name: string
+    email: string
+    role?: string
+  }
+  
+  const uniqueUsers: UniqueUser[] = Array.from(new Set(activities.map(a => a.userId)))
+    .map(id => {
+      const activity = activities.find(a => a.userId === id)
+      if (activity) {
+        return {
+          id: activity.userId,
+          name: activity.userName,
+          email: activity.userEmail,
+          role: activity.userRole
+        }
+      }
+      return null
+    })
+    .filter((user): user is UniqueUser => user !== null)
+
+  // الحصول على أنواع الأنشطة المستخدمة
+  const usedActivityTypes = Array.from(new Set(activities.map(a => a.type)))
+
   // الصفحات
   const totalPages = Math.ceil(filteredActivities.length / itemsPerPage)
   const paginatedActivities = filteredActivities.slice(
