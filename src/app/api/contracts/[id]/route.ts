@@ -21,9 +21,9 @@ export async function DELETE(
       where: { id: decoded.userId }
     })
 
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || !['ADMIN', 'SUB_ADMIN', 'CUSTOMER_SERVICE'].includes(user.role)) {
       return NextResponse.json({ 
-        error: 'غير مصرح - هذه العملية متاحة للأدمن العام فقط' 
+        error: 'غير مصرح - هذه العملية متاحة للمدراء وخدمة العملاء فقط' 
       }, { status: 403 })
     }
 

@@ -298,8 +298,8 @@ export default function ContractsPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        {/* إرجاع/حذف التعاقد - متاح للأدمن والأبوريشن (SUB_ADMIN) */}
-                        {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'DEVELOPER') && (
+                        {/* إرجاع/حذف التعاقد - متاح للأدمن والأبوريشن وخدمة العملاء */}
+                        {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'DEVELOPER' || user?.role === 'CUSTOMER_SERVICE') && (
                           <button 
                             onClick={() => openDeleteModal(contract)} 
                             className="text-muted-foreground hover:text-destructive transition-colors" 

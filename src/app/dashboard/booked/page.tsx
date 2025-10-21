@@ -380,8 +380,8 @@ export default function BookedCVsPage() {
                     >
                       <Download className="h-4 w-4" />
                     </button>
-                    {/* حذف الحجز - متاح للمدراء فقط (ليس للمبيعات) */}
-                    {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                    {/* حذف الحجز - متاح للمدراء وخدمة العملاء */}
+                    {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                       <button
                         onClick={() => openDeleteModal(booking)}
                         className="text-destructive hover:opacity-80 transition-colors"
@@ -391,8 +391,8 @@ export default function BookedCVsPage() {
                       </button>
                     )}
                   </div>
-                  {/* زر التعاقد - متاح للمدراء فقط (ليس للمبيعات) */}
-                  {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                  {/* زر التعاقد - متاح للمدراء وخدمة العملاء */}
+                  {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                     <button
                       onClick={() => openContractModal(booking)}
                       className="btn-success inline-flex items-center px-3 py-1 text-xs"

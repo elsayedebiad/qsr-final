@@ -2279,8 +2279,8 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                               <Bookmark className="h-5 w-5" />
                             </button>
                         )}
-                        {/* أزرار التعاقد والرفض - متاحة للمدراء فقط (ليس للمبيعات) */}
-                        {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                        {/* أزرار التعاقد والرفض - متاحة للمدراء وخدمة العملاء */}
+                        {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                           <>
                             <button
                               onClick={() => {
@@ -2301,7 +2301,7 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                             </button>
                           </>
                         )}
-                        {cv.status === CVStatus.BOOKED && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                        {cv.status === CVStatus.BOOKED && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                           <>
                             <button
                               onClick={() => {
@@ -2322,7 +2322,7 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                             </button>
                           </>
                         )}
-                        {cv.status === CVStatus.RETURNED && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                        {cv.status === CVStatus.RETURNED && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                           <button
                             onClick={() => {
                               setContractingCv(cv)
@@ -2334,7 +2334,7 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                             <FileSignature className="h-5 w-5" />
                           </button>
                         )}
-                        {(cv.status === CVStatus.HIRED || cv.status === CVStatus.REJECTED) && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                        {(cv.status === CVStatus.HIRED || cv.status === CVStatus.REJECTED) && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                           <button
                             onClick={() => handleStatusChange(cv.id, CVStatus.RETURNED)}
                             className="p-2 text-warning hover:text-warning/80 hover:bg-warning/10 rounded-lg"

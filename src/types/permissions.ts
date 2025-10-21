@@ -75,6 +75,19 @@ export const PERMISSION_PRESETS = {
       Permission.VIEW_BOOKINGS
     ]
   },
+  CUSTOMER_SERVICE: {
+    name: 'خدمة العملاء',
+    description: 'إدارة العقود والحجوزات والإعادة',
+    permissions: [
+      Permission.VIEW_CVS,
+      Permission.CREATE_CONTRACT,
+      Permission.VIEW_CONTRACTS,
+      Permission.RESTORE_CONTRACT,
+      Permission.CREATE_BOOKING,
+      Permission.VIEW_BOOKINGS,
+      Permission.RESTORE_BOOKING
+    ]
+  },
   VIEWER: {
     name: 'مشاهد',
     description: 'مشاهدة فقط بدون تعديل',
