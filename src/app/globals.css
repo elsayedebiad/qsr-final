@@ -1256,3 +1256,53 @@ input[type="checkbox"]:indeterminate {
     transform: translateY(20px) translateX(10px) scale(1.05);
   }
 }
+
+/* Sidebar animations and styles */
+.sidebar-item {
+  position: relative;
+}
+
+.sidebar-dropdown {
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+/* Custom scrollbar for sidebar dropdown */
+.sidebar-dropdown::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(155, 155, 155, 0.3);
+  border-radius: 2px;
+}
+
+.sidebar-dropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 155, 155, 0.5);
+}
+
+/* Sidebar scroll area */
+.sidebar-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 155, 155, 0.3) transparent;
+}
+
+.sidebar-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll-area::-webkit-scrollbar-thumb {
+  background: rgba(155, 155, 155, 0.2);
+  border-radius: 3px;
+}
+
+.sidebar-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 155, 155, 0.4);
+}

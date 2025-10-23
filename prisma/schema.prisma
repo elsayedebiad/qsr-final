@@ -27,6 +27,9 @@ model User {
   sessions         Session[]
   loginActivations LoginActivation[]
   userSessions     UserSession[]     @relation("UserSessions")
+  assignedDistributions CVDistribution[] @relation("DistributionAssigner")
+  removedDistributions  CVDistribution[] @relation("DistributionRemover")
+  distributionLogs      DistributionLog[]
 
   @@map("users")
 }
@@ -109,6 +112,7 @@ model CV {
   versions           CVVersion[]
   createdBy          User           @relation("CVCreatedBy", fields: [createdById], references: [id])
   updatedBy          User?          @relation("CVUpdatedBy", fields: [updatedById], references: [id])
+  distributions      CVDistribution[]
 
   @@map("cvs")
 }
@@ -316,4 +320,108 @@ enum ActivityType {
   USER_LOGIN
   USER_LOGOUT
   EXCEL_IMPORT
+  CV_DISTRIBUTED
+  CV_REMOVED_FROM_PAGE
+}
+
+// نظام التوزيع الجديد
+model CVDistribution {
+  id           Int          @id @default(autoincrement())
+  cvId         Int
+  salesPageId  String       // sales1, sales2, ... sales11
+  assignedAt   DateTime     @default(now())
+  removedAt    DateTime?
+  isActive     Boolean      @default(true)
+  assignedBy   Int
+  removedBy    Int?
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  
+  cv           CV           @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  assigner     User         @relation("DistributionAssigner", fields: [assignedBy], references: [id])
+  remover      User?        @relation("DistributionRemover", fields: [removedBy], references: [id])
+  
+  @@unique([cvId, salesPageId, isActive])
+  @@index([salesPageId, isActive])
+  @@index([cvId])
+  @@map("cv_distributions")
+}
+
+model DistributionRule {
+  id              Int      @id @default(autoincrement())
+  salesPageId     String   @unique
+  dailyLimit      Int?     // حد السير اليومية (null = لا يوجد حد)
+  totalLimit      Int?     // الحد الأقصى الكلي
+  minCVs          Int      @default(0)  // الحد الأدنى
+  maxCVs          Int?     // الحد الأقصى
+  priority        Int      @default(0)  // أولوية الصفحة في التوزيع
+  isActive        Boolean  @default(true)
+  autoDistribute  Boolean  @default(false) // التوزيع التلقائي
+  nationality     String?  // تخصيص لجنسية معينة
+  position        String?  // تخصيص لوظيفة معينة
+  googleWeight    Float    @default(0)    // نسبة التوزيع لزيارات Google
+  otherWeight     Float    @default(0)    // نسبة التوزيع لباقي الزيارات
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("distribution_rules")
+}
+
+model DistributionLog {
+  id              Int      @id @default(autoincrement())
+  action          String   // ASSIGNED, REMOVED, BULK_ASSIGNED, etc.
+  salesPageId     String
+  cvIds           Int[]    // قائمة معرفات السير
+  userId          Int
+  count           Int      // عدد السير المتأثرة
+  details         Json?    // تفاصيل إضافية
+  timestamp       DateTime @default(now())
+  
+  user            User     @relation(fields: [userId], references: [id])
+  
+  @@index([salesPageId, timestamp])
+  @@map("distribution_logs")
+}
+
+// إحصائيات التوزيع
+model DistributionStats {
+  id              Int      @id @default(autoincrement())
+  salesPageId     String   
+  date            DateTime @db.Date
+  totalAssigned   Int      @default(0)
+  totalRemoved    Int      @default(0)
+  activeCount     Int      @default(0)
+  viewCount       Int      @default(0)
+  bookingCount    Int      @default(0)
+  contractCount   Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([salesPageId, date])
+  @@index([salesPageId])
+  @@index([date])
+  @@map("distribution_stats")
+}
+
+// تتبع الزيارات
+model Visit {
+  id              Int      @id @default(autoincrement())
+  ipAddress       String
+  country         String?
+  city            String?
+  userAgent       String?
+  referer         String?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  targetPage      String   // الصفحة التي تم التوجيه إليها
+  isGoogle        Boolean  @default(false)
+  timestamp       DateTime @default(now())
+  
+  @@index([timestamp])
+  @@index([targetPage])
+  @@index([country])
+  @@index([utmSource])
+  @@map("visits")
 }

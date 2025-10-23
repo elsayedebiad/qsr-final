@@ -27,7 +27,8 @@ import {
   Store,
   ExternalLink,
   RotateCcw,
-  AlertTriangle
+  AlertTriangle,
+  Network
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -273,6 +274,13 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
       ]
     },
     {
+      id: 'distribution',
+      label: 'نظام التوزيع',
+      icon: Network,
+      href: '/dashboard/distribution',
+      adminOnly: true
+    },
+    {
       id: 'notifications',
       label: 'مركز الإشعارات',
       icon: BellRing,
@@ -376,8 +384,8 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
             )}
           </button>
           
-          <div className={`overflow-hidden sidebar-dropdown ${
-            isExpanded && !isCollapsed ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          <div className={`sidebar-dropdown transition-all duration-300 ${
+            isExpanded && !isCollapsed ? 'max-h-[600px] opacity-100 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'
           }`}>
             <div className="mt-1 space-y-1 pb-1">
               {item.children?.map(child => renderNavItem(child, level + 1))}

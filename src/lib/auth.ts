@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { Role } from '@prisma/client'
 import { db } from './db'
+import { NextRequest } from 'next/server'
 
 export class AuthService {
   private static readonly JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production-2024'
@@ -270,5 +271,25 @@ export class AuthService {
       where: { id: userId },
       data: { isActive: true }
     })
+  }
+}
+
+/**
+ * Verify authentication from NextRequest
+ * Simple helper for API routes
+ */
+export async function verifyAuth(request: NextRequest) {
+  try {
+    const { validateAuthFromRequest } = await import('@/lib/middleware-auth')
+    const authResult = await validateAuthFromRequest(request)
+    
+    if (!authResult.success) {
+      return null
+    }
+    
+    return authResult.user
+  } catch (error) {
+    console.error('Auth verification error:', error)
+    return null
   }
 }

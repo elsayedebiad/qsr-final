@@ -41,13 +41,23 @@ export function checkUserPermissions(user: AuthenticatedUser, action: 'view' | '
 
 export async function validateAuthFromRequest(request: NextRequest): Promise<{ success: boolean; user?: AuthenticatedUser; error?: string }> {
   try {
-    // Get token from Authorization header
+    // Get token from Authorization header OR cookie
+    let token: string | undefined
+    
+    // First, try to get from Authorization header
     const authHeader = request.headers.get('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7) // Remove 'Bearer ' prefix
+    }
+    
+    // If not in header, try to get from cookie
+    if (!token) {
+      token = request.cookies.get('token')?.value
+    }
+    
+    if (!token) {
       return { success: false, error: 'No token provided' }
     }
-
-    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
 
     // Verify token and get user
     const user = await AuthService.verifyToken(token)

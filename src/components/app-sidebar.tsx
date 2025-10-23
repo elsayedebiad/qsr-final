@@ -31,6 +31,7 @@ import {
   Archive,
   Wifi,
   BarChart3,
+  Network,
 } from "lucide-react"
 
 import {
@@ -320,6 +321,20 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
           href: '/sales11'
         }
       ]
+    },
+    {
+      id: 'distribution',
+      label: 'نظام التوزيع',
+      icon: Network,
+      href: '/dashboard/distribution',
+      adminOnly: true
+    },
+    {
+      id: 'visits-report',
+      label: 'تقرير الزيارات المباشر',
+      icon: Activity,
+      href: '/dashboard/visits-report',
+      adminOnly: true
     },
     {
       id: 'notifications',
