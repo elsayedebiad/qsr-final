@@ -49,6 +49,7 @@ interface CV {
   priority?: string;
   notes?: string;
   profileImage?: string;
+  cvImageUrl?: string;
   videoLink?: string;
   // الحقول الإضافية
   previousEmployment?: string;
@@ -197,9 +198,9 @@ const QSOOriginalExactTemplate: React.FC<QSOOriginalExactTemplateProps> = ({ cv,
               borderBottomRightRadius: '2100px',
               borderBottomLeftRadius: '2100px'
             }}>
-              {cv.profileImage ? (
+              {cv.cvImageUrl || cv.profileImage ? (
                 <img 
-                  src={cv.profileImage} 
+                  src={cv.cvImageUrl || cv.profileImage} 
                   alt={cv.fullName}
                   style={{
                     width: '100%',

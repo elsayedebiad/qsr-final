@@ -19,6 +19,8 @@ import {
 import { format } from 'date-fns'
 import { ar } from 'date-fns/locale'
 import ProfileImage from '@/components/ProfileImage'
+import ImageWithFallback from '@/components/ImageWithFallback'
+import { processImageUrl } from '@/lib/url-utils'
 
 interface Contract {
   id: number
@@ -36,6 +38,7 @@ interface Contract {
     nationality?: string
     position?: string
     profileImage?: string
+    cvImageUrl?: string
     status: string
   }
 }
@@ -49,6 +52,7 @@ export default function ContractsPage() {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [selectedCVForView, setSelectedCVForView] = useState<Contract | null>(null)
 
   // جلب التعاقدات من قاعدة البيانات
   const fetchContracts = async () => {
@@ -83,6 +87,29 @@ export default function ContractsPage() {
   useEffect(() => {
     fetchContracts()
   }, [])
+
+  // إدارة modal السيرة الذاتية
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedCVForView(null)
+      }
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [])
+
+  // منع التمرير عند فتح modal
+  useEffect(() => {
+    if (selectedCVForView) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [selectedCVForView])
 
   // فلترة التعاقدات حسب البحث
   useEffect(() => {
@@ -292,9 +319,9 @@ export default function ContractsPage() {
                     <td>
                       <div className="flex gap-3">
                         <button 
-                          onClick={() => router.push(`/dashboard/cv/${contract.cv.id}/alqaeid`)} 
+                          onClick={() => setSelectedCVForView(contract)} 
                           className="text-muted-foreground hover:text-primary transition-colors" 
-                          title="عرض السيرة الذاتية"
+                          title="عرض صورة السيرة الذاتية (CV Image)"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -404,6 +431,81 @@ export default function ContractsPage() {
                       </>
                     )}
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal عرض صورة السيرة الذاتية */}
+          {selectedCVForView && (
+            <div 
+              className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-2 sm:p-4"
+              onClick={() => setSelectedCVForView(null)}
+            >
+              <div 
+                className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-white/20 rounded-full p-2">
+                        <Eye className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg sm:text-xl font-bold">
+                          صورة السيرة الذاتية - {selectedCVForView.cv.fullName}
+                        </h3>
+                        <p className="text-blue-100 text-sm">
+                          الكود المرجعي: {selectedCVForView.cv.referenceCode || 'غير محدد'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedCVForView(null)}
+                      className="text-white hover:text-red-300 transition-all duration-300 hover:rotate-90 hover:scale-110 p-2 rounded-lg hover:bg-white/10"
+                    >
+                      <X className="h-6 w-6 sm:h-7 sm:w-7" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content - الصورة */}
+                <div className="p-4 sm:p-6 bg-gray-50 overflow-y-auto max-h-[calc(95vh-180px)]">
+                  {selectedCVForView.cv.cvImageUrl ? (
+                    <div className="flex justify-center">
+                      <div className="relative inline-block w-full max-w-4xl group">
+                        {/* Tooltip */}
+                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                          اضغط للتكبير 🔍
+                        </div>
+                        <ImageWithFallback
+                          src={selectedCVForView.cv.cvImageUrl}
+                          alt={`سيرة ذاتية - ${selectedCVForView.cv.fullName}`}
+                          className="w-full h-auto object-contain bg-white rounded-lg shadow-xl border-2 border-gray-200 hover:shadow-2xl transition-all duration-300 cursor-zoom-in"
+                          onClick={(e) => {
+                            // فتح الصورة في تبويب جديد عند النقر
+                            if (selectedCVForView.cv.cvImageUrl) {
+                              window.open(processImageUrl(selectedCVForView.cv.cvImageUrl), '_blank');
+                            }
+                          }}
+                          title="اضغط لفتح صورة السيرة الذاتية بالحجم الكامل"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="bg-gray-200 rounded-lg w-32 h-40 mx-auto mb-4 flex items-center justify-center">
+                        <div className="text-center">
+                          <User className="h-16 w-16 text-gray-400 mx-auto mb-2" />
+                          <p className="text-xs text-gray-500">صورة السيرة</p>
+                        </div>
+                      </div>
+                      <p className="text-gray-500 text-lg font-semibold">لا توجد صورة سيرة ذاتية</p>
+                      <p className="text-gray-400 text-sm mt-2">لم يتم رفع صورة السيرة الذاتية لهذا المتعاقد</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

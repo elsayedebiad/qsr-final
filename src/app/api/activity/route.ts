@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
         action,
         description,
         targetType,
-        targetId,
+        targetId: targetId ? String(targetId) : null,
         targetName,
         ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1',
         userAgent: request.headers.get('user-agent') || 'Unknown'

@@ -2755,9 +2755,9 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                       
                       // تسجيل النشاط
                       if (contractingCv.status === 'RETURNED') {
-                        CVActivityLogger.statusChanged(contractingCv.id, contractingCv.fullName, 'معاد', 'متعاقد')
+                        CVActivityLogger.statusChanged(contractingCv.id.toString(), contractingCv.fullName, 'معاد', 'متعاقد')
                       } else {
-                        ContractActivityLogger.created(contractingCv.id, contractingCv.fullName)
+                        ContractActivityLogger.created(contractingCv.id.toString(), contractingCv.fullName)
                       }
                       
                       // إغلاق النافذة وتنظيف البيانات

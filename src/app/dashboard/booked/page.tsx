@@ -152,7 +152,21 @@ export default function BookedCVsPage() {
       return
     }
 
+    // إظهار toast للتحميل أولاً
+    const loadingToast = toast.loading('جاري إنشاء التعاقد...', {
+      duration: Infinity,
+      style: {
+        background: '#3B82F6',
+        color: 'white',
+        fontWeight: 'bold'
+      }
+    })
+
+    // تعيين حالة التحميل
     setIsCreatingContract(true)
+    
+    // تأخير أطول للتأكد من ظهور الـ loading
+    await new Promise(resolve => setTimeout(resolve, 500))
     
     try {
       const token = localStorage.getItem('token')
@@ -170,6 +184,7 @@ export default function BookedCVsPage() {
       })
 
       if (response.ok) {
+        toast.dismiss(loadingToast)
         toast.success('تم إنشاء التعاقد بنجاح')
         closeContractModal()
         fetchBookings() // تحديث قائمة الحجوزات
@@ -179,6 +194,7 @@ export default function BookedCVsPage() {
       }
     } catch (error) {
       console.error('Error creating contract:', error)
+      toast.dismiss(loadingToast)
       toast.error(error instanceof Error ? error.message : 'فشل في إنشاء التعاقد')
     } finally {
       setIsCreatingContract(false)
@@ -538,7 +554,11 @@ export default function BookedCVsPage() {
                   id="identityNumber"
                   value={contractIdentityNumber}
                   onChange={(e) => setContractIdentityNumber(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border rounded-lg transition-all duration-300 ${
+                    isCreatingContract 
+                      ? 'border-gray-300 bg-gray-100 cursor-not-allowed opacity-60' 
+                      : 'border-border focus:ring-2 focus:ring-green-500 focus:border-transparent'
+                  }`}
                   placeholder="أدخل رقم الهوية"
                   disabled={isCreatingContract}
                   dir="ltr"
@@ -571,18 +591,22 @@ export default function BookedCVsPage() {
               </button>
               <button
                 onClick={confirmCreateContract}
-                className="flex-1 bg-success hover:opacity-90 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                  isCreatingContract 
+                    ? 'bg-gray-400 cursor-not-allowed opacity-80' 
+                    : 'bg-success hover:bg-success/90 hover:scale-105'
+                } text-white`}
                 disabled={isCreatingContract || !contractIdentityNumber.trim()}
               >
                 {isCreatingContract ? (
                   <>
-                    <div className="spinner w-4 h-4"></div>
-                    جاري التعاقد...
+                    <div className="animate-spin rounded-full h-6 w-6 border-3 border-white border-t-transparent shadow-lg"></div>
+                    <span className="animate-pulse text-lg font-bold">جاري إنشاء التعاقد...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="h-4 w-4" />
-                    تأكيد التعاقد
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="text-lg font-bold">تأكيد التعاقد</span>
                   </>
                 )}
               </button>
