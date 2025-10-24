@@ -29,7 +29,15 @@ export async function POST(request: NextRequest) {
 
     if (archiveAll) {
       // أرشفة جميع الزيارات حسب الفلاتر
-      const whereClause: any = {
+      const whereClause: {
+        isArchived: boolean
+        country?: string
+        targetPage?: string
+        timestamp?: {
+          gte?: Date
+          lte?: Date
+        }
+      } = {
         isArchived: false
       }
 
@@ -129,7 +137,15 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    const whereClause: any = {
+    const whereClause: {
+      isArchived: boolean
+      country?: string
+      targetPage?: string
+      timestamp?: {
+        gte?: Date
+        lte?: Date
+      }
+    } = {
       isArchived: true
     }
 
@@ -160,10 +176,10 @@ export async function GET(request: NextRequest) {
     // حساب الإجمالي
     const total = await db.visit.count({ where: whereClause })
 
-    // جلب الزيارات المؤرشفة
+    // جلب الزيارات المؤرشفة - الترتيب حسب ID (الأحدث = ID الأكبر)
     const visits = await db.visit.findMany({
       where: whereClause,
-      orderBy: { archivedAt: 'desc' },
+      orderBy: { id: 'desc' },
       skip: (page - 1) * limit,
       take: limit
     })

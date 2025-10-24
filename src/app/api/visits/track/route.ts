@@ -77,8 +77,9 @@ export async function POST(request: NextRequest) {
         } else {
           throw new Error('API response not ok')
         }
-      } catch (error: any) {
-        console.log(`⚠️ ip-api.com failed, trying backup API:`, error.name)
+      } catch (error: unknown) {
+        const errorName = error instanceof Error ? error.name : 'Unknown'
+        console.log(`⚠️ ip-api.com failed, trying backup API:`, errorName)
         
         // محاولة API البديل: ipapi.co
         try {
@@ -100,8 +101,9 @@ export async function POST(request: NextRequest) {
               console.log(`✅ Geo (ipapi.co): ${geoLookupIp} → ${country}, ${city}`)
             }
           }
-        } catch (error2: any) {
-          console.log(`⚠️ All geo lookups failed:`, error2.name)
+        } catch (error2: unknown) {
+          const error2Name = error2 instanceof Error ? error2.name : 'Unknown'
+          console.log(`⚠️ All geo lookups failed:`, error2Name)
           // في حالة فشل الـ API للـ localhost، نستخدم بيانات افتراضية
           if (isLocalhost) {
             country = 'Egypt'
@@ -112,7 +114,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // حفظ الزيارة في قاعدة البيانات
+    // حفظ الزيارة في قاعدة البيانات مع التوقيت الحالي
+    const currentTimestamp = new Date()
     const visit = await db.visit.create({
       data: {
         ipAddress,
@@ -124,9 +127,12 @@ export async function POST(request: NextRequest) {
         utmMedium,
         utmCampaign,
         targetPage,
-        isGoogle
+        isGoogle,
+        timestamp: currentTimestamp // تحديد التوقيت بشكل صريح
       }
     })
+
+    console.log(`✅ Visit tracked: ID=${visit.id}, Page=${targetPage}, Timestamp=${currentTimestamp.toISOString()}`)
 
     return NextResponse.json({
       success: true,

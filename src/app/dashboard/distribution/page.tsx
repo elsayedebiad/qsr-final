@@ -750,7 +750,7 @@ export default function DistributionPage() {
               </div>
 
               {/* ملاحظات هامة */}
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
                   <div className="flex items-start gap-2 text-sm">
                     <Info className="h-5 w-5 text-blue-600 mt-0.5" />
@@ -762,9 +762,20 @@ export default function DistributionPage() {
                     </div>
                   </div>
                 </div>
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
+                  <div className="flex items-start gap-2 text-sm">
+                    <Target className="h-5 w-5 text-red-600 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-red-800 dark:text-red-300">🚫 تعطيل الصفحة</p>
+                      <p className="text-xs text-red-700 dark:text-red-400 mt-1">
+                        إذا كتبت <code className="bg-white/50 px-1 rounded font-bold">0</code> لأي صفحة، لن تحصل على أي زيارات من نظام التوزيع.
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
                   <div className="flex items-start gap-2 text-sm">
-                    <Target className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <Eye className="h-5 w-5 text-yellow-600 mt-0.5" />
                     <div>
                       <p className="font-semibold text-yellow-800 dark:text-yellow-300">📍 كيف تتأكد من التطبيق؟</p>
                       <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">

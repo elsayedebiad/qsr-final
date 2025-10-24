@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { 
   Eye, Globe, MousePointerClick, TrendingUp, MapPin, 
   Calendar, Link as LinkIcon, RefreshCw, Users, BarChart3,
-  Filter, X, Archive, CheckSquare, Square
+  Filter, X, Archive, CheckSquare, Square, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 import toast from 'react-hot-toast'
@@ -22,6 +22,15 @@ interface Visit {
   timestamp: string
 }
 
+interface Pagination {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  itemsPerPage: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+}
+
 interface VisitStats {
   summary: {
     totalVisits: number
@@ -35,6 +44,7 @@ interface VisitStats {
   sourceStats: Record<string, number>
   campaignStats: Record<string, number>
   recentVisits: Visit[]
+  pagination: Pagination
 }
 
 export default function VisitsReportPage() {
@@ -48,31 +58,62 @@ export default function VisitsReportPage() {
   const [archiveProgress, setArchiveProgress] = useState(0)
   const [archiveStatus, setArchiveStatus] = useState('')
   
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(50)
+  
   // Filters
   const [countryFilter, setCountryFilter] = useState<string>('ALL')
   const [pageFilter, setPageFilter] = useState<string>('ALL')
   const [dateFrom, setDateFrom] = useState<string>('')
   const [dateTo, setDateTo] = useState<string>('')
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async (page = currentPage, resetToFirstPage = false) => {
     try {
-      const res = await fetch('/api/visits/stats')
+      // إذا كان resetToFirstPage = true، نرجع للصفحة الأولى
+      const targetPage = resetToFirstPage ? 1 : page
+      const res = await fetch(`/api/visits/stats?page=${targetPage}&limit=${itemsPerPage}`)
       const data = await res.json()
       if (data.success) {
+        // إذا كانت هناك زيارات جديدة وليس في الصفحة الأولى، أظهر إشعار
+        if (stats && !resetToFirstPage && currentPage !== 1 && data.pagination.totalItems > stats.pagination.totalItems) {
+          const newVisitsCount = data.pagination.totalItems - stats.pagination.totalItems
+          toast.success(`🆕 ${newVisitsCount} زيارة جديدة! اضغط "أحدث الزيارات" لعرضها`, {
+            duration: 6000,
+            icon: '🔔'
+          })
+        }
+        
+        // تأكيد الترتيب من API (الأحدث أولاً)
+        if (data.recentVisits && data.recentVisits.length > 0) {
+          console.log('أول زيارة (يجب أن تكون الأحدث):', {
+            id: data.recentVisits[0].id,
+            timestamp: data.recentVisits[0].timestamp,
+            page: data.recentVisits[0].targetPage
+          })
+          console.log('آخر زيارة (يجب أن تكون الأقدم):', {
+            id: data.recentVisits[data.recentVisits.length - 1].id,
+            timestamp: data.recentVisits[data.recentVisits.length - 1].timestamp,
+            page: data.recentVisits[data.recentVisits.length - 1].targetPage
+          })
+        }
+        
         setStats(data)
+        setCurrentPage(targetPage)
       }
     } catch (error) {
       console.error('Error fetching stats:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, itemsPerPage, stats])
 
-  // تطبيق الفلاتر على الزيارات
+  // تطبيق الفلاتر على الزيارات (البيانات تأتي مرتبة من API)
   const filteredVisits = useMemo(() => {
     if (!stats) return []
     
-    return stats.recentVisits.filter(visit => {
+    // الفلترة فقط، الترتيب يأتي من API
+    const filtered = stats.recentVisits.filter(visit => {
       // فلتر الدولة
       if (countryFilter !== 'ALL' && visit.country !== countryFilter) {
         return false
@@ -97,6 +138,20 @@ export default function VisitsReportPage() {
       }
       
       return true
+    })
+    
+    // ترتيب تنازلي صريح (الأحدث أولاً - timestamp الأكبر أولاً)
+    return filtered.sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime()
+      const timeB = new Date(b.timestamp).getTime()
+      
+      // ترتيب تنازلي: الأكبر (الأحدث) أولاً
+      // timeB - timeA: إذا كان موجب يعني b أحدث فيأتي قبل a
+      const timeDiff = timeB - timeA
+      if (timeDiff !== 0) return timeDiff
+      
+      // إذا كان الوقت متساوي، نرتب حسب ID (الأكبر = الأحدث)
+      return b.id - a.id
     })
   }, [stats, countryFilter, pageFilter, dateFrom, dateTo])
   
@@ -273,13 +328,16 @@ export default function VisitsReportPage() {
   }
   
   useEffect(() => {
-    fetchStats()
+    fetchStats(currentPage)
     
     if (autoRefresh) {
-      const interval = setInterval(fetchStats, 5000) // تحديث كل 5 ثواني
+      const interval = setInterval(() => {
+        // في التحديث التلقائي، نبقى في نفس الصفحة لكن نتحقق من الزيارات الجديدة
+        fetchStats(currentPage, false)
+      }, 5000) // تحديث كل 5 ثواني
       return () => clearInterval(interval)
     }
-  }, [autoRefresh])
+  }, [autoRefresh, currentPage, itemsPerPage, fetchStats])
 
   if (loading || !stats) {
     return (
@@ -326,10 +384,12 @@ export default function VisitsReportPage() {
                   {autoRefresh ? '🟢 تحديث تلقائي' : '⚪ متوقف'}
                 </button>
                 <button
-                  onClick={fetchStats}
-                  className="p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800"
+                  onClick={() => fetchStats(1, true)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2"
+                  title="تحديث وعرض أحدث الزيارات"
                 >
                   <RefreshCw className="h-5 w-5" />
+                  <span className="text-sm font-medium">أحدث الزيارات</span>
                 </button>
               </div>
             </div>
@@ -581,7 +641,7 @@ export default function VisitsReportPage() {
                         )}
                       </button>
                     </th>
-                    <th className="text-right py-3 px-4">الوقت</th>
+                    <th className="text-right py-3 px-4">التاريخ والوقت</th>
                     <th className="text-right py-3 px-4">IP</th>
                     <th className="text-right py-3 px-4">الدولة</th>
                     <th className="text-right py-3 px-4">المدينة</th>
@@ -599,8 +659,10 @@ export default function VisitsReportPage() {
                       </td>
                     </tr>
                   ) : (
-                    filteredVisits.map((visit) => (
-                    <tr key={visit.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
+                    filteredVisits.map((visit, index) => (
+                    <tr key={visit.id} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm ${
+                      index === 0 ? 'bg-green-50 dark:bg-green-900/20 border-l-4 border-l-green-500' : ''
+                    }`}>
                       <td className="py-3 px-2 text-center">
                         <button 
                           onClick={() => toggleVisit(visit.id)}
@@ -613,13 +675,31 @@ export default function VisitsReportPage() {
                           )}
                         </button>
                       </td>
-                      <td className="py-3 px-4">
-                        {new Date(visit.timestamp).toLocaleString('ar-EG', { 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                          day: '2-digit',
-                          month: '2-digit'
-                        })}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <div className="text-sm">
+                              {new Date(visit.timestamp).toLocaleDateString('ar-EG', { 
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(visit.timestamp).toLocaleTimeString('ar-EG', { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: true
+                              })}
+                            </div>
+                          </div>
+                          {index === 0 && currentPage === 1 && (
+                            <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full font-bold animate-pulse">
+                              أحدث
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4 font-mono text-xs break-all min-w-[120px]">{visit.ipAddress}</td>
                       <td className="py-3 px-4">{visit.country || '-'}</td>
@@ -645,6 +725,94 @@ export default function VisitsReportPage() {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination Controls */}
+            {stats && stats.pagination && stats.pagination.totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-between border-t dark:border-gray-700 pt-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    عرض {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, stats.pagination.totalItems)} من {stats.pagination.totalItems} زيارة
+                  </span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value))
+                      setCurrentPage(1)
+                    }}
+                    className="px-3 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm"
+                  >
+                    <option value="25">25 / صفحة</option>
+                    <option value="50">50 / صفحة</option>
+                    <option value="100">100 / صفحة</option>
+                    <option value="200">200 / صفحة</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {/* زر السابق */}
+                  <button
+                    onClick={() => fetchStats(currentPage - 1)}
+                    disabled={!stats.pagination.hasPreviousPage}
+                    className="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                    السابق
+                  </button>
+                  
+                  {/* أرقام الصفحات */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, stats.pagination.totalPages) }, (_, i) => {
+                      let pageNum: number
+                      if (stats.pagination.totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= stats.pagination.totalPages - 2) {
+                        pageNum = stats.pagination.totalPages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => fetchStats(pageNum)}
+                          className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
+                            currentPage === pageNum
+                              ? 'bg-blue-500 text-white shadow-lg'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    })}
+                    
+                    {stats.pagination.totalPages > 5 && currentPage < stats.pagination.totalPages - 2 && (
+                      <>
+                        <span className="px-2 text-gray-500">...</span>
+                        <button
+                          onClick={() => fetchStats(stats.pagination.totalPages)}
+                          className="w-10 h-10 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        >
+                          {stats.pagination.totalPages}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* زر التالي */}
+                  <button
+                    onClick={() => fetchStats(currentPage + 1)}
+                    disabled={!stats.pagination.hasNextPage}
+                    className="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                  >
+                    التالي
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

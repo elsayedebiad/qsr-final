@@ -38,31 +38,64 @@ export default function SalesRedirectPage() {
         { path: '/sales11', weight: 9.01 },
       ]
 
-      // محاولة جلب القواعد من API
+      // محاولة جلب القواعد المخصصة من API
       try {
         const res = await fetch('/api/distribution/rules')
         const data = await res.json()
         
-        if (data.success && data.rules) {
-          // فلترة الصفحات النشطة فقط
-          const activeRules = data.rules.filter((r: any) => r.isActive && (r.googleWeight > 0 || r.otherWeight > 0))
+        if (data.success && data.rules && data.rules.length > 0) {
+          // تعريف نوع القاعدة
+          interface Rule {
+            salesPageId: string
+            googleWeight: number
+            otherWeight: number
+            isActive: boolean
+          }
           
-          GOOGLE_WEIGHTED = activeRules
-            .filter((r: any) => r.googleWeight > 0)
-            .map((r: any) => ({
+          // فلترة الصفحات النشطة فقط
+          const activeRules = (data.rules as Rule[]).filter(r => r.isActive)
+          
+          // جلب قواعد Google - فقط الصفحات التي لها وزن > 0
+          // إذا كتب المستخدم 0، لن تظهر الصفحة في القائمة = لن تحصل على زيارات
+          const googleRules = activeRules
+            .filter(r => r.googleWeight > 0)
+            .map(r => ({
               path: `/sales${r.salesPageId.replace('sales', '')}`,
               weight: r.googleWeight
             }))
           
-          OTHER_WEIGHTED = activeRules
-            .filter((r: any) => r.otherWeight > 0)
-            .map((r: any) => ({
+          // جلب قواعد Other - فقط الصفحات التي لها وزن > 0
+          const otherRules = activeRules
+            .filter(r => r.otherWeight > 0)
+            .map(r => ({
               path: `/sales${r.salesPageId.replace('sales', '')}`,
               weight: r.otherWeight
             }))
+          
+          // استخدام القواعد المخصصة - حتى لو كانت النسب المجموعة ≠ 100%
+          // النظام سيوزع حسب النسب النسبية للأوزان المحددة
+          if (googleRules.length > 0) {
+            GOOGLE_WEIGHTED = googleRules
+            console.log('✅ Google distribution: Custom rules applied')
+          } else {
+            console.log('⚠️ Google distribution: No pages with weight > 0, using defaults')
+          }
+          
+          if (otherRules.length > 0) {
+            OTHER_WEIGHTED = otherRules
+            console.log('✅ Other distribution: Custom rules applied')
+          } else {
+            console.log('⚠️ Other distribution: No pages with weight > 0, using defaults')
+          }
+          
+          console.log('📊 Active Distribution Rules:')
+          console.log('  Google pages:', GOOGLE_WEIGHTED.map(r => r.path + ' (' + r.weight + '%)'))
+          console.log('  Other pages:', OTHER_WEIGHTED.map(r => r.path + ' (' + r.weight + '%)'))
+          console.log('  Total Google weight:', GOOGLE_WEIGHTED.reduce((s, r) => s + r.weight, 0).toFixed(2) + '%')
+          console.log('  Total Other weight:', OTHER_WEIGHTED.reduce((s, r) => s + r.weight, 0).toFixed(2) + '%')
         }
       } catch (error) {
-        console.log('Using default distribution rules:', error)
+        console.log('⚠️ API error - using default distribution rules:', error)
       }
 
     function pickWeighted<T extends { weight: number }>(items: T[], rnd: number): T {
@@ -105,8 +138,19 @@ export default function SalesRedirectPage() {
     }
 
     // اختيار الجدول المناسب
-    const table = isGoogleRef(referer) ? GOOGLE_WEIGHTED : OTHER_WEIGHTED
+    const isFromGoogle = isGoogleRef(referer)
+    const table = isFromGoogle ? GOOGLE_WEIGHTED : OTHER_WEIGHTED
+    
+    // التحقق من وجود صفحات متاحة
+    if (table.length === 0) {
+      console.error('❌ No available sales pages in distribution rules!')
+      console.log('   Falling back to sales1')
+      router.replace('/sales1' + window.location.search)
+      return
+    }
+    
     const target = pickWeighted(table, randomValue).path
+    console.log('🎯 Selected:', target, '(Source:', isFromGoogle ? 'Google' : 'Other', ')')
 
     // استخراج UTM parameters
     const urlParams = new URLSearchParams(window.location.search)

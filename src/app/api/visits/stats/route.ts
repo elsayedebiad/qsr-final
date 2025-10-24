@@ -22,11 +22,32 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // جلب جميع الزيارات غير المؤرشفة (آخر 1000 زيارة)
+    // الحصول على معاملات الـ pagination من الـ query string
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const skip = (page - 1) * limit
+
+    // عد إجمالي الزيارات غير المؤرشفة
+    const totalVisitsCount = await db.visit.count({
+      where: { isArchived: false }
+    })
+
+    // جلب جميع الزيارات غير المؤرشفة للإحصائيات (آخر 1000 زيارة)
+    // ترتيب حسب ID فقط (الأكبر = الأحدث) - لتجنب مشاكل فروق التوقيت
     const visits = await db.visit.findMany({
       where: { isArchived: false },
-      orderBy: { timestamp: 'desc' },
+      orderBy: { id: 'desc' }, // الأحدث أولاً (ID الأكبر)
       take: 1000
+    })
+
+    // جلب الزيارات للصفحة الحالية فقط مع ترتيب من الأحدث للأقدم
+    // الصفحة 1 = أحدث الزيارات، الصفحة 2 = زيارات أقدم، وهكذا
+    const paginatedVisits = await db.visit.findMany({
+      where: { isArchived: false },
+      orderBy: { id: 'desc' }, // الأحدث أولاً (ID الأكبر)
+      skip,
+      take: limit
     })
 
     // إحصائيات عامة
@@ -139,7 +160,15 @@ export async function GET(request: NextRequest) {
       countryStats,
       sourceStats,
       campaignStats,
-      recentVisits: visits.slice(0, 50) // آخر 50 زيارة
+      recentVisits: paginatedVisits, // الزيارات المقسمة حسب الصفحة
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalVisitsCount / limit),
+        totalItems: totalVisitsCount,
+        itemsPerPage: limit,
+        hasNextPage: page < Math.ceil(totalVisitsCount / limit),
+        hasPreviousPage: page > 1
+      }
     })
   } catch (error) {
     console.error('Error fetching visit stats:', error)

@@ -33,7 +33,14 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // بناء الشروط
-    const where: any = {}
+    const where: {
+      targetPage?: string
+      country?: string
+      timestamp?: {
+        gte?: Date
+        lte?: Date
+      }
+    } = {}
     
     if (targetPage) {
       where.targetPage = targetPage
@@ -53,11 +60,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // جلب الزيارات
+    // جلب الزيارات - الترتيب حسب ID (الأحدث = ID الأكبر)
+    // هذا الحل يضمن الترتيب الصحيح بدون تأثر بفروق التوقيت
     const [visits, total] = await Promise.all([
       db.visit.findMany({
         where,
-        orderBy: { timestamp: 'desc' },
+        orderBy: { id: 'desc' }, // الأحدث أولاً (ID الأكبر = الزيارة الأحدث)
         skip,
         take: limit
       }),
