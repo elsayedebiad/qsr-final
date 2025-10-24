@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { 
   Eye, Globe, MousePointerClick, TrendingUp, MapPin, 
   Calendar, Link as LinkIcon, RefreshCw, Users, BarChart3,
-  Filter, X, Archive, CheckSquare, Square, ChevronLeft, ChevronRight
+  Filter, X, Archive, CheckSquare, Square, ChevronLeft, ChevronRight,
+  FileSpreadsheet
 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 import toast from 'react-hot-toast'
@@ -67,6 +68,9 @@ export default function VisitsReportPage() {
   const [pageFilter, setPageFilter] = useState<string>('ALL')
   const [dateFrom, setDateFrom] = useState<string>('')
   const [dateTo, setDateTo] = useState<string>('')
+  
+  // Export state
+  const [exporting, setExporting] = useState(false)
 
   const fetchStats = useCallback(async (page = currentPage, resetToFirstPage = false) => {
     try {
@@ -255,6 +259,51 @@ export default function VisitsReportPage() {
       setTimeout(() => setShowArchiveModal(false), 2000)
     } finally {
       setArchiving(false)
+    }
+  }
+  
+  // تصدير الزيارات إلى Excel
+  const exportToExcel = async () => {
+    if (filteredVisits.length === 0) {
+      toast.error('لا توجد زيارات للتصدير')
+      return
+    }
+    
+    setExporting(true)
+    toast.loading('جاري تصدير الزيارات...', { id: 'export-visits' })
+    
+    try {
+      // بناء query parameters للفلاتر
+      const params = new URLSearchParams()
+      if (countryFilter !== 'ALL') params.append('country', countryFilter)
+      if (pageFilter !== 'ALL') params.append('targetPage', pageFilter)
+      if (dateFrom) params.append('dateFrom', dateFrom)
+      if (dateTo) params.append('dateTo', dateTo)
+      params.append('limit', '5000') // حد أقصى للتصدير
+      
+      const res = await fetch(`/api/visits/export-excel?${params.toString()}`)
+      
+      if (!res.ok) {
+        throw new Error('فشل التصدير')
+      }
+      
+      // تحميل الملف
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `visits-report-${new Date().toISOString().split('T')[0]}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      toast.success('✅ تم تصدير الزيارات بنجاح!', { id: 'export-visits' })
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('❌ فشل تصدير الزيارات', { id: 'export-visits' })
+    } finally {
+      setExporting(false)
     }
   }
   
@@ -527,6 +576,24 @@ export default function VisitsReportPage() {
                 )}
               </h2>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={exportToExcel}
+                  disabled={exporting || filteredVisits.length === 0}
+                  className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 text-sm flex items-center gap-1 disabled:opacity-50 shadow-md hover:shadow-lg transition-all"
+                  title="تصدير إلى Excel مع إحصائيات مفصلة"
+                >
+                  {exporting ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      جاري التصدير...
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet className="h-4 w-4" />
+                      تصدير Excel
+                    </>
+                  )}
+                </button>
                 {selectedVisits.length > 0 && (
                   <button
                     onClick={archiveSelected}
