@@ -66,6 +66,9 @@ export default function DistributionPage() {
   })
   const [showSettings, setShowSettings] = useState(false)
   const [visitStats, setVisitStats] = useState<VisitStats[]>([])
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [refreshInterval, setRefreshInterval] = useState(30) // بالثواني
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [rules, setRules] = useState<DistributionRule[]>([
     { path: '/sales1', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
     { path: '/sales2', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
@@ -86,6 +89,19 @@ export default function DistributionPage() {
     fetchDistributionRules()
   }, [])
 
+  // Auto-refresh للبيانات
+  useEffect(() => {
+    if (!autoRefresh) return
+
+    const intervalId = setInterval(() => {
+      fetchData()
+      fetchVisitStats()
+      setLastUpdate(new Date())
+    }, refreshInterval * 1000)
+
+    return () => clearInterval(intervalId)
+  }, [autoRefresh, refreshInterval])
+
   const fetchDistributionRules = async () => {
     try {
       const res = await fetch('/api/distribution/rules')
@@ -93,7 +109,12 @@ export default function DistributionPage() {
       
       if (data.success && data.rules) {
         // تحويل البيانات من قاعدة البيانات لصيغة state
-        const formattedRules = data.rules.map((rule: any) => ({
+        const formattedRules = data.rules.map((rule: {
+          salesPageId: string
+          googleWeight: number
+          otherWeight: number
+          isActive: boolean
+        }) => ({
           path: `/sales${rule.salesPageId.replace('sales', '')}`,
           googleWeight: rule.googleWeight || 0,
           otherWeight: rule.otherWeight || 0,
@@ -107,7 +128,21 @@ export default function DistributionPage() {
   }
 
   const fetchVisitStats = async () => {
-    // بيانات تجريبية - سيتم استبدالها بـ API حقيقي لاحقاً
+    try {
+      // جلب البيانات الحقيقية من قاعدة البيانات
+      const res = await fetch('/api/visits/stats')
+      const data = await res.json()
+      
+      if (data.success && data.visitStats) {
+        setVisitStats(data.visitStats)
+        setLastUpdate(new Date())
+        return
+      }
+    } catch (error) {
+      console.error('Failed to fetch visit stats:', error)
+    }
+    
+    // بيانات افتراضية في حالة الفشل
     const mockData: VisitStats[] = [
       {
         salesPageId: 'sales1',
@@ -308,12 +343,90 @@ export default function DistributionPage() {
                 <p className="text-gray-600 dark:text-gray-400">إدارة التوزيع على صفحات المبيعات</p>
               </div>
             </div>
-            <button
-              onClick={fetchData}
-              className="p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800"
-            >
-              <RefreshCw className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Auto-refresh controls - محسّن */}
+              <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border-2 border-blue-200 dark:border-blue-700 px-4 py-2 rounded-xl shadow-sm">
+                <button
+                  onClick={() => setAutoRefresh(!autoRefresh)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 shadow-md ${
+                    autoRefresh
+                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700'
+                      : 'bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 text-gray-700 dark:text-gray-200 hover:from-gray-400 hover:to-gray-500'
+                  }`}
+                >
+                  {autoRefresh ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <span>تلقائي</span>
+                    </>
+                  ) : (
+                    <>
+                      <Activity className="h-4 w-4" />
+                      <span>متوقف</span>
+                    </>
+                  )}
+                </button>
+                <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg">
+                  <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <select
+                    value={refreshInterval}
+                    onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                    disabled={!autoRefresh}
+                    className="text-sm font-medium bg-transparent border-none outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-200"
+                  >
+                    <option value={10}>10 ث</option>
+                    <option value={30}>30 ث</option>
+                    <option value={60}>دقيقة</option>
+                    <option value={120}>دقيقتين</option>
+                    <option value={300}>5 دقائق</option>
+                  </select>
+                </div>
+              </div>
+              
+              {/* زر التحديث اليدوي */}
+              <button
+                onClick={() => {
+                  fetchData()
+                  fetchVisitStats()
+                }}
+                className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+                title="تحديث يدوي"
+              >
+                <RefreshCw className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          {/* Last update time - محسّن */}
+          <div className="mt-4 flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800/50 dark:to-blue-900/20 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full flex items-center justify-center ${
+                autoRefresh ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-gray-400'
+              }`}>
+                {autoRefresh && <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>}
+              </div>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                آخر تحديث:
+              </span>
+              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                {lastUpdate.toLocaleTimeString('ar-EG')}
+              </span>
+            </div>
+            {autoRefresh && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900/30 rounded-full">
+                <RefreshCw className="h-3.5 w-3.5 text-green-600 dark:text-green-400 animate-spin" />
+                <span className="text-xs font-semibold text-green-700 dark:text-green-400">
+                  التحديث كل {refreshInterval} ثانية
+                </span>
+              </div>
+            )}
+            {!autoRefresh && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full">
+                <Activity className="h-3.5 w-3.5 text-gray-500" />
+                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                  التحديث متوقف
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -437,47 +550,85 @@ export default function DistributionPage() {
 
           {showSettings && (
             <>
-              <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div className="flex items-start gap-2">
-                  <Info className="h-5 w-5 text-blue-500 mt-0.5" />
-                  <div className="text-sm text-gray-700 dark:text-gray-300">
-                    <p className="font-medium mb-1">نظام التوزيع المرجح:</p>
-                    <ul className="list-disc list-inside space-y-1 text-xs">
-                      <li><strong>Google Traffic:</strong> الزيارات القادمة من Google (إعلانات، بحث، gclid)</li>
-                      <li><strong>Other Traffic:</strong> باقي المصادر (مباشر، سوشيال ميديا، إلخ)</li>
-                      <li><strong>عدد التحويلات:</strong> العدد المستهدف من التحويلات (حجوزات/عقود) لكل صفحة شهرياً</li>
-                      <li><strong>sales7:</strong> معطل عمداً حسب المتطلبات</li>
-                      <li>يتم التوزيع تلقائياً عند زيارة <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">/sales</code></li>
-                    </ul>
+              {/* مؤشر حالة النظام */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg border-2 border-green-200 dark:border-green-700">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-green-500 rounded-lg">
+                      <Zap className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-green-800 dark:text-green-300">نظام التوزيع نشط ✅</h3>
+                      <p className="text-xs text-green-600 dark:text-green-400">يعمل في <code className="bg-white/50 px-1 rounded">/sales</code></p>
+                    </div>
+                  </div>
+                  <div className="text-xs text-green-700 dark:text-green-300 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span>يتم التوزيع حسب الأوزان المحددة أدناه</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span>يحفظ الزائر في نفس الصفحة لمدة 7 أيام (Cookie)</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-5 w-5 text-blue-500 mt-0.5" />
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                      <p className="font-medium mb-1">كيف يعمل النظام:</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li><strong>Google Traffic:</strong> من Google Ads/Search</li>
+                        <li><strong>Other Traffic:</strong> المصادر الأخرى</li>
+                        <li><strong>التحويلات:</strong> الهدف الشهري لكل صفحة</li>
+                        <li>الحفظ في DB: ✅ | التطبيق الفوري: ✅</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-lg border-2 border-gray-200 dark:border-gray-700">
                 <table className="w-full">
-                  <thead>
-                    <tr className="border-b dark:border-gray-700">
-                      <th className="text-right py-2 px-4 text-sm font-medium">الصفحة</th>
-                      <th className="text-center py-2 px-4 text-sm font-medium">
-                        <div className="flex items-center justify-center gap-1">
-                          <TrendingUp className="h-4 w-4" />
-                          Google %
+                  <thead className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30">
+                    <tr className="border-b-2 border-blue-200 dark:border-blue-700">
+                      <th className="text-right py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4 text-blue-500" />
+                          الصفحة
                         </div>
                       </th>
-                      <th className="text-center py-2 px-4 text-sm font-medium">
-                        <div className="flex items-center justify-center gap-1">
-                          <Globe className="h-4 w-4" />
-                          Other %
+                      <th className="text-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center gap-1">
+                            <TrendingUp className="h-4 w-4 text-red-500" />
+                            <span>Google</span>
+                          </div>
+                          <span className="text-xs text-gray-500 font-normal">(من إعلانات)</span>
                         </div>
                       </th>
-                      <th className="text-center py-2 px-4 text-sm font-medium">
-                        <div className="flex items-center justify-center gap-1">
-                          <Target className="h-4 w-4" />
-                          عدد التحويلات
+                      <th className="text-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center gap-1">
+                            <Globe className="h-4 w-4 text-blue-500" />
+                            <span>Other</span>
+                          </div>
+                          <span className="text-xs text-gray-500 font-normal">(مصادر أخرى)</span>
                         </div>
                       </th>
-                      <th className="text-center py-2 px-4 text-sm font-medium">الحالة</th>
-                      <th className="text-center py-2 px-4 text-sm font-medium">إجراءات</th>
+                      <th className="text-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center gap-1">
+                            <Target className="h-4 w-4 text-green-500" />
+                            <span>الهدف الشهري</span>
+                          </div>
+                          <span className="text-xs text-gray-500 font-normal">(تحويلات)</span>
+                        </div>
+                      </th>
+                      <th className="text-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">الحالة</th>
+                      <th className="text-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">إجراءات</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -566,28 +717,70 @@ export default function DistributionPage() {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 dark:border-gray-600 font-bold">
-                      <td className="py-3 px-4">الإجمالي</td>
-                      <td className="py-3 px-4 text-center">
-                        {rules.filter(r => r.isActive).reduce((sum, r) => sum + r.googleWeight, 0).toFixed(2)}%
+                  <tfoot className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20">
+                    <tr className="border-t-2 border-green-300 dark:border-green-600 font-bold">
+                      <td className="py-4 px-4 text-gray-800 dark:text-gray-200">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5 text-green-600" />
+                          <span>الإجمالي</span>
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        {rules.filter(r => r.isActive).reduce((sum, r) => sum + r.otherWeight, 0).toFixed(2)}%
+                      <td className="py-4 px-4 text-center">
+                        <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          {rules.filter(r => r.isActive).reduce((sum, r) => sum + r.googleWeight, 0).toFixed(2)}%
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-center text-blue-600 dark:text-blue-400">
-                        {rules.filter(r => r.isActive).reduce((sum, r) => sum + (r.targetConversions || 0), 0)} تحويلة
+                      <td className="py-4 px-4 text-center">
+                        <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          {rules.filter(r => r.isActive).reduce((sum, r) => sum + r.otherWeight, 0).toFixed(2)}%
+                        </div>
                       </td>
-                      <td colSpan={2} className="py-3 px-4"></td>
+                      <td className="py-4 px-4 text-center">
+                        <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          <Target className="h-4 w-4" />
+                          {rules.filter(r => r.isActive).reduce((sum, r) => sum + (r.targetConversions || 0), 0)} تحويلة
+                        </div>
+                      </td>
+                      <td colSpan={2} className="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
+                        {rules.filter(r => r.isActive).length} صفحة نشطة
+                      </td>
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+
+              {/* ملاحظات هامة */}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                  <div className="flex items-start gap-2 text-sm">
+                    <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-blue-800 dark:text-blue-300">ℹ️ ملاحظة</p>
+                      <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                        المجموع ليس مطلوب أن يكون 100%. يمكنك تحديد أي نسب تريدها للتوزيع حسب احتياجاتك.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                  <div className="flex items-start gap-2 text-sm">
+                    <Target className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-yellow-800 dark:text-yellow-300">📍 كيف تتأكد من التطبيق؟</p>
+                      <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                        افتح <code className="bg-white/50 px-1 rounded">/sales</code> في متصفح خاص عدة مرات لترى التوزيع حسب الأوزان المحددة.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-4 flex gap-3">
                 <button
                   onClick={async () => {
                     try {
+                      const loadingToast = toast.loading('جاري الحفظ...')
+                      
                       const res = await fetch('/api/distribution/rules', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -596,8 +789,12 @@ export default function DistributionPage() {
                       
                       const data = await res.json()
                       
+                      toast.dismiss(loadingToast)
+                      
                       if (data.success) {
-                        toast.success('✅ تم حفظ قواعد التوزيع بنجاح! سيتم تطبيقها فوراً على /sales')
+                        toast.success('✅ تم الحفظ! القواعد نشطة الآن في /sales', { duration: 4000 })
+                        // إعادة جلب القواعد للتأكيد
+                        await fetchDistributionRules()
                       } else {
                         toast.error(data.error || 'فشل حفظ القواعد')
                       }

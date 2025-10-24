@@ -18,8 +18,6 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ar } from 'date-fns/locale'
-import ProfileImage from '@/components/ProfileImage'
-import ImageWithFallback from '@/components/ImageWithFallback'
 import { processImageUrl } from '@/lib/url-utils'
 
 interface Contract {
@@ -263,14 +261,16 @@ export default function ContractsPage() {
                   <tr key={contract.id}>
                     <td>
                       <div className="flex items-center">
-                        <ProfileImage
-                          src={contract.cv.profileImage}
+                        <img 
+                          src={processImageUrl(contract.cv.profileImage)}
                           alt={contract.cv.fullName}
-                          size="md"
-                          className="flex-shrink-0"
-                          clickable={true}
-                          title={`صورة ${contract.cv.fullName}`}
-                          subtitle={`الكود المرجعي: ${contract.cv.referenceCode || 'غير محدد'}`}
+                          className="h-10 w-10 rounded-full object-cover flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            if (!target.src.startsWith('data:')) {
+                              target.src = 'data:image/svg+xml,%3Csvg width="400" height="400" xmlns="http://www.w3.org/2000/svg"%3E%3Cdefs%3E%3ClinearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%234F46E5;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%237C3AED;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="400" height="400" fill="url(%23grad1)"/%3E%3Ccircle cx="200" cy="200" r="120" fill="rgba(255, 255, 255, 0.1)"/%3E%3Cg fill="white" opacity="0.9"%3E%3Ccircle cx="200" cy="170" r="40"/%3E%3Cellipse cx="200" cy="280" rx="70" ry="80"/%3E%3Crect x="130" y="260" width="140" height="140" fill="url(%23grad1)"/%3E%3C/g%3E%3C/svg%3E'
+                            }
+                          }}
                         />
                         <div className="mr-4">
                           <div className="text-sm font-medium text-foreground">
@@ -436,74 +436,83 @@ export default function ContractsPage() {
             </div>
           )}
 
-          {/* Modal عرض صورة السيرة الذاتية */}
+          {/* Modal عرض صورة السيرة الذاتية - نفس أسلوب cv/[id] */}
           {selectedCVForView && (
             <div 
-              className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-2 sm:p-4"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-2 sm:p-4 overflow-y-auto"
               onClick={() => setSelectedCVForView(null)}
             >
               <div 
-                className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden shadow-2xl"
+                className="bg-background w-full max-w-7xl my-8"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 sm:p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-white/20 rounded-full p-2">
-                        <Eye className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg sm:text-xl font-bold">
-                          صورة السيرة الذاتية - {selectedCVForView.cv.fullName}
-                        </h3>
-                        <p className="text-blue-100 text-sm">
-                          الكود المرجعي: {selectedCVForView.cv.referenceCode || 'غير محدد'}
-                        </p>
-                      </div>
+                {/* Header - مبسط */}
+                <div className="bg-card border-b border-border p-4 sm:p-6 flex items-center justify-between sticky top-0 z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-primary/10 rounded-full p-2">
+                      <Eye className="h-5 w-5 text-primary" />
                     </div>
-                    <button
-                      onClick={() => setSelectedCVForView(null)}
-                      className="text-white hover:text-red-300 transition-all duration-300 hover:rotate-90 hover:scale-110 p-2 rounded-lg hover:bg-white/10"
-                    >
-                      <X className="h-6 w-6 sm:h-7 sm:w-7" />
-                    </button>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-bold text-foreground">
+                        {selectedCVForView.cv.fullName}
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        الكود المرجعي: {selectedCVForView.cv.referenceCode || 'غير محدد'}
+                      </p>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setSelectedCVForView(null)}
+                    className="text-muted-foreground hover:text-destructive transition-colors p-2 rounded-lg hover:bg-muted"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
                 </div>
 
-                {/* Content - الصورة */}
-                <div className="p-4 sm:p-6 bg-gray-50 overflow-y-auto max-h-[calc(95vh-180px)]">
-                  {selectedCVForView.cv.cvImageUrl ? (
-                    <div className="flex justify-center">
-                      <div className="relative inline-block w-full max-w-4xl group">
-                        {/* Tooltip */}
-                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
-                          اضغط للتكبير 🔍
-                        </div>
-                        <ImageWithFallback
-                          src={selectedCVForView.cv.cvImageUrl}
-                          alt={`سيرة ذاتية - ${selectedCVForView.cv.fullName}`}
-                          className="w-full h-auto object-contain bg-white rounded-lg shadow-xl border-2 border-gray-200 hover:shadow-2xl transition-all duration-300 cursor-zoom-in"
-                          onClick={(e) => {
-                            // فتح الصورة في تبويب جديد عند النقر
-                            if (selectedCVForView.cv.cvImageUrl) {
-                              window.open(processImageUrl(selectedCVForView.cv.cvImageUrl), '_blank');
+                {/* صورة السيرة - عرض مباشر بسيط */}
+                <div className="bg-muted p-4 sm:p-8">
+                  {(selectedCVForView.cv.cvImageUrl || selectedCVForView.cv.profileImage) ? (
+                    <div className="relative w-full flex justify-center">
+                      <img
+                        src={(() => {
+                          // أولوية: cvImageUrl (صورة قالب السيرة الكامل)
+                          if (selectedCVForView.cv.cvImageUrl) {
+                            const fileId = selectedCVForView.cv.cvImageUrl.match(/[-\w]{25,}/)?.[0]
+                            if (fileId) {
+                              return `https://images.weserv.nl/?url=${encodeURIComponent(`https://drive.google.com/uc?export=view&id=${fileId}`)}&w=2000&output=webp`
                             }
-                          }}
-                          title="اضغط لفتح صورة السيرة الذاتية بالحجم الكامل"
-                        />
-                      </div>
+                            return selectedCVForView.cv.cvImageUrl
+                          }
+                          // بديل: profileImage
+                          return processImageUrl(selectedCVForView.cv.profileImage)
+                        })()}
+                        alt={`سيرة ذاتية - ${selectedCVForView.cv.fullName}`}
+                        className="max-w-full h-auto shadow-2xl rounded-lg border border-border"
+                        style={{ 
+                          maxHeight: '2000px',
+                          width: 'auto',
+                          objectFit: 'contain'
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          // جرب cvImageUrl أولاً
+                          if (selectedCVForView.cv.cvImageUrl && !target.src.includes(selectedCVForView.cv.cvImageUrl)) {
+                            target.src = selectedCVForView.cv.cvImageUrl
+                          } 
+                          // ثم جرب profileImage
+                          else if (selectedCVForView.cv.profileImage && !target.src.includes(selectedCVForView.cv.profileImage)) {
+                            target.src = processImageUrl(selectedCVForView.cv.profileImage)
+                          }
+                        }}
+                      />
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <div className="bg-gray-200 rounded-lg w-32 h-40 mx-auto mb-4 flex items-center justify-center">
-                        <div className="text-center">
-                          <User className="h-16 w-16 text-gray-400 mx-auto mb-2" />
-                          <p className="text-xs text-gray-500">صورة السيرة</p>
-                        </div>
+                      <div className="bg-muted rounded-lg w-32 h-40 mx-auto mb-4 flex items-center justify-center">
+                        <User className="h-16 w-16 text-muted-foreground" />
                       </div>
-                      <p className="text-gray-500 text-lg font-semibold">لا توجد صورة سيرة ذاتية</p>
-                      <p className="text-gray-400 text-sm mt-2">لم يتم رفع صورة السيرة الذاتية لهذا المتعاقد</p>
+                      <p className="text-foreground text-lg font-semibold">لا توجد صورة سيرة ذاتية</p>
+                      <p className="text-muted-foreground text-sm mt-2">لم يتم رفع صورة السيرة الذاتية لهذا المتعاقد</p>
                     </div>
                   )}
                 </div>

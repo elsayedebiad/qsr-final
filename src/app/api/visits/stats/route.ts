@@ -73,6 +73,58 @@ export async function GET(request: NextRequest) {
       return acc
     }, {} as Record<string, number>)
 
+    // بناء إحصائيات مفصلة لكل صفحة
+    const salesPages = ['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7', 'sales8', 'sales9', 'sales10', 'sales11']
+    
+    const visitStats = salesPages.map(pageId => {
+      const pageVisits = visits.filter(v => v.targetPage === pageId)
+      
+      // حساب المصادر
+      const sources = {
+        google: pageVisits.filter(v => v.isGoogle).length,
+        facebook: pageVisits.filter(v => v.utmSource?.toLowerCase().includes('facebook')).length,
+        instagram: pageVisits.filter(v => v.utmSource?.toLowerCase().includes('instagram')).length,
+        tiktok: pageVisits.filter(v => v.utmSource?.toLowerCase().includes('tiktok')).length,
+        youtube: pageVisits.filter(v => v.utmSource?.toLowerCase().includes('youtube')).length,
+        twitter: pageVisits.filter(v => v.utmSource?.toLowerCase().includes('twitter')).length,
+        direct: pageVisits.filter(v => !v.utmSource && !v.isGoogle && (!v.referer || v.referer === '')).length,
+        other: 0
+      }
+      
+      // حساب "other" (الباقي)
+      const knownSources = sources.google + sources.facebook + sources.instagram + sources.tiktok + sources.youtube + sources.twitter + sources.direct
+      sources.other = pageVisits.length - knownSources
+      
+      // الزيارات اليوم
+      const todayVisits = pageVisits.filter(v => new Date(v.timestamp) >= today).length
+      
+      // الزيارات أمس
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayVisits = pageVisits.filter(v => {
+        const visitDate = new Date(v.timestamp)
+        return visitDate >= yesterday && visitDate < today
+      }).length
+      
+      // الزيارات هذا الأسبوع
+      const thisWeekVisits = pageVisits.filter(v => new Date(v.timestamp) >= weekAgo).length
+      
+      // الزيارات هذا الشهر
+      const monthAgo = new Date()
+      monthAgo.setDate(monthAgo.getDate() - 30)
+      const thisMonthVisits = pageVisits.filter(v => new Date(v.timestamp) >= monthAgo).length
+      
+      return {
+        salesPageId: pageId,
+        totalVisits: pageVisits.length,
+        sources,
+        today: todayVisits,
+        yesterday: yesterdayVisits,
+        thisWeek: thisWeekVisits,
+        thisMonth: thisMonthVisits
+      }
+    })
+
     return NextResponse.json({
       success: true,
       summary: {
@@ -82,6 +134,7 @@ export async function GET(request: NextRequest) {
         googleVisits,
         otherVisits
       },
+      visitStats, // البيانات بالشكل المطلوب لصفحة distribution
       pageStats,
       countryStats,
       sourceStats,

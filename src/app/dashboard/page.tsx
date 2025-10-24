@@ -26,9 +26,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
-  Bookmark,
   FileSignature,
   Play,
+  CalendarCheck,
   X,
   XCircle,
   BookOpen,
@@ -172,7 +172,7 @@ export default function CVsPage() {
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(30)
+  const [itemsPerPage, setItemsPerPage] = useState(30)
   const [paginatedCvs, setPaginatedCvs] = useState<CV[]>([])
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false)
@@ -213,10 +213,29 @@ export default function CVsPage() {
     setPaginatedCvs(filteredCvs.slice(startIndex, endIndex))
   }, [filteredCvs, currentPage, itemsPerPage])
 
-  // Reset to first page when filters change
+  // Reset to first page when filters or items per page change
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, religionFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, arabicLevelFilter, englishLevelFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
+  }, [
+    searchTerm,
+    religionFilter,
+    nationalityFilter,
+    skillFilter,
+    maritalStatusFilter,
+    ageFilter,
+    experienceFilter,
+    arabicLevelFilter,
+    englishLevelFilter,
+    educationFilter,
+    salaryFilter,
+    contractPeriodFilter,
+    passportStatusFilter,
+    heightFilter,
+    weightFilter,
+    childrenFilter,
+    locationFilter,
+    itemsPerPage
+  ])
 
   // إغلاق الـModal بزر Escape
   useEffect(() => {
@@ -2282,7 +2301,7 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                               className="p-2 text-warning hover:text-warning/80 hover:bg-warning/10 rounded-lg transition-all"
                               title="📋 حجز السيرة الذاتية برقم هوية"
                             >
-                              <Bookmark className="h-5 w-5" />
+                              <CalendarCheck className="h-5 w-5" />
                             </button>
                         )}
                         {/* أزرار التعاقد والرفض - متاحة للمدراء وخدمة العملاء */}
@@ -2468,7 +2487,7 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                       onClick={() => openBookingModal(cv)}
                       className="flex-1 p-2 text-warning hover:bg-warning/10 rounded-lg text-xs flex items-center justify-center gap-1"
                     >
-                      <Bookmark className="h-3.5 w-3.5" />
+                      <CalendarCheck className="h-3.5 w-3.5" />
                       حجز
                     </button>
                   )}
@@ -2483,10 +2502,29 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
           {totalPages > 1 && (
             <div className="card p-3 sm:p-6 mt-4 sm:mt-6">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
-                <div className="hidden sm:flex items-center gap-2">
-                  <span className="text-xs sm:text-sm text-muted-foreground">
-                    عرض {((currentPage - 1) * itemsPerPage) + 1} إلى {Math.min(currentPage * itemsPerPage, filteredCvs.length)} من أصل {filteredCvs.length} نتيجة
-                  </span>
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="hidden sm:flex items-center gap-2">
+                    <span className="text-xs sm:text-sm text-muted-foreground">
+                      عرض {((currentPage - 1) * itemsPerPage) + 1} إلى {Math.min(currentPage * itemsPerPage, filteredCvs.length)} من أصل {filteredCvs.length} نتيجة
+                    </span>
+                  </div>
+                  
+                  {/* Items per page selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm text-muted-foreground">عرض:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                      className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={30}>30</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                    <span className="text-xs sm:text-sm text-muted-foreground">صف</span>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
@@ -2901,7 +2939,7 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
           <div className="bg-gradient-to-r from-warning to-warning/80 p-6 text-white">
             <div className="flex items-center gap-4">
               <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                <Bookmark className="h-7 w-7" />
+                <CalendarCheck className="h-7 w-7" />
               </div>
               <div className="flex-1">
                 <h3 className="text-2xl font-bold mb-1">حجز السيرة الذاتية</h3>
@@ -2999,7 +3037,7 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                   </>
                 ) : (
                   <>
-                    <Bookmark className="h-5 w-5" />
+                    <CalendarCheck className="h-5 w-5" />
                     تأكيد الحجز
                   </>
                 )}
