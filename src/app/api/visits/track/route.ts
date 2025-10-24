@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     let city = null
     
     // جلب البيانات الجغرافية (نستخدم geoLookupIp الذي قد يكون IP اختبار في التطوير)
-    if (geoLookupIp !== 'unknown' && !isLocalhost) {
+    if (geoLookupIp !== 'unknown' && !geoLookupIp.includes('localhost')) {
       try {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 3000)
@@ -74,12 +74,13 @@ export async function POST(request: NextRequest) {
         }
       } catch (error: any) {
         console.log(`⚠️ Geo lookup failed:`, error.name)
+        // في حالة فشل الـ API للـ localhost، نستخدم بيانات افتراضية
+        if (isLocalhost) {
+          country = 'Egypt'
+          city = 'Cairo'
+          console.log('🧪 Fallback: Using test geo data')
+        }
       }
-    } else if (isLocalhost) {
-      // في التطوير، نستخدم بيانات اختبار
-      country = 'Egypt'
-      city = 'Cairo'
-      console.log('🧪 Using test geo data for localhost')
     }
 
     // حفظ الزيارة في قاعدة البيانات
