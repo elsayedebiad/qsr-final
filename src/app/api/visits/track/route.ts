@@ -16,27 +16,70 @@ export async function POST(request: NextRequest) {
 
     // الحصول على IP من headers
     const forwarded = request.headers.get('x-forwarded-for')
-    const ipAddress = forwarded 
-      ? forwarded.split(',')[0].trim() 
-      : request.headers.get('x-real-ip') || 'unknown'
+    const realIp = request.headers.get('x-real-ip')
+    const cfConnectingIp = request.headers.get('cf-connecting-ip')
+    
+    // ترتيب الأولوية: CloudFlare > Real-IP > Forwarded > Unknown
+    let ipAddress = cfConnectingIp || realIp || (forwarded ? forwarded.split(',')[0].trim() : null) || 'unknown'
+    
+    // تنظيف IPv6 المختصر
+    if (ipAddress.includes('::') && ipAddress.length < 10 && ipAddress !== '::1') {
+      ipAddress = 'unknown'
+    }
+    
+    // تحويل localhost IPv6 إلى شكل أوضح
+    if (ipAddress === '::1') {
+      ipAddress = '127.0.0.1 (localhost)'
+    }
+    
+    // IP للبحث الجغرافي (في التطوير نستخدم IP اختبار)
+    let geoLookupIp = ipAddress
+    const isLocalhost = ipAddress.includes('127.0.0.1') || ipAddress === 'localhost' || ipAddress.includes('::ffff:127')
+    
+    if (isLocalhost) {
+      geoLookupIp = '41.233.0.1' // IP مصري للاختبار في التطوير
+      console.log('🧪 Development mode: Using test IP for geo lookup')
+    }
+    
+    console.log('🔍 IP Detection:', {
+      'original': ipAddress,
+      'geo-lookup': geoLookupIp,
+      'isLocalhost': isLocalhost
+    })
 
     // محاولة الحصول على معلومات الموقع الجغرافي
     let country = null
     let city = null
     
-    try {
-      // استخدام ipapi.co للحصول على معلومات الموقع (مجاني)
-      if (ipAddress !== 'unknown' && !ipAddress.includes('127.0.0.1') && !ipAddress.includes('localhost')) {
-        const geoResponse = await fetch(`https://ipapi.co/${ipAddress}/json/`)
+    // جلب البيانات الجغرافية (نستخدم geoLookupIp الذي قد يكون IP اختبار في التطوير)
+    if (geoLookupIp !== 'unknown' && !isLocalhost) {
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000)
+        
+        const geoResponse = await fetch(`https://ipapi.co/${geoLookupIp}/json/`, {
+          signal: controller.signal
+        })
+        
+        clearTimeout(timeoutId)
+        
         if (geoResponse.ok) {
           const geoData = await geoResponse.json()
-          country = geoData.country_name || null
-          city = geoData.city || null
+          
+          if (!geoData.error) {
+            country = geoData.country_name || null
+            city = geoData.city || null
+            console.log(`✅ Geo: ${geoLookupIp} → ${country}, ${city}`)
+          }
         }
+      } catch (error: any) {
+        console.log(`⚠️ Geo lookup failed:`, error.name)
       }
-    } catch (error) {
-      console.log('Error fetching geo data:', error)
-      // نستمر بدون بيانات جغرافية
+    } else if (isLocalhost) {
+      // في التطوير، نستخدم بيانات اختبار
+      country = 'Egypt'
+      city = 'Cairo'
+      console.log('🧪 Using test geo data for localhost')
     }
 
     // حفظ الزيارة في قاعدة البيانات

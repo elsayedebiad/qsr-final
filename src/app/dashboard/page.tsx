@@ -180,6 +180,7 @@ export default function CVsPage() {
   const [isContractModalOpen, setIsContractModalOpen] = useState(false)
   const [contractingCv, setContractingCv] = useState<CV | null>(null)
   const [identityNumber, setIdentityNumber] = useState('')
+  const [isCreatingContract, setIsCreatingContract] = useState(false)
   
   // حالة مودال الحجز
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
@@ -2243,11 +2244,11 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                             </button>
                           
                           {/* أزرار تغيير الحالة - للمدراء فقط */}
-                          {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
+                          {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                             <button
                               onClick={() => router.push(`/dashboard/cv/${cv.id}`)}
-                              className="p-2 text-primary hover:text-primary/80 hover:bg-primary/10 rounded-lg"
-                              title="تعديل البيانات"
+                              className="p-2 text-primary hover:text-primary/80 hover:bg-primary/10 rounded-lg transition-all"
+                              title="✏️ تعديل بيانات السيرة الذاتية"
                             >
                               <Edit className="h-5 w-5" />
                             </button>
@@ -2268,8 +2269,8 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                                 setVideoModalKey(prev => prev + 1);
                                 setVideoModalKey((prev: number) => prev + 1); setSelectedVideo(cv.videoLink || null)
                               }}
-                              className="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg"
-                              title="مشاهدة الفيديو"
+                              className="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg transition-all"
+                              title="🎬 مشاهدة الفيديو الخاص بالسيرة"
                             >
                               <Play className="h-5 w-5" />
                             </button>
@@ -2278,8 +2279,8 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                           {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                             <button
                               onClick={() => openBookingModal(cv)}
-                              className="p-2 text-warning hover:text-warning/80 hover:bg-warning/10 rounded-lg"
-                              title="حجز"
+                              className="p-2 text-warning hover:text-warning/80 hover:bg-warning/10 rounded-lg transition-all"
+                              title="📋 حجز السيرة الذاتية برقم هوية"
                             >
                               <Bookmark className="h-5 w-5" />
                             </button>
@@ -2299,8 +2300,8 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                             </button>
                             <button
                               onClick={() => handleStatusChange(cv.id, CVStatus.REJECTED)}
-                              className="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg"
-                              title="رفض"
+                              className="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg transition-all"
+                              title="❌ رفض السيرة الذاتية"
                             >
                               <XCircle className="h-5 w-5" />
                             </button>
@@ -2320,8 +2321,8 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                             </button>
                             <button
                               onClick={() => handleStatusChange(cv.id, CVStatus.RETURNED)}
-                              className="p-2 text-warning hover:text-warning/80 hover:bg-warning/10 rounded-lg"
-                              title="إعادة"
+                              className="p-2 text-warning hover:text-warning/80 hover:bg-warning/10 rounded-lg transition-all"
+                              title="🔄 إعادة السيرة إلى الحالة الجديدة"
                             >
                               <Undo2 className="h-5 w-5" />
                             </button>
@@ -2333,8 +2334,8 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                               setContractingCv(cv)
                               setIsContractModalOpen(true)
                             }}
-                            className="p-2 text-success hover:text-success/80 hover:bg-success/10 rounded-lg"
-                            title="إعادة التعاقد"
+                            className="p-2 text-success hover:text-success/80 hover:bg-success/10 rounded-lg transition-all"
+                            title="♻️ إعادة التعاقد مع السيرة المعادة"
                           >
                             <FileSignature className="h-5 w-5" />
                           </button>
@@ -2702,8 +2703,12 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault()
-                    if (!identityNumber) return
-                    
+                    if (!contractingCv || !identityNumber.trim()) {
+                      toast.error('يرجى إدخال رقم الهوية')
+                      return
+                    }
+
+                    setIsCreatingContract(true)
                     try {
                       const token = localStorage.getItem('token')
                       // إنشاء تاريخ العقد بتوقيت مصر الصحيح
@@ -2802,6 +2807,8 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                       console.error('Contract creation error:', error)
                       const errorMessage = error instanceof Error ? error.message : 'فشل في إنشاء العقد. يرجى المحاولة مرة أخرى.'
                       toast.error(errorMessage)
+                    } finally {
+                      setIsCreatingContract(false)
                     }
                   }}
                 >
@@ -2817,8 +2824,23 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                       className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-ring focus:border-ring transition-all"
                       placeholder="أدخل رقم الهوية هنا"
                       required
+                      disabled={isCreatingContract}
                     />
                   </div>
+                  
+                  {/* شريط التحميل */}
+                  {isCreatingContract && (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-3 text-primary mb-2">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span className="text-sm font-medium">جاري إنشاء العقد...</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full animate-pulse" style={{width: '70%'}}></div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-end gap-4">
                     <button 
                       type="button" 
@@ -2827,15 +2849,27 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                         setContractingCv(null)
                         setIdentityNumber('')
                       }} 
-                      className="px-6 py-3 bg-muted text-foreground rounded-xl hover:bg-gray-200 font-semibold transition-all"
+                      disabled={isCreatingContract}
+                      className="px-6 py-3 bg-muted text-foreground rounded-xl hover:bg-gray-200 font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       إلغاء
                     </button>
                     <button 
                       type="submit" 
-                      className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 font-semibold shadow-lg transition-all"
+                      disabled={isCreatingContract}
+                      className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 font-semibold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      تأكيد التعاقد
+                      {isCreatingContract ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          جاري التعاقد...
+                        </>
+                      ) : (
+                        <>
+                          <FileSignature className="h-5 w-5" />
+                          تأكيد التعاقد
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>

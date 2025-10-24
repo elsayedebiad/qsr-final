@@ -22,8 +22,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // جلب جميع الزيارات (آخر 1000 زيارة)
+    // جلب جميع الزيارات غير المؤرشفة (آخر 1000 زيارة)
     const visits = await db.visit.findMany({
+      where: { isArchived: false },
       orderBy: { timestamp: 'desc' },
       take: 1000
     })

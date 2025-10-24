@@ -417,11 +417,14 @@ model Visit {
   utmCampaign     String?
   targetPage      String   // الصفحة التي تم التوجيه إليها
   isGoogle        Boolean  @default(false)
+  isArchived      Boolean  @default(false)  // للأرشفة
+  archivedAt      DateTime?                 // تاريخ الأرشفة
   timestamp       DateTime @default(now())
   
   @@index([timestamp])
   @@index([targetPage])
   @@index([country])
   @@index([utmSource])
+  @@index([isArchived])
   @@map("visits")
 }

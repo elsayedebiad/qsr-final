@@ -337,6 +337,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       adminOnly: true
     },
     {
+      id: 'visits-archive',
+      label: 'أرشيف تقارير الزيارات',
+      icon: Archive,
+      href: '/dashboard/visits-archive',
+      adminOnly: true
+    },
+    {
       id: 'notifications',
       label: 'مركز الإشعارات',
       icon: BellRing,

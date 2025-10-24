@@ -33,6 +33,7 @@ interface DistributionRule {
   googleWeight: number
   otherWeight: number
   isActive: boolean
+  targetConversions?: number // عدد التحويلات المستهدفة
 }
 
 interface VisitStats {
@@ -66,17 +67,17 @@ export default function DistributionPage() {
   const [showSettings, setShowSettings] = useState(false)
   const [visitStats, setVisitStats] = useState<VisitStats[]>([])
   const [rules, setRules] = useState<DistributionRule[]>([
-    { path: '/sales1', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-    { path: '/sales2', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-    { path: '/sales3', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-    { path: '/sales4', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-    { path: '/sales5', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-    { path: '/sales6', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-    { path: '/sales7', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-    { path: '/sales8', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-    { path: '/sales9', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-    { path: '/sales10', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-    { path: '/sales11', googleWeight: 9.01, otherWeight: 9.01, isActive: true },
+    { path: '/sales1', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+    { path: '/sales2', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+    { path: '/sales3', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+    { path: '/sales4', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+    { path: '/sales5', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+    { path: '/sales6', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+    { path: '/sales7', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+    { path: '/sales8', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+    { path: '/sales9', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+    { path: '/sales10', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+    { path: '/sales11', googleWeight: 9.01, otherWeight: 9.01, isActive: true, targetConversions: 100 },
   ])
 
   useEffect(() => {
@@ -444,6 +445,7 @@ export default function DistributionPage() {
                     <ul className="list-disc list-inside space-y-1 text-xs">
                       <li><strong>Google Traffic:</strong> الزيارات القادمة من Google (إعلانات، بحث، gclid)</li>
                       <li><strong>Other Traffic:</strong> باقي المصادر (مباشر، سوشيال ميديا، إلخ)</li>
+                      <li><strong>عدد التحويلات:</strong> العدد المستهدف من التحويلات (حجوزات/عقود) لكل صفحة شهرياً</li>
                       <li><strong>sales7:</strong> معطل عمداً حسب المتطلبات</li>
                       <li>يتم التوزيع تلقائياً عند زيارة <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">/sales</code></li>
                     </ul>
@@ -466,6 +468,12 @@ export default function DistributionPage() {
                         <div className="flex items-center justify-center gap-1">
                           <Globe className="h-4 w-4" />
                           Other %
+                        </div>
+                      </th>
+                      <th className="text-center py-2 px-4 text-sm font-medium">
+                        <div className="flex items-center justify-center gap-1">
+                          <Target className="h-4 w-4" />
+                          عدد التحويلات
                         </div>
                       </th>
                       <th className="text-center py-2 px-4 text-sm font-medium">الحالة</th>
@@ -515,6 +523,23 @@ export default function DistributionPage() {
                             <Percent className="h-4 w-4 text-gray-400" />
                           </div>
                         </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center justify-center">
+                            <input
+                              type="number"
+                              value={rule.targetConversions || 0}
+                              onChange={(e) => {
+                                const newRules = [...rules]
+                                newRules[index].targetConversions = parseInt(e.target.value) || 0
+                                setRules(newRules)
+                              }}
+                              disabled={!rule.isActive}
+                              className="w-24 px-2 py-1 text-center border rounded dark:bg-gray-700 dark:border-gray-600 font-semibold"
+                              placeholder="0"
+                              min="0"
+                            />
+                          </div>
+                        </td>
                         <td className="py-3 px-4 text-center">
                           {rule.isActive ? (
                             <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">نشط</span>
@@ -549,6 +574,9 @@ export default function DistributionPage() {
                       </td>
                       <td className="py-3 px-4 text-center">
                         {rules.filter(r => r.isActive).reduce((sum, r) => sum + r.otherWeight, 0).toFixed(2)}%
+                      </td>
+                      <td className="py-3 px-4 text-center text-blue-600 dark:text-blue-400">
+                        {rules.filter(r => r.isActive).reduce((sum, r) => sum + (r.targetConversions || 0), 0)} تحويلة
                       </td>
                       <td colSpan={2} className="py-3 px-4"></td>
                     </tr>
@@ -586,17 +614,17 @@ export default function DistributionPage() {
                 <button
                   onClick={() => {
                     setRules([
-                      { path: '/sales1', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-                      { path: '/sales2', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-                      { path: '/sales3', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-                      { path: '/sales4', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-                      { path: '/sales5', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-                      { path: '/sales6', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-                      { path: '/sales7', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-                      { path: '/sales8', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-                      { path: '/sales9', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-                      { path: '/sales10', googleWeight: 9.09, otherWeight: 9.09, isActive: true },
-                      { path: '/sales11', googleWeight: 9.01, otherWeight: 9.01, isActive: true },
+                      { path: '/sales1', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+                      { path: '/sales2', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+                      { path: '/sales3', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+                      { path: '/sales4', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+                      { path: '/sales5', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+                      { path: '/sales6', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+                      { path: '/sales7', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+                      { path: '/sales8', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+                      { path: '/sales9', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+                      { path: '/sales10', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
+                      { path: '/sales11', googleWeight: 9.01, otherWeight: 9.01, isActive: true, targetConversions: 100 },
                     ])
                     toast.success('تم إعادة تعيين الإعدادات الافتراضية (جميع الصفحات الـ 11 متساوية)')
                   }}
