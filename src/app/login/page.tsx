@@ -61,9 +61,12 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        // Store token and user data
+        // Store token, session, and user data
         localStorage.setItem('token', data.token)
         localStorage.setItem('user', JSON.stringify(data.user))
+        if (data.session) {
+          localStorage.setItem('sessionId', data.session.toString())
+        }
         toast.success(`أهلاً وسهلاً ${data.user.name}`, {
           duration: 3000
         })

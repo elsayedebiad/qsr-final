@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from './app-sidebar'
 import { Menu } from 'lucide-react'
+import UserHeartbeat from './UserHeartbeat'
 
 interface User {
   id: string
@@ -106,11 +107,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (typeof window === 'undefined') return // Skip on server-side
+    
+    const sessionId = localStorage.getItem('sessionId')
+    
+    // Notify server about logout
+    if (sessionId) {
+      try {
+        const token = localStorage.getItem('token')
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ sessionId })
+        })
+      } catch (error) {
+        console.error('Logout notification failed:', error)
+      }
+    }
     
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    localStorage.removeItem('sessionId')
     toast.success('تم تسجيل الخروج بنجاح')
     router.push('/login')
   }
@@ -132,6 +153,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider>
+      <UserHeartbeat />
       <AppSidebar user={user} onLogout={handleLogout} />
       <main className="flex flex-1 flex-col min-h-screen">
         <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center gap-3 sm:gap-4 border-b border-border bg-background px-3 sm:px-6">

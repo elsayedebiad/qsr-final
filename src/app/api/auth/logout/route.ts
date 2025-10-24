@@ -8,25 +8,38 @@ export async function POST(request: NextRequest) {
     // Get session info before logout for session tracking
     let sessionId: string | null = null
     
+    // Try to get sessionId from request body first
     try {
-      const authHeader = request.headers.get('Authorization')
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7)
-        
-        // Find session by token for tracking purposes
-        const session = await db.session.findFirst({
-          where: {
-            token,
-            expiresAt: { gt: new Date() }
-          }
-        })
-        
-        if (session) {
-          sessionId = session.id.toString()
-        }
+      const body = await request.json()
+      if (body.sessionId) {
+        sessionId = body.sessionId
       }
     } catch (error) {
-      console.log('Could not get session info for logout tracking:', error)
+      // Body parsing failed, will try to get from token
+    }
+    
+    // If no sessionId in body, try to get from token
+    if (!sessionId) {
+      try {
+        const authHeader = request.headers.get('Authorization')
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.substring(7)
+          
+          // Find session by token for tracking purposes
+          const session = await db.session.findFirst({
+            where: {
+              token,
+              expiresAt: { gt: new Date() }
+            }
+          })
+          
+          if (session) {
+            sessionId = session.id.toString()
+          }
+        }
+      } catch (error) {
+        console.log('Could not get session info for logout tracking:', error)
+      }
     }
 
     // Standard logout process

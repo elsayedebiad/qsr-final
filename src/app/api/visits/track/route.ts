@@ -53,11 +53,12 @@ export async function POST(request: NextRequest) {
     
     // جلب البيانات الجغرافية (نستخدم geoLookupIp الذي قد يكون IP اختبار في التطوير)
     if (geoLookupIp !== 'unknown' && !geoLookupIp.includes('localhost')) {
+      // محاولة API الأول: ip-api.com (مجاني بدون حد)
       try {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 3000)
         
-        const geoResponse = await fetch(`https://ipapi.co/${geoLookupIp}/json/`, {
+        const geoResponse = await fetch(`http://ip-api.com/json/${geoLookupIp}?fields=status,country,city,query`, {
           signal: controller.signal
         })
         
@@ -66,19 +67,47 @@ export async function POST(request: NextRequest) {
         if (geoResponse.ok) {
           const geoData = await geoResponse.json()
           
-          if (!geoData.error) {
-            country = geoData.country_name || null
+          if (geoData.status === 'success') {
+            country = geoData.country || null
             city = geoData.city || null
-            console.log(`✅ Geo: ${geoLookupIp} → ${country}, ${city}`)
+            console.log(`✅ Geo (ip-api): ${geoLookupIp} → ${country}, ${city}`)
+          } else {
+            throw new Error('IP lookup failed')
           }
+        } else {
+          throw new Error('API response not ok')
         }
       } catch (error: any) {
-        console.log(`⚠️ Geo lookup failed:`, error.name)
-        // في حالة فشل الـ API للـ localhost، نستخدم بيانات افتراضية
-        if (isLocalhost) {
-          country = 'Egypt'
-          city = 'Cairo'
-          console.log('🧪 Fallback: Using test geo data')
+        console.log(`⚠️ ip-api.com failed, trying backup API:`, error.name)
+        
+        // محاولة API البديل: ipapi.co
+        try {
+          const controller2 = new AbortController()
+          const timeoutId2 = setTimeout(() => controller2.abort(), 3000)
+          
+          const geoResponse2 = await fetch(`https://ipapi.co/${geoLookupIp}/json/`, {
+            signal: controller2.signal
+          })
+          
+          clearTimeout(timeoutId2)
+          
+          if (geoResponse2.ok) {
+            const geoData2 = await geoResponse2.json()
+            
+            if (!geoData2.error) {
+              country = geoData2.country_name || null
+              city = geoData2.city || null
+              console.log(`✅ Geo (ipapi.co): ${geoLookupIp} → ${country}, ${city}`)
+            }
+          }
+        } catch (error2: any) {
+          console.log(`⚠️ All geo lookups failed:`, error2.name)
+          // في حالة فشل الـ API للـ localhost، نستخدم بيانات افتراضية
+          if (isLocalhost) {
+            country = 'Egypt'
+            city = 'Cairo'
+            console.log('🧪 Fallback: Using test geo data')
+          }
         }
       }
     }

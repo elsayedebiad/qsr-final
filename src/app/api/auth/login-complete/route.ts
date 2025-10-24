@@ -62,11 +62,25 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Get IP address and user agent for session tracking
+    const forwarded = request.headers.get('x-forwarded-for')
+    const realIp = request.headers.get('x-real-ip')
+    const cfConnectingIp = request.headers.get('cf-connecting-ip')
+    const ipAddress = cfConnectingIp || realIp || (forwarded ? forwarded.split(',')[0].trim() : null) || 'unknown'
+    const userAgent = request.headers.get('user-agent') || 'Unknown Browser'
+
     // Log login activity
     try {
       await UserActivityLogger.login(user.id)
-      // Track user session
-      await UserSessionTracker.recordLogin(user.id, user.name, user.email, session.id.toString())
+      // Track user session with IP and user agent
+      await UserSessionTracker.recordLogin(
+        user.id, 
+        user.name, 
+        user.email, 
+        session.id.toString(),
+        ipAddress,
+        userAgent
+      )
     } catch (error) {
       console.error('Failed to log login activity:', error)
       // Don't fail the login if activity logging fails
