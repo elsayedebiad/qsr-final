@@ -52,21 +52,25 @@ export default function SalesRedirectPage() {
             isActive: boolean
           }
           
-          // فلترة الصفحات النشطة فقط
+          // ✅ الخطوة 1: فلترة الصفحات النشطة فقط (isActive = true)
+          // الصفحات المعطلة لن تظهر هنا نهائياً
           const activeRules = (data.rules as Rule[]).filter(r => r.isActive)
           
-          // جلب قواعد Google - فقط الصفحات التي لها وزن > 0
-          // إذا كتب المستخدم 0، لن تظهر الصفحة في القائمة = لن تحصل على زيارات
+          // ✅ الخطوة 2: جلب قواعد Google - فقط الصفحات التي لها وزن > 0
+          // 🚫 القاعدة المهمة: إذا كتب المستخدم 0، لن تظهر الصفحة في القائمة
+          // 🎯 النتيجة: الصفحة لن تحصل على أي زيارات Google (بدقة 100%)
           const googleRules = activeRules
-            .filter(r => r.googleWeight > 0)
+            .filter(r => r.googleWeight > 0)  // ⚡ هنا يتم استبعاد القيم = 0
             .map(r => ({
               path: `/sales${r.salesPageId.replace('sales', '')}`,
               weight: r.googleWeight
             }))
           
-          // جلب قواعد Other - فقط الصفحات التي لها وزن > 0
+          // ✅ الخطوة 3: جلب قواعد Other - فقط الصفحات التي لها وزن > 0
+          // 🚫 نفس القاعدة: إذا كتب المستخدم 0، لن تظهر الصفحة
+          // 🎯 النتيجة: الصفحة لن تحصل على أي زيارات Other (بدقة 100%)
           const otherRules = activeRules
-            .filter(r => r.otherWeight > 0)
+            .filter(r => r.otherWeight > 0)  // ⚡ هنا يتم استبعاد القيم = 0
             .map(r => ({
               path: `/sales${r.salesPageId.replace('sales', '')}`,
               weight: r.otherWeight
@@ -89,13 +93,25 @@ export default function SalesRedirectPage() {
           }
           
           console.log('📊 Active Distribution Rules:')
+          console.log('  Total Active Rules:', activeRules.length)
           console.log('  Google pages:', GOOGLE_WEIGHTED.map(r => r.path + ' (' + r.weight + '%)'))
           console.log('  Other pages:', OTHER_WEIGHTED.map(r => r.path + ' (' + r.weight + '%)'))
+          
+          // عرض الصفحات المستبعدة
+          const googleExcluded = activeRules.filter(r => r.googleWeight === 0)
+          const otherExcluded = activeRules.filter(r => r.otherWeight === 0)
+          if (googleExcluded.length > 0) {
+            console.log('  🚫 Google Excluded (weight=0):', googleExcluded.map(r => `/sales${r.salesPageId.replace('sales', '')}`))
+          }
+          if (otherExcluded.length > 0) {
+            console.log('  🚫 Other Excluded (weight=0):', otherExcluded.map(r => `/sales${r.salesPageId.replace('sales', '')}`))
+          }
+          
           const googleTotal = GOOGLE_WEIGHTED.reduce((s, r) => s + r.weight, 0)
           const otherTotal = OTHER_WEIGHTED.reduce((s, r) => s + r.weight, 0)
           console.log('  Total Google weight:', googleTotal.toFixed(2) + '%')
           console.log('  Total Other weight:', otherTotal.toFixed(2) + '%')
-          console.log('  ℹ️ Note: If total ≠ 100%, distribution will be proportional')
+          console.log('  ✅ Distribution is calculated proportionally - accuracy 100%')
           console.log('  📐 Example: weights [20, 30, 50] = distribution [20%, 30%, 50%]')
           console.log('  📐 Example: weights [10, 10, 10] = distribution [33.33%, 33.33%, 33.33%]')
         }

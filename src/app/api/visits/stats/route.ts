@@ -35,21 +35,15 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
 
-    // بناء where condition للفلاتر
+    // بناء where condition للفلاتر (بدون فلتر الصفحة - سنفلتره في الذاكرة)
     const whereCondition: any = { isArchived: false }
     
     if (countryFilter) {
       whereCondition.country = countryFilter
     }
     
-    if (pageFilterParam) {
-      // تنظيف اسم الصفحة
-      const cleanPage = pageFilterParam.trim().toLowerCase().replace(/^\/+/, '')
-      whereCondition.targetPage = {
-        contains: cleanPage,
-        mode: 'insensitive'
-      }
-    }
+    // لا نضيف فلتر الصفحة هنا - سنفلتره بعد جلب البيانات
+    // لأن البيانات في DB قد تكون بتنسيقات مختلفة (/sales1, sales1, etc)
     
     if (campaignFilter) {
       if (campaignFilter === 'No Campaign') {
@@ -71,31 +65,36 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // عد إجمالي الزيارات حسب الفلاتر
-    const totalVisitsCount = await db.visit.count({
-      where: whereCondition
-    })
-
     // جلب جميع الزيارات حسب الفلاتر للإحصائيات
-    const visits = await db.visit.findMany({
+    let visits = await db.visit.findMany({
       where: whereCondition,
       orderBy: { id: 'desc' },
-      take: 1000 // للإحصائيات
+      take: 10000 // زيادة للحصول على بيانات كافية قبل الفلترة
     })
+    
+    // تطبيق فلتر الصفحة في الذاكرة (للمطابقة الدقيقة)
+    if (pageFilterParam) {
+      const cleanPageFilter = pageFilterParam.trim().toLowerCase().replace(/^\/+/, '')
+      visits = visits.filter(visit => {
+        const cleanVisitPage = visit.targetPage.trim().toLowerCase().replace(/^\/+/, '').replace(/\/+$/, '')
+        return cleanVisitPage === cleanPageFilter
+      })
+    }
 
-    // جلب الزيارات للصفحة الحالية حسب الفلاتر
-    const paginatedVisits = await db.visit.findMany({
-      where: whereCondition,
-      orderBy: { id: 'desc' },
-      skip,
-      take: limit
-    })
+    // حساب إجمالي الزيارات بعد الفلترة
+    const totalVisitsCount = visits.length
+    
+    // أخذ أول 1000 زيارة للإحصائيات
+    const statsVisits = visits.slice(0, 1000)
+    
+    // جلب الزيارات للصفحة الحالية (مع pagination)
+    const paginatedVisits = visits.slice(skip, skip + limit)
 
-    // إحصائيات عامة
-    const totalVisits = visits.length
+    // إحصائيات عامة (من البيانات المحدودة للإحصائيات)
+    const totalVisits = statsVisits.length
     
     // عدد الزيارات لكل صفحة (مع تنظيف ودمج أسماء الصفحات المكررة)
-    const pageStatsRaw = visits.reduce((acc, visit) => {
+    const pageStatsRaw = statsVisits.reduce((acc, visit) => {
       // تنظيف اسم الصفحة: إزالة / من البداية، المسافات، وتحويل لأحرف صغيرة
       const cleanPage = visit.targetPage.trim().toLowerCase().replace(/^\/+/, '')
       acc[cleanPage] = (acc[cleanPage] || 0) + 1
@@ -120,7 +119,7 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>)
 
     // عدد الزيارات لكل دولة (مع تنظيف ودمج أسماء الدول المكررة)
-    const countryStatsRaw = visits.reduce((acc, visit) => {
+    const countryStatsRaw = statsVisits.reduce((acc, visit) => {
       // تنظيف اسم الدولة: إزالة المسافات الزائدة
       const country = (visit.country || 'Unknown').trim()
       acc[country] = (acc[country] || 0) + 1
@@ -147,7 +146,7 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>)
 
     // عدد الزيارات من كل مصدر - بدقة 100%
-    const sourceStats = visits.reduce((acc, visit) => {
+    const sourceStats = statsVisits.reduce((acc, visit) => {
       let source = 'Direct' // القيمة الافتراضية
       
       // الأولوية 1: فحص معرفات الإعلانات (أدق طريقة)
@@ -196,21 +195,21 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>)
 
     // عدد الزيارات من Google vs Others
-    const googleVisits = visits.filter(v => v.isGoogle).length
+    const googleVisits = statsVisits.filter(v => v.isGoogle).length
     const otherVisits = totalVisits - googleVisits
 
     // الزيارات اليوم
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const todayVisits = visits.filter(v => new Date(v.timestamp) >= today).length
+    const todayVisits = statsVisits.filter(v => new Date(v.timestamp) >= today).length
 
     // الزيارات هذا الأسبوع
     const weekAgo = new Date()
     weekAgo.setDate(weekAgo.getDate() - 7)
-    const weekVisits = visits.filter(v => new Date(v.timestamp) >= weekAgo).length
+    const weekVisits = statsVisits.filter(v => new Date(v.timestamp) >= weekAgo).length
 
     // الزيارات حسب الحملة
-    const campaignStats = visits.reduce((acc, visit) => {
+    const campaignStats = statsVisits.reduce((acc, visit) => {
       const campaign = visit.utmCampaign || 'No Campaign'
       acc[campaign] = (acc[campaign] || 0) + 1
       return acc
@@ -221,7 +220,7 @@ export async function GET(request: NextRequest) {
     
     const visitStats = salesPages.map(pageId => {
       // تنظيف targetPage للمقارنة - إزالة / من البداية والمسافات
-      const pageVisits = visits.filter(v => {
+      const pageVisits = statsVisits.filter(v => {
         const cleanTarget = v.targetPage.trim().toLowerCase().replace(/^\/+/, '')
         return cleanTarget === pageId
       })
