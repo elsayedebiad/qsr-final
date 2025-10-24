@@ -50,6 +50,11 @@ interface VisitStats {
   countryStats: Record<string, number>
   sourceStats: Record<string, number>
   campaignStats: Record<string, number>
+  filterOptions?: {
+    countries: string[]
+    pages: string[]
+    campaigns: string[]
+  }
   recentVisits: Visit[]
   pagination: Pagination
 }
@@ -72,6 +77,7 @@ export default function VisitsReportPage() {
   // Filters
   const [countryFilter, setCountryFilter] = useState<string>('ALL')
   const [pageFilter, setPageFilter] = useState<string>('ALL')
+  const [campaignFilter, setCampaignFilter] = useState<string>('ALL')
   const [dateFrom, setDateFrom] = useState<string>('')
   const [dateTo, setDateTo] = useState<string>('')
   
@@ -96,23 +102,22 @@ export default function VisitsReportPage() {
     try {
       // إذا كان resetToFirstPage = true، نرجع للصفحة الأولى
       const targetPage = resetToFirstPage ? 1 : page
-      const res = await fetch(`/api/visits/stats?page=${targetPage}&limit=${itemsPerPageRef.current}`)
+      
+      // بناء query string مع الفلاتر
+      const params = new URLSearchParams()
+      params.append('page', targetPage.toString())
+      params.append('limit', itemsPerPageRef.current.toString())
+      
+      // إضافة الفلاتر إلى API
+      if (countryFilter !== 'ALL') params.append('country', countryFilter)
+      if (pageFilter !== 'ALL') params.append('targetPage', pageFilter)
+      if (campaignFilter !== 'ALL') params.append('campaign', campaignFilter)
+      if (dateFrom) params.append('dateFrom', dateFrom)
+      if (dateTo) params.append('dateTo', dateTo)
+      
+      const res = await fetch(`/api/visits/stats?${params.toString()}`)
       const data = await res.json()
       if (data.success) {
-        // تأكيد الترتيب من API (الأحدث أولاً)
-        if (data.recentVisits && data.recentVisits.length > 0) {
-          console.log('أول زيارة (يجب أن تكون الأحدث):', {
-            id: data.recentVisits[0].id,
-            timestamp: data.recentVisits[0].timestamp,
-            page: data.recentVisits[0].targetPage
-          })
-          console.log('آخر زيارة (يجب أن تكون الأقدم):', {
-            id: data.recentVisits[data.recentVisits.length - 1].id,
-            timestamp: data.recentVisits[data.recentVisits.length - 1].timestamp,
-            page: data.recentVisits[data.recentVisits.length - 1].targetPage
-          })
-        }
-        
         setStats(data)
         // فقط حدث currentPage إذا كانت مختلفة لتجنب re-render غير ضروري
         if (targetPage !== currentPageRef.current) {
@@ -125,101 +130,36 @@ export default function VisitsReportPage() {
       setLoading(false)
       setIsNavigating(false)
     }
-  }, [])
+  }, [countryFilter, pageFilter, campaignFilter, dateFrom, dateTo])
 
-  // تطبيق الفلاتر على الزيارات (البيانات تأتي مرتبة من API)
+  // البيانات تأتي مفلترة من API
   const filteredVisits = useMemo(() => {
     if (!stats) return []
-    
-    const filtered = stats.recentVisits.filter(visit => {
-      // فلتر الدولة (مع تنظيف للتأكد من التطابق)
-      if (countryFilter !== 'ALL') {
-        const visitCountry = (visit.country || 'Unknown').trim()
-        if (visitCountry !== countryFilter) {
-          return false
-        }
-      }
-      
-      // فلتر الصفحة (مع تنظيف شامل للتأكد من التطابق)
-      if (pageFilter !== 'ALL') {
-        const visitPage = visit.targetPage.trim().toLowerCase().replace(/^\/+/, '')
-        if (visitPage !== pageFilter) {
-          return false
-        }
-      }
-      
-      // فلتر التاريخ
-      const visitDate = new Date(visit.timestamp)
-      if (dateFrom) {
-        const fromDate = new Date(dateFrom)
-        fromDate.setHours(0, 0, 0, 0)
-        if (visitDate < fromDate) return false
-      }
-      if (dateTo) {
-        const toDate = new Date(dateTo)
-        toDate.setHours(23, 59, 59, 999)
-        if (visitDate > toDate) return false
-      }
-      
-      return true
-    })
-    
-    // ترتيب تنازلي صريح (الأحدث أولاً - timestamp الأكبر أولاً)
-    return filtered.sort((a, b) => {
-      const timeA = new Date(a.timestamp).getTime()
-      const timeB = new Date(b.timestamp).getTime()
-      
-      // ترتيب تنازلي: الأكبر (الأحدث) أولاً
-      // timeB - timeA: إذا كان موجب يعني b أحدث فيأتي قبل a
-      const timeDiff = timeB - timeA
-      if (timeDiff !== 0) return timeDiff
-      
-      // إذا كان الوقت متساوي، نرتب حسب ID (الأكبر = الأحدث)
-      return b.id - a.id
-    })
-  }, [stats, countryFilter, pageFilter, dateFrom, dateTo])
-  
-  // الحصول على قائمة الدول الفريدة من الإحصائيات الكلية
-  const uniqueCountries = useMemo(() => {
-    if (!stats) return []
-    // استخدام Set لضمان عدم التكرار
-    const countriesSet = new Set<string>()
-    
-    // جمع جميع أسماء الدول من countryStats
-    Object.keys(stats.countryStats).forEach(country => {
-      const cleanCountry = country.trim()
-      if (cleanCountry && cleanCountry !== 'Unknown') {
-        countriesSet.add(cleanCountry)
-      }
-    })
-    
-    // تحويل Set إلى مصفوفة مرتبة
-    return Array.from(countriesSet).sort()
+    // البيانات مفلترة ومرتبة من السيرفر
+    return stats.recentVisits
   }, [stats])
   
-  // الحصول على قائمة الصفحات الفريدة من الإحصائيات الكلية
+  // الحصول على قوائم الفلاتر من جميع البيانات (بدون فلتر)
+  const uniqueCountries = useMemo(() => {
+    if (!stats || !stats.filterOptions) return []
+    return stats.filterOptions.countries || []
+  }, [stats])
+  
   const uniquePages = useMemo(() => {
-    if (!stats) return []
-    // استخدام Set لضمان عدم التكرار
-    const pagesSet = new Set<string>()
-    
-    // جمع جميع أسماء الصفحات من pageStats
-    Object.keys(stats.pageStats).forEach(page => {
-      // تنظيف شامل: إزالة / من البداية، المسافات، وتحويل لأحرف صغيرة
-      const cleanPage = page.trim().toLowerCase().replace(/^\/+/, '')
-      if (cleanPage) {
-        pagesSet.add(cleanPage)
-      }
-    })
-    
-    // تحويل Set إلى مصفوفة مرتبة
-    return Array.from(pagesSet).sort()
+    if (!stats || !stats.filterOptions) return []
+    return stats.filterOptions.pages || []
+  }, [stats])
+  
+  const uniqueCampaigns = useMemo(() => {
+    if (!stats || !stats.filterOptions) return []
+    return stats.filterOptions.campaigns || []
   }, [stats])
   
   // إعادة تعيين الفلاتر
   const resetFilters = () => {
     setCountryFilter('ALL')
     setPageFilter('ALL')
+    setCampaignFilter('ALL')
     setDateFrom('')
     setDateTo('')
   }
@@ -417,10 +357,15 @@ export default function VisitsReportPage() {
     }
   }
   
-  // Initial load and page changes
+  // Initial load and when filters change - نرجع للصفحة الأولى
+  useEffect(() => {
+    setCurrentPage(1) // هذا سيؤدي لاستدعاء useEffect التالي
+  }, [countryFilter, pageFilter, campaignFilter, dateFrom, dateTo, itemsPerPage])
+  
+  // Load data when page changes
   useEffect(() => {
     fetchStats(currentPage)
-  }, [currentPage, itemsPerPage, fetchStats])
+  }, [currentPage, fetchStats])
   
   // Auto refresh effect - منفصل لتجنب التداخل
   useEffect(() => {
@@ -556,9 +501,20 @@ export default function VisitsReportPage() {
                   return Array.from(mergedPages.entries())
                     .sort(([, a], [, b]) => b - a)
                     .map(([page, count]) => (
-                      <div key={page} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <span className="font-medium">{page}</span>
-                        <span className="text-blue-600 dark:text-blue-400 font-bold">{count}</span>
+                      <div key={page} className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span 
+                          className="font-medium text-sm break-all overflow-hidden" 
+                          style={{ 
+                            wordBreak: 'break-all',
+                            overflowWrap: 'break-word',
+                            maxWidth: 'calc(100% - 50px)',
+                            lineHeight: '1.3'
+                          }}
+                          title={page}
+                        >
+                          {page.length > 40 ? page.substring(0, 40) + '...' : page}
+                        </span>
+                        <span className="text-blue-600 dark:text-blue-400 font-bold flex-shrink-0 text-sm">{count}</span>
                       </div>
                     ))
                 })()}
@@ -575,9 +531,20 @@ export default function VisitsReportPage() {
                 {Object.entries(stats.countryStats)
                   .sort(([, a], [, b]) => b - a)
                   .map(([country, count]) => (
-                    <div key={country} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <span className="font-medium">{country}</span>
-                      <span className="text-green-600 dark:text-green-400 font-bold">{count}</span>
+                    <div key={country} className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <span 
+                        className="font-medium text-sm break-all overflow-hidden" 
+                        style={{ 
+                          wordBreak: 'break-all',
+                          overflowWrap: 'break-word',
+                          maxWidth: 'calc(100% - 50px)',
+                          lineHeight: '1.3'
+                        }}
+                        title={country}
+                      >
+                        {country.length > 30 ? country.substring(0, 30) + '...' : country}
+                      </span>
+                      <span className="text-green-600 dark:text-green-400 font-bold flex-shrink-0 text-sm">{count}</span>
                     </div>
                   ))}
               </div>
@@ -593,9 +560,20 @@ export default function VisitsReportPage() {
                 {Object.entries(stats.sourceStats)
                   .sort(([, a], [, b]) => b - a)
                   .map(([source, count]) => (
-                    <div key={source} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <span className="font-medium capitalize">{source}</span>
-                      <span className="text-purple-600 dark:text-purple-400 font-bold">{count}</span>
+                    <div key={source} className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <span 
+                        className="font-medium capitalize text-sm break-all overflow-hidden" 
+                        style={{ 
+                          wordBreak: 'break-all',
+                          overflowWrap: 'break-word',
+                          maxWidth: 'calc(100% - 50px)',
+                          lineHeight: '1.3'
+                        }}
+                        title={source}
+                      >
+                        {source.length > 30 ? source.substring(0, 30) + '...' : source}
+                      </span>
+                      <span className="text-purple-600 dark:text-purple-400 font-bold flex-shrink-0 text-sm">{count}</span>
                     </div>
                   ))}
               </div>
@@ -611,9 +589,20 @@ export default function VisitsReportPage() {
                 {Object.entries(stats.campaignStats)
                   .sort(([, a], [, b]) => b - a)
                   .map(([campaign, count]) => (
-                    <div key={campaign} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <span className="font-medium">{campaign}</span>
-                      <span className="text-orange-600 dark:text-orange-400 font-bold">{count}</span>
+                    <div key={campaign} className="flex items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <span 
+                        className="font-medium text-sm break-all overflow-hidden" 
+                        style={{ 
+                          wordBreak: 'break-all',
+                          overflowWrap: 'break-word',
+                          maxWidth: 'calc(100% - 50px)',
+                          lineHeight: '1.3'
+                        }}
+                        title={campaign}
+                      >
+                        {campaign.length > 50 ? campaign.substring(0, 50) + '...' : campaign}
+                      </span>
+                      <span className="text-orange-600 dark:text-orange-400 font-bold flex-shrink-0 text-sm">{count}</span>
                     </div>
                   ))}
               </div>
@@ -687,38 +676,44 @@ export default function VisitsReportPage() {
               </div>
             </div>
             
-            {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-1">
-                  <MapPin className="h-4 w-4 text-green-500" />
+            {/* Filters - محسّن */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 p-6 bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+              {/* فلتر الدولة */}
+              <div className="group">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                  <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:scale-110 transition-transform">
+                    <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
                   الدولة
                 </label>
                 <select
                   value={countryFilter}
                   onChange={(e) => setCountryFilter(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm"
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-green-400 dark:hover:border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all cursor-pointer shadow-sm hover:shadow-md"
                 >
-                  <option value="ALL">جميع الدول ({stats?.summary.totalVisits || 0})</option>
+                  <option value="ALL" className="font-bold bg-gray-50 dark:bg-gray-800">🌍 جميع الدول ({stats?.summary.totalVisits || 0})</option>
                   {uniqueCountries.map(country => (
-                    <option key={country} value={country}>
-                      {country} ({stats?.countryStats[country] || 0})
+                    <option key={country} value={country} className="py-2 hover:bg-blue-50">
+                      📍 {country} ({stats?.countryStats[country] || 0})
                     </option>
                   ))}
                 </select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-1">
-                  <MousePointerClick className="h-4 w-4 text-blue-500" />
+              {/* فلتر الصفحة */}
+              <div className="group">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                  <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:scale-110 transition-transform">
+                    <MousePointerClick className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
                   الصفحة
                 </label>
                 <select
                   value={pageFilter}
                   onChange={(e) => setPageFilter(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm"
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer shadow-sm hover:shadow-md"
                 >
-                  <option value="ALL">جميع الصفحات ({stats?.summary.totalVisits || 0})</option>
+                  <option value="ALL" className="font-bold bg-gray-50 dark:bg-gray-800">📄 جميع الصفحات ({stats?.summary.totalVisits || 0})</option>
                   {uniquePages.map(page => {
                     // جمع العدد من جميع النسخ المختلفة من نفس الصفحة (مع تنظيف شامل)
                     const count = Object.entries(stats?.pageStats || {})
@@ -726,45 +721,73 @@ export default function VisitsReportPage() {
                       .reduce((sum, [, value]) => sum + value, 0)
                     
                     return (
-                      <option key={page} value={page}>
-                        {page} ({count})
+                      <option key={page} value={page} className="py-2 hover:bg-blue-50">
+                        🔗 {page} ({count})
                       </option>
                     )
                   })}
                 </select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-1">
-                  <Calendar className="h-4 w-4 text-purple-500" />
+              {/* فلتر الحملة */}
+              <div className="group">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                  <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg group-hover:scale-110 transition-transform">
+                    <LinkIcon className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  الحملة الإعلانية
+                </label>
+                <select
+                  value={campaignFilter}
+                  onChange={(e) => setCampaignFilter(e.target.value)}
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-orange-400 dark:hover:border-orange-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                >
+                  <option value="ALL" className="font-bold bg-gray-50 dark:bg-gray-800">🎯 جميع الحملات ({stats?.summary.totalVisits || 0})</option>
+                  {uniqueCampaigns.map(campaign => (
+                    <option key={campaign} value={campaign} className="py-2 hover:bg-orange-50">
+                      📢 {campaign} ({stats?.campaignStats[campaign] || 0})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* فلتر من تاريخ */}
+              <div className="group">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                  <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:scale-110 transition-transform">
+                    <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
                   من تاريخ
                 </label>
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm"
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-purple-400 dark:hover:border-purple-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm hover:shadow-md"
                 />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-1">
-                  <Calendar className="h-4 w-4 text-orange-500" />
+              {/* فلتر إلى تاريخ */}
+              <div className="group">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                  <div className="p-1.5 bg-pink-100 dark:bg-pink-900/30 rounded-lg group-hover:scale-110 transition-transform">
+                    <Calendar className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+                  </div>
                   إلى تاريخ
                 </label>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm"
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-pink-400 dark:hover:border-pink-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm hover:shadow-md"
                 />
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>
+              <table className="w-full min-w-[1200px]" style={{ tableLayout: 'fixed' }}>
                 <thead>
                   <tr className="border-b dark:border-gray-700 text-sm">
-                    <th className="text-center py-3 px-2 w-12">
+                    <th className="text-center py-3 px-2" style={{ width: '50px' }}>
                       <button onClick={toggleAllVisits} className="hover:text-blue-500">
                         {selectedVisits.length === filteredVisits.length && filteredVisits.length > 0 ? (
                           <CheckSquare className="h-5 w-5" />
@@ -773,14 +796,14 @@ export default function VisitsReportPage() {
                         )}
                       </button>
                     </th>
-                    <th className="text-right py-3 px-4">التاريخ والوقت</th>
-                    <th className="text-right py-3 px-4">IP</th>
-                    <th className="text-right py-3 px-4">الدولة</th>
-                    <th className="text-right py-3 px-4">المدينة</th>
-                    <th className="text-right py-3 px-4">الصفحة</th>
-                    <th className="text-right py-3 px-4">الجهاز</th>
-                    <th className="text-right py-3 px-4">المصدر</th>
-                    <th className="text-right py-3 px-4">الحملة</th>
+                    <th className="text-right py-3 px-4" style={{ width: '140px' }}>التاريخ والوقت</th>
+                    <th className="text-right py-3 px-4" style={{ width: '110px' }}>IP</th>
+                    <th className="text-right py-3 px-4" style={{ width: '100px' }}>الدولة</th>
+                    <th className="text-right py-3 px-4" style={{ width: '100px' }}>المدينة</th>
+                    <th className="text-right py-3 px-4" style={{ width: '100px' }}>الصفحة</th>
+                    <th className="text-right py-3 px-4" style={{ width: '120px' }}>الجهاز</th>
+                    <th className="text-right py-3 px-4" style={{ width: '110px' }}>المصدر</th>
+                    <th className="text-right py-3 px-4" style={{ width: '180px' }}>الحملة</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -834,11 +857,17 @@ export default function VisitsReportPage() {
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-mono text-xs break-all min-w-[120px]">{visit.ipAddress}</td>
-                      <td className="py-3 px-4">{visit.country || '-'}</td>
-                      <td className="py-3 px-4">{visit.city || '-'}</td>
+                      <td className="py-3 px-4" title={visit.ipAddress}>
+                        <span className="font-mono text-xs block overflow-hidden text-ellipsis whitespace-nowrap">{visit.ipAddress}</span>
+                      </td>
+                      <td className="py-3 px-4" title={visit.country || '-'}>
+                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap">{visit.country || '-'}</span>
+                      </td>
+                      <td className="py-3 px-4" title={visit.city || '-'}>
+                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap">{visit.city || '-'}</span>
+                      </td>
                       <td className="py-3 px-4">
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs">
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs block overflow-hidden text-ellipsis whitespace-nowrap" title={visit.targetPage}>
                           {visit.targetPage}
                         </span>
                       </td>
@@ -851,39 +880,47 @@ export default function VisitsReportPage() {
                             {!visit.device && '-'}
                           </span>
                           {visit.browser && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 block overflow-hidden text-ellipsis whitespace-nowrap">
                               {visit.browser} • {visit.os}
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded text-xs ${
+                        <span className={`px-2 py-1 rounded text-xs block overflow-hidden text-ellipsis whitespace-nowrap ${
                           visit.isGoogle
                             ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                        }`}>
+                        }`} title={visit.utmSource || (visit.isGoogle ? 'Google' : 'Direct')}>
                           {visit.utmSource || (visit.isGoogle ? 'Google' : 'Direct')}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col gap-0.5">
+                      <td className="py-3 px-4" style={{ maxWidth: '180px', overflow: 'hidden' }}>
+                        <div className="w-full" style={{ wordBreak: 'break-all', overflowWrap: 'break-word' }}>
                           {visit.gclid && (
-                            <span className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded">
-                              🎯 Google Ads
-                            </span>
+                            <div className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded w-full" title={`Google Ads: ${visit.gclid}`} style={{ wordBreak: 'break-all' }}>
+                              <div className="font-semibold mb-0.5">🎯 Google Ads</div>
+                              <div className="font-mono text-[9px] leading-tight opacity-70" style={{ wordBreak: 'break-all', maxWidth: '100%' }}>
+                                {visit.gclid.substring(0, 25)}...
+                              </div>
+                            </div>
                           )}
                           {visit.fbclid && (
-                            <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
-                              📘 Facebook Ads
-                            </span>
+                            <div className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded w-full" title={`Facebook Ads: ${visit.fbclid}`} style={{ wordBreak: 'break-all' }}>
+                              <div className="font-semibold mb-0.5">📘 Facebook Ads</div>
+                              <div className="font-mono text-[9px] leading-tight opacity-70" style={{ wordBreak: 'break-all', maxWidth: '100%' }}>
+                                {visit.fbclid.substring(0, 25)}...
+                              </div>
+                            </div>
                           )}
                           {visit.utmCampaign && !visit.gclid && !visit.fbclid && (
-                            <span className="text-xs truncate max-w-[150px]" title={visit.utmCampaign}>
-                              {visit.utmCampaign}
+                            <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded block w-full" title={visit.utmCampaign} style={{ wordBreak: 'break-all', overflowWrap: 'break-word', maxWidth: '100%' }}>
+                              {visit.utmCampaign.length > 30 ? visit.utmCampaign.substring(0, 30) + '...' : visit.utmCampaign}
                             </span>
                           )}
-                          {!visit.utmCampaign && !visit.gclid && !visit.fbclid && '-'}
+                          {!visit.utmCampaign && !visit.gclid && !visit.fbclid && (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
                         </div>
                       </td>
                     </tr>

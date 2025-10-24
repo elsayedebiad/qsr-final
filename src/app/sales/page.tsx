@@ -91,8 +91,13 @@ export default function SalesRedirectPage() {
           console.log('📊 Active Distribution Rules:')
           console.log('  Google pages:', GOOGLE_WEIGHTED.map(r => r.path + ' (' + r.weight + '%)'))
           console.log('  Other pages:', OTHER_WEIGHTED.map(r => r.path + ' (' + r.weight + '%)'))
-          console.log('  Total Google weight:', GOOGLE_WEIGHTED.reduce((s, r) => s + r.weight, 0).toFixed(2) + '%')
-          console.log('  Total Other weight:', OTHER_WEIGHTED.reduce((s, r) => s + r.weight, 0).toFixed(2) + '%')
+          const googleTotal = GOOGLE_WEIGHTED.reduce((s, r) => s + r.weight, 0)
+          const otherTotal = OTHER_WEIGHTED.reduce((s, r) => s + r.weight, 0)
+          console.log('  Total Google weight:', googleTotal.toFixed(2) + '%')
+          console.log('  Total Other weight:', otherTotal.toFixed(2) + '%')
+          console.log('  ℹ️ Note: If total ≠ 100%, distribution will be proportional')
+          console.log('  📐 Example: weights [20, 30, 50] = distribution [20%, 30%, 50%]')
+          console.log('  📐 Example: weights [10, 10, 10] = distribution [33.33%, 33.33%, 33.33%]')
         }
       } catch (error) {
         console.log('⚠️ API error - using default distribution rules:', error)
@@ -124,19 +129,29 @@ export default function SalesRedirectPage() {
     
     // التحقق من الكوكي للثبات
     const cookieName = 'td_bucket'
+    const rulesVersion = 'v2' // نسخة القواعد لإلغاء الـ cookies القديمة
+    const versionCookieName = 'td_rules_version'
+    
+    // التحقق من نسخة القواعد
+    const existingVersion = document.cookie
+      .split('; ')
+      .find(row => row.startsWith(versionCookieName + '='))
+    
+    const currentVersion = existingVersion?.split('=')[1]
+    
+    // إذا تغيرت القواعد، امسح الـ cookie القديم
+    let shouldResetCookie = false
+    if (currentVersion !== rulesVersion) {
+      shouldResetCookie = true
+      document.cookie = `${versionCookieName}=${rulesVersion}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax`
+    }
+    
     const existingCookie = document.cookie
       .split('; ')
       .find(row => row.startsWith(cookieName + '='))
     
     let randomValue: number
-    if (existingCookie) {
-      randomValue = parseFloat(existingCookie.split('=')[1])
-    } else {
-      randomValue = Math.random()
-      // حفظ الكوكي لمدة 7 أيام
-      document.cookie = `${cookieName}=${randomValue}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax`
-    }
-
+    
     // اختيار الجدول المناسب
     const isFromGoogle = isGoogleRef(referer)
     const table = isFromGoogle ? GOOGLE_WEIGHTED : OTHER_WEIGHTED
@@ -144,13 +159,44 @@ export default function SalesRedirectPage() {
     // التحقق من وجود صفحات متاحة
     if (table.length === 0) {
       console.error('❌ No available sales pages in distribution rules!')
+      console.log('   All pages have weight = 0 or are disabled')
       console.log('   Falling back to sales1')
       router.replace('/sales1' + window.location.search)
       return
     }
     
+    // إذا كان لدينا cookie قديم، نتحقق أن الصفحة المحفوظة لا تزال نشطة
+    if (existingCookie && !shouldResetCookie) {
+      randomValue = parseFloat(existingCookie.split('=')[1])
+      
+      // التحقق أن الصفحة المختارة سابقاً لا تزال نشطة (قيمتها > 0)
+      const previousTarget = pickWeighted(table, randomValue).path
+      const isStillActive = table.some(item => item.path === previousTarget && item.weight > 0)
+      
+      if (!isStillActive) {
+        // الصفحة المحفوظة لم تعد نشطة، اختر صفحة جديدة
+        console.log('⚠️ Previous page no longer active, selecting new page...')
+        randomValue = Math.random()
+        document.cookie = `${cookieName}=${randomValue}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax`
+      }
+    } else {
+      // لا يوجد cookie أو نحتاج إعادة تعيين
+      randomValue = Math.random()
+      // حفظ الكوكي لمدة 7 أيام (يمكن تقليلها إلى ساعة واحدة: 60 * 60)
+      document.cookie = `${cookieName}=${randomValue}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax`
+    }
+    
     const target = pickWeighted(table, randomValue).path
-    console.log('🎯 Selected:', target, '(Source:', isFromGoogle ? 'Google' : 'Other', ')')
+    const totalWeight = table.reduce((s, r) => s + r.weight, 0)
+    const selectedWeight = table.find(r => r.path === target)?.weight || 0
+    const actualPercentage = ((selectedWeight / totalWeight) * 100).toFixed(2)
+    
+    console.log('🎯 Distribution Result:')
+    console.log('  Source:', isFromGoogle ? '📊 Google' : '🌍 Other')
+    console.log('  Selected page:', target)
+    console.log('  Page weight:', selectedWeight + '%')
+    console.log('  Actual probability:', actualPercentage + '%')
+    console.log('  Random value:', (randomValue * 100).toFixed(2) + '%')
 
     // استخراج UTM parameters ومعرفات الحملات الإعلانية
     const urlParams = new URLSearchParams(window.location.search)

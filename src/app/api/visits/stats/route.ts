@@ -22,30 +22,71 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // الحصول على معاملات الـ pagination من الـ query string
+    // الحصول على معاملات الـ pagination والفلاتر من الـ query string
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
+    
+    // الحصول على الفلاتر
+    const countryFilter = searchParams.get('country')
+    const pageFilterParam = searchParams.get('targetPage')
+    const campaignFilter = searchParams.get('campaign')
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
 
-    // عد إجمالي الزيارات غير المؤرشفة
+    // بناء where condition للفلاتر
+    const whereCondition: any = { isArchived: false }
+    
+    if (countryFilter) {
+      whereCondition.country = countryFilter
+    }
+    
+    if (pageFilterParam) {
+      // تنظيف اسم الصفحة
+      const cleanPage = pageFilterParam.trim().toLowerCase().replace(/^\/+/, '')
+      whereCondition.targetPage = {
+        contains: cleanPage,
+        mode: 'insensitive'
+      }
+    }
+    
+    if (campaignFilter) {
+      if (campaignFilter === 'No Campaign') {
+        whereCondition.utmCampaign = null
+      } else {
+        whereCondition.utmCampaign = campaignFilter
+      }
+    }
+    
+    if (dateFrom || dateTo) {
+      whereCondition.timestamp = {}
+      if (dateFrom) {
+        whereCondition.timestamp.gte = new Date(dateFrom)
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        whereCondition.timestamp.lte = toDate
+      }
+    }
+
+    // عد إجمالي الزيارات حسب الفلاتر
     const totalVisitsCount = await db.visit.count({
-      where: { isArchived: false }
+      where: whereCondition
     })
 
-    // جلب جميع الزيارات غير المؤرشفة للإحصائيات (آخر 1000 زيارة)
-    // ترتيب حسب ID فقط (الأكبر = الأحدث) - لتجنب مشاكل فروق التوقيت
+    // جلب جميع الزيارات حسب الفلاتر للإحصائيات
     const visits = await db.visit.findMany({
-      where: { isArchived: false },
-      orderBy: { id: 'desc' }, // الأحدث أولاً (ID الأكبر)
-      take: 1000
+      where: whereCondition,
+      orderBy: { id: 'desc' },
+      take: 1000 // للإحصائيات
     })
 
-    // جلب الزيارات للصفحة الحالية فقط مع ترتيب من الأحدث للأقدم
-    // الصفحة 1 = أحدث الزيارات، الصفحة 2 = زيارات أقدم، وهكذا
+    // جلب الزيارات للصفحة الحالية حسب الفلاتر
     const paginatedVisits = await db.visit.findMany({
-      where: { isArchived: false },
-      orderBy: { id: 'desc' }, // الأحدث أولاً (ID الأكبر)
+      where: whereCondition,
+      orderBy: { id: 'desc' },
       skip,
       take: limit
     })
@@ -105,9 +146,51 @@ export async function GET(request: NextRequest) {
       return acc
     }, {} as Record<string, number>)
 
-    // عدد الزيارات من كل مصدر
+    // عدد الزيارات من كل مصدر - بدقة 100%
     const sourceStats = visits.reduce((acc, visit) => {
-      const source = visit.utmSource || (visit.isGoogle ? 'Google' : 'Direct')
+      let source = 'Direct' // القيمة الافتراضية
+      
+      // الأولوية 1: فحص معرفات الإعلانات (أدق طريقة)
+      if (visit.gclid) {
+        source = 'Google Ads'
+      } else if (visit.fbclid) {
+        source = 'Facebook Ads'
+      } else if (visit.msclkid) {
+        source = 'Microsoft Ads'
+      } else if (visit.ttclid) {
+        source = 'TikTok Ads'
+      }
+      // الأولوية 2: فحص utmSource (إذا وُجد)
+      else if (visit.utmSource) {
+        source = visit.utmSource
+      }
+      // الأولوية 3: فحص isGoogle flag
+      else if (visit.isGoogle) {
+        source = 'Google Organic'
+      }
+      // الأولوية 4: فحص referer إذا كان موجود
+      else if (visit.referer && visit.referer.trim() !== '') {
+        const refLower = visit.referer.toLowerCase()
+        if (refLower.includes('google')) source = 'Google'
+        else if (refLower.includes('facebook')) source = 'Facebook'
+        else if (refLower.includes('instagram')) source = 'Instagram'
+        else if (refLower.includes('tiktok')) source = 'TikTok'
+        else if (refLower.includes('youtube')) source = 'YouTube'
+        else if (refLower.includes('twitter') || refLower.includes('t.co')) source = 'Twitter'
+        else source = 'Referral'
+      }
+      
+      // Log للتأكد من دقة البيانات (مؤقت للتشخيص)
+      // 🔕 تم إيقاف الـ log - يمكن تفعيله للتشخيص
+      // if (source === 'Twitter' || (visit.utmSource && visit.utmSource.toLowerCase().includes('twitter'))) {
+      //   console.log('⚠️ Twitter Visit Detected:', {
+      //     utmSource: visit.utmSource,
+      //     referer: visit.referer,
+      //     utmCampaign: visit.utmCampaign,
+      //     id: visit.id
+      //   })
+      // }
+      
       acc[source] = (acc[source] || 0) + 1
       return acc
     }, {} as Record<string, number>)
@@ -137,23 +220,81 @@ export async function GET(request: NextRequest) {
     const salesPages = ['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7', 'sales8', 'sales9', 'sales10', 'sales11']
     
     const visitStats = salesPages.map(pageId => {
-      const pageVisits = visits.filter(v => v.targetPage.trim().toLowerCase() === pageId)
+      // تنظيف targetPage للمقارنة - إزالة / من البداية والمسافات
+      const pageVisits = visits.filter(v => {
+        const cleanTarget = v.targetPage.trim().toLowerCase().replace(/^\/+/, '')
+        return cleanTarget === pageId
+      })
       
-      // حساب المصادر
+      // حساب المصادر بدقة 100% - باستخدام نفس منطق sourceStats
       const sources = {
-        google: pageVisits.filter(v => v.isGoogle).length,
-        facebook: pageVisits.filter(v => v.utmSource?.toLowerCase().includes('facebook')).length,
-        instagram: pageVisits.filter(v => v.utmSource?.toLowerCase().includes('instagram')).length,
-        tiktok: pageVisits.filter(v => v.utmSource?.toLowerCase().includes('tiktok')).length,
-        youtube: pageVisits.filter(v => v.utmSource?.toLowerCase().includes('youtube')).length,
-        twitter: pageVisits.filter(v => v.utmSource?.toLowerCase().includes('twitter')).length,
-        direct: pageVisits.filter(v => !v.utmSource && !v.isGoogle && (!v.referer || v.referer === '')).length,
+        google: 0,
+        facebook: 0,
+        instagram: 0,
+        tiktok: 0,
+        youtube: 0,
+        twitter: 0,
+        direct: 0,
         other: 0
       }
       
-      // حساب "other" (الباقي)
-      const knownSources = sources.google + sources.facebook + sources.instagram + sources.tiktok + sources.youtube + sources.twitter + sources.direct
-      sources.other = pageVisits.length - knownSources
+      pageVisits.forEach(visit => {
+        // استخدام نفس المنطق الدقيق من sourceStats
+        // فحص معرفات الإعلانات
+        if (visit.gclid) {
+          sources.google++
+        } else if (visit.fbclid) {
+          sources.facebook++
+        } else if (visit.ttclid) {
+          sources.tiktok++
+        }
+        // فحص utmSource
+        else if (visit.utmSource) {
+          const sourceLower = visit.utmSource.toLowerCase()
+          if (sourceLower.includes('google')) {
+            sources.google++
+          } else if (sourceLower.includes('facebook')) {
+            sources.facebook++
+          } else if (sourceLower.includes('instagram')) {
+            sources.instagram++
+          } else if (sourceLower.includes('tiktok')) {
+            sources.tiktok++
+          } else if (sourceLower.includes('youtube')) {
+            sources.youtube++
+          } else if (sourceLower.includes('twitter')) {
+            sources.twitter++
+          } else {
+            sources.other++
+          }
+        }
+        // فحص isGoogle flag
+        else if (visit.isGoogle) {
+          sources.google++
+        }
+        // فحص referer
+        else if (visit.referer && visit.referer.trim() !== '') {
+          const refLower = visit.referer.toLowerCase()
+          if (refLower.includes('google')) {
+            sources.google++
+          } else if (refLower.includes('facebook')) {
+            sources.facebook++
+          } else if (refLower.includes('instagram')) {
+            sources.instagram++
+          } else if (refLower.includes('tiktok')) {
+            sources.tiktok++
+          } else if (refLower.includes('youtube')) {
+            sources.youtube++
+          } else if (refLower.includes('twitter') || refLower.includes('t.co')) {
+            sources.twitter++
+          } else {
+            sources.other++
+          }
+        }
+        // Direct (لا يوجد أي مصدر)
+        else {
+          sources.direct++
+        }
+      })
       
       // الزيارات اليوم
       const todayVisits = pageVisits.filter(v => new Date(v.timestamp) >= today).length
@@ -192,6 +333,34 @@ export async function GET(request: NextRequest) {
       country: (visit.country || 'Unknown').trim()
     }))
 
+    // جلب جميع الخيارات المتاحة للفلاتر (بدون فلتر) لعرضها في القوائم المنسدلة
+    const allVisitsForFilters = await db.visit.findMany({
+      where: { isArchived: false },
+      select: {
+        country: true,
+        targetPage: true,
+        utmCampaign: true
+      }
+    })
+
+    // بناء قوائم الفلاتر من جميع البيانات
+    const allCountries = Array.from(new Set(
+      allVisitsForFilters
+        .map(v => (v.country || 'Unknown').trim())
+        .filter(c => c && c !== '')
+    )).sort()
+
+    const allPages = Array.from(new Set(
+      allVisitsForFilters
+        .map(v => v.targetPage.trim().toLowerCase().replace(/^\/+/, ''))
+        .filter(p => p && p !== '')
+    )).sort()
+
+    const allCampaigns = Array.from(new Set(
+      allVisitsForFilters
+        .map(v => v.utmCampaign || 'No Campaign')
+    )).sort()
+
     return NextResponse.json({
       success: true,
       summary: {
@@ -206,6 +375,12 @@ export async function GET(request: NextRequest) {
       countryStats,
       sourceStats,
       campaignStats,
+      // قوائم الفلاتر من جميع البيانات
+      filterOptions: {
+        countries: allCountries,
+        pages: allPages,
+        campaigns: allCampaigns
+      },
       recentVisits: cleanedRecentVisits, // الزيارات المقسمة حسب الصفحة بعد التنظيف
       pagination: {
         currentPage: page,

@@ -720,19 +720,34 @@ export default function DistributionPage() {
                   <tfoot className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20">
                     <tr className="border-t-2 border-green-300 dark:border-green-600 font-bold">
                       <td className="py-4 px-4 text-gray-800 dark:text-gray-200">
-                        <div className="flex items-center gap-2">
-                          <BarChart3 className="h-5 w-5 text-green-600" />
-                          <span>الإجمالي</span>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <BarChart3 className="h-5 w-5 text-green-600" />
+                            <span>الإجمالي</span>
+                          </div>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 font-normal">
+                            ({rules.filter(r => r.isActive && ((r.googleWeight > 0) || (r.otherWeight > 0))).length} صفحة نشطة)
+                          </span>
                         </div>
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                          {rules.filter(r => r.isActive).reduce((sum, r) => sum + r.googleWeight, 0).toFixed(2)}%
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            {rules.filter(r => r.isActive).reduce((sum, r) => sum + r.googleWeight, 0).toFixed(2)}%
+                          </div>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 font-normal">
+                            ({rules.filter(r => r.isActive && r.googleWeight > 0).length} صفحة تستقبل)
+                          </span>
                         </div>
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                          {rules.filter(r => r.isActive).reduce((sum, r) => sum + r.otherWeight, 0).toFixed(2)}%
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            {rules.filter(r => r.isActive).reduce((sum, r) => sum + r.otherWeight, 0).toFixed(2)}%
+                          </div>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 font-normal">
+                            ({rules.filter(r => r.isActive && r.otherWeight > 0).length} صفحة تستقبل)
+                          </span>
                         </div>
                       </td>
                       <td className="py-4 px-4 text-center">
@@ -749,48 +764,179 @@ export default function DistributionPage() {
                 </table>
               </div>
 
-              {/* ملاحظات هامة */}
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-                  <div className="flex items-start gap-2 text-sm">
-                    <Info className="h-5 w-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-blue-800 dark:text-blue-300">ℹ️ ملاحظة</p>
-                      <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
-                        المجموع ليس مطلوب أن يكون 100%. يمكنك تحديد أي نسب تريدها للتوزيع حسب احتياجاتك.
-                      </p>
+              {/* ملاحظات هامة - محسّنة */}
+              <div className="mt-4 space-y-3 mb-4">
+                {/* شرح آلية التوزيع */}
+                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border-2 border-green-300 dark:border-green-700">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-green-500 rounded-lg">
+                      <Info className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-green-900 dark:text-green-200 mb-3 text-base">✅ كيف يعمل التوزيع بالضبط؟</p>
+                      <div className="space-y-2 text-xs text-green-800 dark:text-green-300">
+                        <div className="flex items-start gap-2">
+                          <span className="font-bold min-w-[20px]">1️⃣</span>
+                          <span>النظام يوزع حسب <strong>النسب النسبية</strong> للأوزان المدخلة</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="font-bold min-w-[20px]">2️⃣</span>
+                          <div className="flex-1">
+                            <p className="font-semibold mb-1">أمثلة عملية:</p>
+                            <div className="space-y-1 bg-white/30 dark:bg-black/20 p-2 rounded">
+                              <p>• إذا أدخلت: <code className="bg-white/50 dark:bg-gray-700 px-1 rounded">20, 30, 50</code></p>
+                              <p className="pr-4">→ التوزيع: <strong>20%, 30%, 50%</strong> (بالضبط)</p>
+                              
+                              <p className="mt-1">• إذا أدخلت: <code className="bg-white/50 dark:bg-gray-700 px-1 rounded">10, 10, 10</code></p>
+                              <p className="pr-4">→ التوزيع: <strong>33.33%, 33.33%, 33.33%</strong></p>
+                              
+                              <p className="mt-1">• إذا أدخلت: <code className="bg-white/50 dark:bg-gray-700 px-1 rounded">5, 15</code></p>
+                              <p className="pr-4">→ التوزيع: <strong>25%, 75%</strong></p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="font-bold min-w-[20px]">3️⃣</span>
+                          <span>المجموع <strong>ليس مطلوب</strong> أن يكون 100% - النظام يحسب النسب النسبية تلقائياً</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="font-bold min-w-[20px]">4️⃣</span>
+                          <span>الصفحات بوزن 0 أو المعطلة <strong>لن تظهر في التوزيع نهائياً</strong></span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
-                  <div className="flex items-start gap-2 text-sm">
-                    <Target className="h-5 w-5 text-red-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-red-800 dark:text-red-300">🚫 تعطيل الصفحة</p>
-                      <p className="text-xs text-red-700 dark:text-red-400 mt-1">
-                        إذا كتبت <code className="bg-white/50 px-1 rounded font-bold">0</code> لأي صفحة، لن تحصل على أي زيارات من نظام التوزيع.
-                      </p>
+
+                {/* التعطيل والصفر */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="p-4 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 rounded-lg border-2 border-red-300 dark:border-red-700">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-red-500 rounded-lg">
+                        <Target className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-red-900 dark:text-red-200 mb-2">🚫 إذا كتبت 0</p>
+                        <p className="text-xs text-red-800 dark:text-red-300">
+                          الصفحة <strong>لن تظهر في التوزيع إطلاقاً</strong> = لن تحصل على أي زيارات من <code className="bg-white/50 px-1 rounded">/sales</code>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-lg border-2 border-orange-300 dark:border-orange-700">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-orange-500 rounded-lg">
+                        <Activity className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-orange-900 dark:text-orange-200 mb-2">⚠️ إذا عملت تعطيل</p>
+                        <p className="text-xs text-orange-800 dark:text-orange-300">
+                          الصفحة <strong>ستُستثنى من التوزيع</strong> حتى لو كان لها وزن {'>'} 0
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
-                  <div className="flex items-start gap-2 text-sm">
-                    <Eye className="h-5 w-5 text-yellow-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-yellow-800 dark:text-yellow-300">📍 كيف تتأكد من التطبيق؟</p>
-                      <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
-                        افتح <code className="bg-white/50 px-1 rounded">/sales</code> في متصفح خاص عدة مرات لترى التوزيع حسب الأوزان المحددة.
-                      </p>
+
+                {/* التحقق من التطبيق */}
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg border-2 border-purple-300 dark:border-purple-700">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-purple-500 rounded-lg">
+                      <Eye className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-purple-900 dark:text-purple-200 mb-2">🧪 كيف تتحقق من التطبيق؟</p>
+                      <div className="space-y-1 text-xs text-purple-800 dark:text-purple-300">
+                        <p>1. افتح <code className="bg-white/50 px-1.5 py-0.5 rounded font-mono font-bold">{typeof window !== 'undefined' ? window.location.origin : ''}/sales</code> في متصفح خاص (Incognito)</p>
+                        <p>2. أعد تحميل الصفحة عدة مرات (10-20 مرة)</p>
+                        <p>3. ستجد التوزيع يتبع النسب المحددة بدقة</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 flex gap-3">
+              {/* معاينة التوزيع الفعلي */}
+              <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border-2 border-blue-300 dark:border-blue-700">
+                <h3 className="font-bold text-blue-900 dark:text-blue-200 mb-3 flex items-center gap-2">
+                  <Percent className="h-5 w-5" />
+                  معاينة التوزيع الفعلي (حسب الأوزان المدخلة)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Google Distribution */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">📊 توزيع Google:</p>
+                    {(() => {
+                      const googleActive = rules.filter(r => r.isActive && r.googleWeight > 0)
+                      const googleTotal = googleActive.reduce((s, r) => s + r.googleWeight, 0)
+                      return googleActive.length > 0 ? (
+                        <div className="space-y-1">
+                          {googleActive.map(rule => {
+                            const actualPercent = ((rule.googleWeight / googleTotal) * 100).toFixed(2)
+                            return (
+                              <div key={rule.path} className="flex items-center gap-2 text-xs">
+                                <span className="font-mono font-semibold min-w-[60px] text-blue-700 dark:text-blue-400">{rule.path}</span>
+                                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                                  <div 
+                                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-full flex items-center justify-end pr-1 transition-all duration-300"
+                                    style={{ width: `${actualPercent}%` }}
+                                  >
+                                    <span className="text-[10px] font-bold text-white">{actualPercent}%</span>
+                                  </div>
+                                </div>
+                                <span className="text-[10px] text-gray-600 dark:text-gray-400">({rule.googleWeight})</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-red-600 dark:text-red-400">⚠️ لا توجد صفحات نشطة</p>
+                      )
+                    })()}
+                  </div>
+                  
+                  {/* Other Distribution */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-green-800 dark:text-green-300">🌍 توزيع Other:</p>
+                    {(() => {
+                      const otherActive = rules.filter(r => r.isActive && r.otherWeight > 0)
+                      const otherTotal = otherActive.reduce((s, r) => s + r.otherWeight, 0)
+                      return otherActive.length > 0 ? (
+                        <div className="space-y-1">
+                          {otherActive.map(rule => {
+                            const actualPercent = ((rule.otherWeight / otherTotal) * 100).toFixed(2)
+                            return (
+                              <div key={rule.path} className="flex items-center gap-2 text-xs">
+                                <span className="font-mono font-semibold min-w-[60px] text-green-700 dark:text-green-400">{rule.path}</span>
+                                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                                  <div 
+                                    className="bg-gradient-to-r from-green-500 to-green-600 h-full flex items-center justify-end pr-1 transition-all duration-300"
+                                    style={{ width: `${actualPercent}%` }}
+                                  >
+                                    <span className="text-[10px] font-bold text-white">{actualPercent}%</span>
+                                  </div>
+                                </div>
+                                <span className="text-[10px] text-gray-600 dark:text-gray-400">({rule.otherWeight})</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-red-600 dark:text-red-400">⚠️ لا توجد صفحات نشطة</p>
+                      )
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={async () => {
                     try {
-                      const loadingToast = toast.loading('جاري الحفظ...')
+                      // عرض عدد الصفحات النشطة
+                      const activePages = rules.filter(r => r.isActive && ((r.googleWeight > 0) || (r.otherWeight > 0)))
+                      const loadingToast = toast.loading(`جاري حفظ القواعد... (${activePages.length} صفحة نشطة)`)
                       
                       const res = await fetch('/api/distribution/rules', {
                         method: 'POST',
@@ -803,7 +949,13 @@ export default function DistributionPage() {
                       toast.dismiss(loadingToast)
                       
                       if (data.success) {
-                        toast.success('✅ تم الحفظ! القواعد نشطة الآن في /sales', { duration: 4000 })
+                        // رسالة تفصيلية
+                        const googlePages = rules.filter(r => r.isActive && r.googleWeight > 0).length
+                        const otherPages = rules.filter(r => r.isActive && r.otherWeight > 0).length
+                        toast.success(
+                          `✅ تم الحفظ بنجاح!\n📊 Google: ${googlePages} صفحة\n🌍 Other: ${otherPages} صفحة\n🚀 القواعد نشطة في /sales`, 
+                          { duration: 6000 }
+                        )
                         // إعادة جلب القواعد للتأكيد
                         await fetchDistributionRules()
                       } else {
@@ -814,10 +966,10 @@ export default function DistributionPage() {
                       toast.error('حدث خطأ أثناء الحفظ')
                     }
                   }}
-                  className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all flex items-center gap-2"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl font-semibold"
                 >
-                  <Save className="h-4 w-4" />
-                  حفظ التغييرات
+                  <Save className="h-5 w-5" />
+                  <span>حفظ التغييرات وتطبيقها فوراً</span>
                 </button>
                 <button
                   onClick={() => {
