@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { 
   Eye, Globe, MousePointerClick, TrendingUp, MapPin, 
   Calendar, Link as LinkIcon, RefreshCw, Users, BarChart3,
@@ -77,12 +77,26 @@ export default function VisitsReportPage() {
   
   // Export state
   const [exporting, setExporting] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
 
+  // استخدام useRef لتخزين current values دون إعادة render
+  const currentPageRef = useRef(currentPage)
+  const itemsPerPageRef = useRef(itemsPerPage)
+  
+  // تحديث الـ refs عند تغيير القيم
+  useEffect(() => {
+    currentPageRef.current = currentPage
+  }, [currentPage])
+  
+  useEffect(() => {
+    itemsPerPageRef.current = itemsPerPage
+  }, [itemsPerPage])
+  
   const fetchStats = useCallback(async (page: number, resetToFirstPage = false) => {
     try {
       // إذا كان resetToFirstPage = true، نرجع للصفحة الأولى
       const targetPage = resetToFirstPage ? 1 : page
-      const res = await fetch(`/api/visits/stats?page=${targetPage}&limit=${itemsPerPage}`)
+      const res = await fetch(`/api/visits/stats?page=${targetPage}&limit=${itemsPerPageRef.current}`)
       const data = await res.json()
       if (data.success) {
         // تأكيد الترتيب من API (الأحدث أولاً)
@@ -101,20 +115,22 @@ export default function VisitsReportPage() {
         
         setStats(data)
         // فقط حدث currentPage إذا كانت مختلفة لتجنب re-render غير ضروري
-        setCurrentPage(prev => prev !== targetPage ? targetPage : prev)
+        if (targetPage !== currentPageRef.current) {
+          setCurrentPage(targetPage)
+        }
       }
     } catch (error) {
       console.error('Error fetching stats:', error)
     } finally {
       setLoading(false)
+      setIsNavigating(false)
     }
-  }, [itemsPerPage])
+  }, [])
 
   // تطبيق الفلاتر على الزيارات (البيانات تأتي مرتبة من API)
   const filteredVisits = useMemo(() => {
     if (!stats) return []
     
-    // الفلترة فقط، الترتيب يأتي من API
     const filtered = stats.recentVisits.filter(visit => {
       // فلتر الدولة (مع تنظيف للتأكد من التطابق)
       if (countryFilter !== 'ALL') {
@@ -401,17 +417,21 @@ export default function VisitsReportPage() {
     }
   }
   
+  // Initial load and page changes
   useEffect(() => {
     fetchStats(currentPage)
-    
+  }, [currentPage, itemsPerPage, fetchStats])
+  
+  // Auto refresh effect - منفصل لتجنب التداخل
+  useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
         // في التحديث التلقائي، نبقى في نفس الصفحة لكن نتحقق من الزيارات الجديدة
-        fetchStats(currentPage, false)
+        fetchStats(currentPageRef.current, false)
       }, 5000) // تحديث كل 5 ثواني
       return () => clearInterval(interval)
     }
-  }, [autoRefresh, currentPage, itemsPerPage, fetchStats])
+  }, [autoRefresh, fetchStats])
 
   if (loading || !stats) {
     return (
@@ -898,8 +918,13 @@ export default function VisitsReportPage() {
                 <div className="flex items-center gap-2">
                   {/* زر السابق */}
                   <button
-                    onClick={() => fetchStats(currentPage - 1)}
-                    disabled={!stats.pagination.hasPreviousPage}
+                    onClick={() => {
+                      if (!isNavigating && stats.pagination.hasPreviousPage) {
+                        setIsNavigating(true)
+                        fetchStats(currentPage - 1)
+                      }
+                    }}
+                    disabled={!stats.pagination.hasPreviousPage || isNavigating}
                     className="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -923,11 +948,17 @@ export default function VisitsReportPage() {
                       return (
                         <button
                           key={pageNum}
-                          onClick={() => fetchStats(pageNum)}
+                          onClick={() => {
+                            if (!isNavigating && pageNum !== currentPage) {
+                              setIsNavigating(true)
+                              fetchStats(pageNum)
+                            }
+                          }}
+                          disabled={isNavigating}
                           className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
                             currentPage === pageNum
                               ? 'bg-blue-500 text-white shadow-lg'
-                              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50'
                           }`}
                         >
                           {pageNum}
@@ -939,8 +970,14 @@ export default function VisitsReportPage() {
                       <>
                         <span className="px-2 text-gray-500">...</span>
                         <button
-                          onClick={() => fetchStats(stats.pagination.totalPages)}
-                          className="w-10 h-10 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                          onClick={() => {
+                            if (!isNavigating && stats.pagination.totalPages !== currentPage) {
+                              setIsNavigating(true)
+                              fetchStats(stats.pagination.totalPages)
+                            }
+                          }}
+                          disabled={isNavigating}
+                          className="w-10 h-10 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50"
                         >
                           {stats.pagination.totalPages}
                         </button>
@@ -950,8 +987,13 @@ export default function VisitsReportPage() {
                   
                   {/* زر التالي */}
                   <button
-                    onClick={() => fetchStats(currentPage + 1)}
-                    disabled={!stats.pagination.hasNextPage}
+                    onClick={() => {
+                      if (!isNavigating && stats.pagination.hasNextPage) {
+                        setIsNavigating(true)
+                        fetchStats(currentPage + 1)
+                      }
+                    }}
+                    disabled={!stats.pagination.hasNextPage || isNavigating}
                     className="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
                   >
                     التالي
