@@ -152,13 +152,25 @@ export default function SalesRedirectPage() {
     const target = pickWeighted(table, randomValue).path
     console.log('🎯 Selected:', target, '(Source:', isFromGoogle ? 'Google' : 'Other', ')')
 
-    // استخراج UTM parameters
+    // استخراج UTM parameters ومعرفات الحملات الإعلانية
     const urlParams = new URLSearchParams(window.location.search)
     const utmSource = urlParams.get('utm_source')
     const utmMedium = urlParams.get('utm_medium')
     const utmCampaign = urlParams.get('utm_campaign')
+    
+    // معرفات الحملات الإعلانية
+    const gclid = urlParams.get('gclid')        // Google Ads
+    const fbclid = urlParams.get('fbclid')      // Facebook Ads
+    const msclkid = urlParams.get('msclkid')    // Microsoft/Bing Ads
+    const ttclid = urlParams.get('ttclid')      // TikTok Ads
 
-    // تسجيل الزيارة
+    // معلومات الجهاز والشاشة
+    const screenWidth = window.screen.width
+    const screenHeight = window.screen.height
+    const language = navigator.language
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+    // تسجيل الزيارة مع جميع المعلومات
     fetch('/api/visits/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -168,8 +180,16 @@ export default function SalesRedirectPage() {
         utmSource,
         utmMedium,
         utmCampaign,
+        gclid,
+        fbclid,
+        msclkid,
+        ttclid,
         isGoogle: isGoogleRef(referer),
-        userAgent: navigator.userAgent
+        userAgent: navigator.userAgent,
+        screenWidth,
+        screenHeight,
+        language,
+        timezone
       })
     }).catch(err => console.log('Track error:', err))
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { parseUserAgent } from '@/lib/user-agent-parser'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +12,15 @@ export async function POST(request: NextRequest) {
       utmMedium,
       utmCampaign,
       isGoogle,
-      userAgent
+      userAgent,
+      gclid,
+      fbclid,
+      msclkid,
+      ttclid,
+      screenWidth,
+      screenHeight,
+      language,
+      timezone
     } = body
 
     // الحصول على IP من headers
@@ -114,7 +123,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // حفظ الزيارة في قاعدة البيانات مع التوقيت الحالي
+    // تحليل User Agent للحصول على معلومات الجهاز والمتصفح
+    const deviceInfo = userAgent ? parseUserAgent(userAgent) : null
+    
+    // إذا كان هناك gclid، نفترض أن المصدر Google Ads
+    const finalUtmSource = gclid && !utmSource ? 'google-ads' : utmSource
+    const finalUtmCampaign = gclid && !utmCampaign ? gclid : utmCampaign
+    
+    // حفظ الزيارة في قاعدة البيانات مع جميع المعلومات
     const currentTimestamp = new Date()
     const visit = await db.visit.create({
       data: {
@@ -123,12 +139,28 @@ export async function POST(request: NextRequest) {
         city,
         userAgent,
         referer,
-        utmSource,
+        utmSource: finalUtmSource,
         utmMedium,
-        utmCampaign,
+        utmCampaign: finalUtmCampaign,
         targetPage,
         isGoogle,
-        timestamp: currentTimestamp // تحديد التوقيت بشكل صريح
+        timestamp: currentTimestamp,
+        // معرفات الحملات الإعلانية
+        gclid,
+        fbclid,
+        msclkid,
+        ttclid,
+        // معلومات الجهاز والمتصفح
+        device: deviceInfo?.device,
+        browser: deviceInfo?.browser,
+        os: deviceInfo?.os,
+        browserVersion: deviceInfo?.browserVersion,
+        osVersion: deviceInfo?.osVersion,
+        // معلومات إضافية
+        screenWidth,
+        screenHeight,
+        language,
+        timezone
       }
     })
 

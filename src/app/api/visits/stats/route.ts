@@ -53,16 +53,55 @@ export async function GET(request: NextRequest) {
     // إحصائيات عامة
     const totalVisits = visits.length
     
-    // عدد الزيارات لكل صفحة
-    const pageStats = visits.reduce((acc, visit) => {
-      acc[visit.targetPage] = (acc[visit.targetPage] || 0) + 1
+    // عدد الزيارات لكل صفحة (مع تنظيف ودمج أسماء الصفحات المكررة)
+    const pageStatsRaw = visits.reduce((acc, visit) => {
+      // تنظيف اسم الصفحة: إزالة / من البداية، المسافات، وتحويل لأحرف صغيرة
+      const cleanPage = visit.targetPage.trim().toLowerCase().replace(/^\/+/, '')
+      acc[cleanPage] = (acc[cleanPage] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    
+    // دمج الصفحات المتشابهة (sales1, Sales1, SALES1، إلخ)
+    const pageStats = Object.entries(pageStatsRaw).reduce((acc, [page, count]) => {
+      // البحث عن مفتاح موجود بنفس الاسم (بعد التنظيف)
+      const normalizedPage = page.trim().toLowerCase()
+      const existingKey = Object.keys(acc).find(key => key.toLowerCase() === normalizedPage)
+      
+      if (existingKey) {
+        // إذا وجدنا مفتاح مطابق، نضيف العدد إليه
+        acc[existingKey] += count
+      } else {
+        // إذا لم نجد، نضيف المفتاح الجديد
+        acc[normalizedPage] = count
+      }
+      
       return acc
     }, {} as Record<string, number>)
 
-    // عدد الزيارات لكل دولة
-    const countryStats = visits.reduce((acc, visit) => {
-      const country = visit.country || 'Unknown'
+    // عدد الزيارات لكل دولة (مع تنظيف ودمج أسماء الدول المكررة)
+    const countryStatsRaw = visits.reduce((acc, visit) => {
+      // تنظيف اسم الدولة: إزالة المسافات الزائدة
+      const country = (visit.country || 'Unknown').trim()
       acc[country] = (acc[country] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    
+    // دمج الدول المتشابهة (مع اختلافات في الحالة أو المسافات)
+    const countryStats = Object.entries(countryStatsRaw).reduce((acc, [country, count]) => {
+      // البحث عن مفتاح موجود بنفس الاسم (بعد التنظيف)
+      const normalizedCountry = country.trim()
+      const existingKey = Object.keys(acc).find(key => 
+        key.trim().toLowerCase() === normalizedCountry.toLowerCase()
+      )
+      
+      if (existingKey) {
+        // إذا وجدنا مفتاح مطابق، نضيف العدد إليه
+        acc[existingKey] += count
+      } else {
+        // إذا لم نجد، نضيف المفتاح الجديد
+        acc[normalizedCountry] = count
+      }
+      
       return acc
     }, {} as Record<string, number>)
 
@@ -98,7 +137,7 @@ export async function GET(request: NextRequest) {
     const salesPages = ['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7', 'sales8', 'sales9', 'sales10', 'sales11']
     
     const visitStats = salesPages.map(pageId => {
-      const pageVisits = visits.filter(v => v.targetPage === pageId)
+      const pageVisits = visits.filter(v => v.targetPage.trim().toLowerCase() === pageId)
       
       // حساب المصادر
       const sources = {
@@ -146,6 +185,13 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // تنظيف البيانات المرسلة: تنظيف targetPage في recentVisits
+    const cleanedRecentVisits = paginatedVisits.map(visit => ({
+      ...visit,
+      targetPage: visit.targetPage.trim().toLowerCase().replace(/^\/+/, ''),
+      country: (visit.country || 'Unknown').trim()
+    }))
+
     return NextResponse.json({
       success: true,
       summary: {
@@ -160,7 +206,7 @@ export async function GET(request: NextRequest) {
       countryStats,
       sourceStats,
       campaignStats,
-      recentVisits: paginatedVisits, // الزيارات المقسمة حسب الصفحة
+      recentVisits: cleanedRecentVisits, // الزيارات المقسمة حسب الصفحة بعد التنظيف
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(totalVisitsCount / limit),

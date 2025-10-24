@@ -21,6 +21,12 @@ interface Visit {
   utmCampaign: string | null
   isGoogle: boolean
   timestamp: string
+  gclid: string | null
+  fbclid: string | null
+  device: string | null
+  browser: string | null
+  os: string | null
+  language: string | null
 }
 
 interface Pagination {
@@ -72,22 +78,13 @@ export default function VisitsReportPage() {
   // Export state
   const [exporting, setExporting] = useState(false)
 
-  const fetchStats = useCallback(async (page = currentPage, resetToFirstPage = false) => {
+  const fetchStats = useCallback(async (page: number, resetToFirstPage = false) => {
     try {
       // إذا كان resetToFirstPage = true، نرجع للصفحة الأولى
       const targetPage = resetToFirstPage ? 1 : page
       const res = await fetch(`/api/visits/stats?page=${targetPage}&limit=${itemsPerPage}`)
       const data = await res.json()
       if (data.success) {
-        // إذا كانت هناك زيارات جديدة وليس في الصفحة الأولى، أظهر إشعار
-        if (stats && !resetToFirstPage && currentPage !== 1 && data.pagination.totalItems > stats.pagination.totalItems) {
-          const newVisitsCount = data.pagination.totalItems - stats.pagination.totalItems
-          toast.success(`🆕 ${newVisitsCount} زيارة جديدة! اضغط "أحدث الزيارات" لعرضها`, {
-            duration: 6000,
-            icon: '🔔'
-          })
-        }
-        
         // تأكيد الترتيب من API (الأحدث أولاً)
         if (data.recentVisits && data.recentVisits.length > 0) {
           console.log('أول زيارة (يجب أن تكون الأحدث):', {
@@ -103,14 +100,15 @@ export default function VisitsReportPage() {
         }
         
         setStats(data)
-        setCurrentPage(targetPage)
+        // فقط حدث currentPage إذا كانت مختلفة لتجنب re-render غير ضروري
+        setCurrentPage(prev => prev !== targetPage ? targetPage : prev)
       }
     } catch (error) {
       console.error('Error fetching stats:', error)
     } finally {
       setLoading(false)
     }
-  }, [currentPage, itemsPerPage, stats])
+  }, [itemsPerPage])
 
   // تطبيق الفلاتر على الزيارات (البيانات تأتي مرتبة من API)
   const filteredVisits = useMemo(() => {
@@ -118,14 +116,20 @@ export default function VisitsReportPage() {
     
     // الفلترة فقط، الترتيب يأتي من API
     const filtered = stats.recentVisits.filter(visit => {
-      // فلتر الدولة
-      if (countryFilter !== 'ALL' && visit.country !== countryFilter) {
-        return false
+      // فلتر الدولة (مع تنظيف للتأكد من التطابق)
+      if (countryFilter !== 'ALL') {
+        const visitCountry = (visit.country || 'Unknown').trim()
+        if (visitCountry !== countryFilter) {
+          return false
+        }
       }
       
-      // فلتر الصفحة
-      if (pageFilter !== 'ALL' && visit.targetPage !== pageFilter) {
-        return false
+      // فلتر الصفحة (مع تنظيف شامل للتأكد من التطابق)
+      if (pageFilter !== 'ALL') {
+        const visitPage = visit.targetPage.trim().toLowerCase().replace(/^\/+/, '')
+        if (visitPage !== pageFilter) {
+          return false
+        }
       }
       
       // فلتر التاريخ
@@ -159,20 +163,41 @@ export default function VisitsReportPage() {
     })
   }, [stats, countryFilter, pageFilter, dateFrom, dateTo])
   
-  // الحصول على قائمة الدول الفريدة
+  // الحصول على قائمة الدول الفريدة من الإحصائيات الكلية
   const uniqueCountries = useMemo(() => {
     if (!stats) return []
-    const countries = stats.recentVisits
-      .map(v => v.country)
-      .filter((c): c is string => c !== null && c !== 'Unknown')
-    return Array.from(new Set(countries)).sort()
+    // استخدام Set لضمان عدم التكرار
+    const countriesSet = new Set<string>()
+    
+    // جمع جميع أسماء الدول من countryStats
+    Object.keys(stats.countryStats).forEach(country => {
+      const cleanCountry = country.trim()
+      if (cleanCountry && cleanCountry !== 'Unknown') {
+        countriesSet.add(cleanCountry)
+      }
+    })
+    
+    // تحويل Set إلى مصفوفة مرتبة
+    return Array.from(countriesSet).sort()
   }, [stats])
   
-  // الحصول على قائمة الصفحات الفريدة
+  // الحصول على قائمة الصفحات الفريدة من الإحصائيات الكلية
   const uniquePages = useMemo(() => {
     if (!stats) return []
-    const pages = stats.recentVisits.map(v => v.targetPage)
-    return Array.from(new Set(pages)).sort()
+    // استخدام Set لضمان عدم التكرار
+    const pagesSet = new Set<string>()
+    
+    // جمع جميع أسماء الصفحات من pageStats
+    Object.keys(stats.pageStats).forEach(page => {
+      // تنظيف شامل: إزالة / من البداية، المسافات، وتحويل لأحرف صغيرة
+      const cleanPage = page.trim().toLowerCase().replace(/^\/+/, '')
+      if (cleanPage) {
+        pagesSet.add(cleanPage)
+      }
+    })
+    
+    // تحويل Set إلى مصفوفة مرتبة
+    return Array.from(pagesSet).sort()
   }, [stats])
   
   // إعادة تعيين الفلاتر
@@ -244,7 +269,7 @@ export default function VisitsReportPage() {
         setTimeout(() => {
           setShowArchiveModal(false)
           setSelectedVisits([])
-          fetchStats()
+          fetchStats(currentPage)
           toast.success(data.message)
         }, 1500)
       } else {
@@ -358,7 +383,7 @@ export default function VisitsReportPage() {
         setTimeout(() => {
           setShowArchiveModal(false)
           setSelectedVisits([])
-          fetchStats()
+          fetchStats(currentPage)
           toast.success(data.message)
         }, 1500)
       } else {
@@ -496,14 +521,27 @@ export default function VisitsReportPage() {
                 الزيارات حسب الصفحة
               </h2>
               <div className="space-y-2">
-                {Object.entries(stats.pageStats)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([page, count]) => (
-                    <div key={page} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <span className="font-medium">{page}</span>
-                      <span className="text-blue-600 dark:text-blue-400 font-bold">{count}</span>
-                    </div>
-                  ))}
+                {(() => {
+                  // دمج الصفحات المكررة (حالة مختلفة و / في البداية)
+                  const mergedPages = new Map<string, number>()
+                  
+                  Object.entries(stats.pageStats).forEach(([page, count]) => {
+                    // تنظيف شامل: إزالة / من البداية، المسافات، وتحويل لأحرف صغيرة
+                    const normalizedPage = page.trim().toLowerCase().replace(/^\/+/, '')
+                    const currentCount = mergedPages.get(normalizedPage) || 0
+                    mergedPages.set(normalizedPage, currentCount + count)
+                  })
+                  
+                  // تحويل إلى مصفوفة وترتيب
+                  return Array.from(mergedPages.entries())
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([page, count]) => (
+                      <div key={page} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span className="font-medium">{page}</span>
+                        <span className="text-blue-600 dark:text-blue-400 font-bold">{count}</span>
+                      </div>
+                    ))
+                })()}
               </div>
             </div>
 
@@ -644,7 +682,7 @@ export default function VisitsReportPage() {
                   <option value="ALL">جميع الدول ({stats?.summary.totalVisits || 0})</option>
                   {uniqueCountries.map(country => (
                     <option key={country} value={country}>
-                      {country} ({stats?.recentVisits.filter(v => v.country === country).length})
+                      {country} ({stats?.countryStats[country] || 0})
                     </option>
                   ))}
                 </select>
@@ -661,11 +699,18 @@ export default function VisitsReportPage() {
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm"
                 >
                   <option value="ALL">جميع الصفحات ({stats?.summary.totalVisits || 0})</option>
-                  {uniquePages.map(page => (
-                    <option key={page} value={page}>
-                      {page} ({stats?.recentVisits.filter(v => v.targetPage === page).length})
-                    </option>
-                  ))}
+                  {uniquePages.map(page => {
+                    // جمع العدد من جميع النسخ المختلفة من نفس الصفحة (مع تنظيف شامل)
+                    const count = Object.entries(stats?.pageStats || {})
+                      .filter(([key]) => key.trim().toLowerCase().replace(/^\/+/, '') === page)
+                      .reduce((sum, [, value]) => sum + value, 0)
+                    
+                    return (
+                      <option key={page} value={page}>
+                        {page} ({count})
+                      </option>
+                    )
+                  })}
                 </select>
               </div>
               
@@ -713,6 +758,7 @@ export default function VisitsReportPage() {
                     <th className="text-right py-3 px-4">الدولة</th>
                     <th className="text-right py-3 px-4">المدينة</th>
                     <th className="text-right py-3 px-4">الصفحة</th>
+                    <th className="text-right py-3 px-4">الجهاز</th>
                     <th className="text-right py-3 px-4">المصدر</th>
                     <th className="text-right py-3 px-4">الحملة</th>
                   </tr>
@@ -720,7 +766,7 @@ export default function VisitsReportPage() {
                 <tbody>
                   {filteredVisits.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
                         <Filter className="h-12 w-12 mx-auto mb-2 opacity-50" />
                         <p>لا توجد زيارات تطابق الفلاتر المحددة</p>
                       </td>
@@ -777,6 +823,21 @@ export default function VisitsReportPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-medium">
+                            {visit.device === 'mobile' && '📱 Mobile'}
+                            {visit.device === 'tablet' && '📱 Tablet'}
+                            {visit.device === 'desktop' && '💻 Desktop'}
+                            {!visit.device && '-'}
+                          </span>
+                          {visit.browser && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {visit.browser} • {visit.os}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded text-xs ${
                           visit.isGoogle
                             ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
@@ -785,7 +846,26 @@ export default function VisitsReportPage() {
                           {visit.utmSource || (visit.isGoogle ? 'Google' : 'Direct')}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-xs">{visit.utmCampaign || '-'}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col gap-0.5">
+                          {visit.gclid && (
+                            <span className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded">
+                              🎯 Google Ads
+                            </span>
+                          )}
+                          {visit.fbclid && (
+                            <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+                              📘 Facebook Ads
+                            </span>
+                          )}
+                          {visit.utmCampaign && !visit.gclid && !visit.fbclid && (
+                            <span className="text-xs truncate max-w-[150px]" title={visit.utmCampaign}>
+                              {visit.utmCampaign}
+                            </span>
+                          )}
+                          {!visit.utmCampaign && !visit.gclid && !visit.fbclid && '-'}
+                        </div>
+                      </td>
                     </tr>
                   ))
                   )}

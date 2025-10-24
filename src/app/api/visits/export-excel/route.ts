@@ -35,11 +35,13 @@ export async function GET(request: NextRequest) {
     const where: any = { isArchived: false }
     
     if (country && country !== 'ALL') {
-      where.country = country
+      // تنظيف اسم الدولة للبحث
+      where.country = country.trim()
     }
     
     if (targetPage && targetPage !== 'ALL') {
-      where.targetPage = targetPage
+      // تنظيف اسم الصفحة للبحث
+      where.targetPage = targetPage.trim().toLowerCase()
     }
     
     if (dateFrom) {
@@ -72,7 +74,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // تحضير البيانات للإكسل
+    // تحضير البيانات للإكسل (مع تنظيف البيانات)
     const excelData = visits.map((visit, index) => ({
       '#': index + 1,
       'ID': visit.id,
@@ -88,9 +90,9 @@ export async function GET(request: NextRequest) {
         hour12: true
       }),
       'عنوان IP': visit.ipAddress,
-      'الدولة': visit.country || 'غير معروف',
+      'الدولة': (visit.country || 'غير معروف').trim(),
       'المدينة': visit.city || 'غير معروف',
-      'الصفحة المستهدفة': visit.targetPage,
+      'الصفحة المستهدفة': visit.targetPage.trim().toLowerCase(),
       'المصدر': visit.isGoogle ? 'Google' : (visit.utmSource || 'مباشر'),
       'الوسيط': visit.utmMedium || '-',
       'الحملة': visit.utmCampaign || '-',
@@ -165,10 +167,10 @@ export async function GET(request: NextRequest) {
     wsStats['!cols'] = [{ wch: 20 }, { wch: 12 }, { wch: 15 }]
     XLSX.utils.book_append_sheet(wb, wsStats, 'الإحصائيات')
 
-    // إضافة ورقة إحصائيات الدول
+    // إضافة ورقة إحصائيات الدول (مع تنظيف)
     const countryStats: Record<string, number> = {}
     visits.forEach(v => {
-      const country = v.country || 'Unknown'
+      const country = (v.country || 'Unknown').trim()
       countryStats[country] = (countryStats[country] || 0) + 1
     })
 
@@ -185,10 +187,11 @@ export async function GET(request: NextRequest) {
     wsCountry['!cols'] = [{ wch: 5 }, { wch: 20 }, { wch: 15 }, { wch: 12 }]
     XLSX.utils.book_append_sheet(wb, wsCountry, 'الدول')
 
-    // إضافة ورقة إحصائيات الصفحات
+    // إضافة ورقة إحصائيات الصفحات (مع تنظيف)
     const pageStats: Record<string, number> = {}
     visits.forEach(v => {
-      pageStats[v.targetPage] = (pageStats[v.targetPage] || 0) + 1
+      const page = v.targetPage.trim().toLowerCase()
+      pageStats[page] = (pageStats[page] || 0) + 1
     })
 
     const pageData = Object.entries(pageStats)

@@ -421,10 +421,32 @@ model Visit {
   archivedAt      DateTime?                 // تاريخ الأرشفة
   timestamp       DateTime @default(now())
   
+  // معلومات الحملات الإعلانية
+  gclid           String?  // Google Click ID
+  fbclid          String?  // Facebook Click ID
+  msclkid         String?  // Microsoft/Bing Click ID
+  ttclid          String?  // TikTok Click ID
+  
+  // معلومات الجهاز والمتصفح
+  device          String?  // mobile, desktop, tablet
+  browser         String?  // Chrome, Safari, Firefox, etc.
+  os              String?  // Windows, macOS, iOS, Android, etc.
+  browserVersion  String?  // إصدار المتصفح
+  osVersion       String?  // إصدار نظام التشغيل
+  
+  // معلومات إضافية
+  screenWidth     Int?     // عرض الشاشة
+  screenHeight    Int?     // ارتفاع الشاشة
+  language        String?  // لغة المتصفح
+  timezone        String?  // المنطقة الزمنية
+  
   @@index([timestamp])
   @@index([targetPage])
   @@index([country])
   @@index([utmSource])
   @@index([isArchived])
+  @@index([gclid])
+  @@index([fbclid])
+  @@index([device])
   @@map("visits")
 }
