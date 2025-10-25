@@ -38,12 +38,53 @@ export default function SalesRedirectPage() {
         { path: '/sales11', weight: 9.01 },
       ]
 
-      // محاولة جلب القواعد المخصصة من API
+      // محاولة جلب القواعد المخصصة - من API أولاً ثم من localStorage
       try {
-        const res = await fetch('/api/distribution/rules')
-        const data = await res.json()
+        let rulesData = null;
+        let dataSource = 'default';
         
-        if (data.success && data.rules && data.rules.length > 0) {
+        // محاولة 1: جلب من API
+        try {
+          const res = await fetch('/api/distribution/rules')
+          const data = await res.json()
+          if (data.success && data.rules && data.rules.length > 0) {
+            rulesData = data.rules
+            dataSource = 'API'
+          }
+        } catch {
+          console.log('⚠️ API failed, checking localStorage...')
+        }
+        
+        // محاولة 2: إذا فشل API، اقرأ من localStorage
+        if (!rulesData) {
+          const savedRules = localStorage.getItem('qsr_distribution_rules')
+          if (savedRules) {
+            try {
+              const parsed = JSON.parse(savedRules)
+              if (parsed.rules && parsed.rules.length > 0) {
+                // تحويل القواعد من localStorage لنفس الشكل المتوقع
+                interface LocalRule {
+                  path: string
+                  googleWeight: number
+                  otherWeight: number
+                  isActive?: boolean
+                }
+                rulesData = parsed.rules.map((rule: LocalRule) => ({
+                  salesPageId: rule.path.replace('/sales', 'sales'),
+                  googleWeight: rule.googleWeight || 0,
+                  otherWeight: rule.otherWeight || 0,
+                  isActive: rule.isActive !== false
+                }))
+                console.log('✅ Using rules from localStorage')
+                dataSource = 'localStorage'
+              }
+            } catch (parseError) {
+              console.error('Failed to parse localStorage rules:', parseError)
+            }
+          }
+        }
+        
+        if (rulesData) {
           // تعريف نوع القاعدة
           interface Rule {
             salesPageId: string
@@ -54,7 +95,7 @@ export default function SalesRedirectPage() {
           
           // ✅ الخطوة 1: فلترة الصفحات النشطة فقط (isActive = true)
           // الصفحات المعطلة لن تظهر هنا نهائياً
-          const activeRules = (data.rules as Rule[]).filter(r => r.isActive)
+          const activeRules = (rulesData as Rule[]).filter(r => r.isActive)
           
           // ✅ الخطوة 2: جلب قواعد Google - فقط الصفحات التي لها وزن > 0
           // 🚫 القاعدة المهمة: إذا كتب المستخدم 0، لن تظهر الصفحة في القائمة
@@ -94,6 +135,20 @@ export default function SalesRedirectPage() {
           
           console.log('📊 Active Distribution Rules:')
           console.log('  Total Active Rules:', activeRules.length)
+          console.log('  Data source:', dataSource)
+          
+          // عرض تفاصيل كل صفحة نشطة
+          console.log('  📋 Active Rules Detail:')
+          activeRules.forEach(rule => {
+            const isGoogleActive = rule.googleWeight > 0
+            const isOtherActive = rule.otherWeight > 0
+            const status = []
+            if (isGoogleActive) status.push(`Google=${rule.googleWeight}%`)
+            if (isOtherActive) status.push(`Other=${rule.otherWeight}%`)
+            if (!isGoogleActive && !isOtherActive) status.push('❌ NO TRAFFIC')
+            console.log(`    ${rule.salesPageId}: ${status.join(', ')}, Active=${rule.isActive}`)
+          })
+          
           console.log('  Google pages:', GOOGLE_WEIGHTED.map(r => r.path + ' (' + r.weight + '%)'))
           console.log('  Other pages:', OTHER_WEIGHTED.map(r => r.path + ' (' + r.weight + '%)'))
           
@@ -119,12 +174,23 @@ export default function SalesRedirectPage() {
         console.log('⚠️ API error - using default distribution rules:', error)
       }
 
-    function pickWeighted<T extends { weight: number }>(items: T[], rnd: number): T {
+    function pickWeighted<T extends { weight: number, path: string }>(items: T[], rnd: number): T {
       const total = items.reduce((s, i) => s + i.weight, 0)
       let cursor = rnd * total
+      
+      console.log('🎲 Weight Selection Debug:')
+      console.log('  Total weight sum:', total)
+      console.log('  Random value:', rnd)
+      console.log('  Cursor start:', cursor)
+      
       for (const it of items) {
-        if ((cursor -= it.weight) <= 0) return it
+        console.log(`  Checking ${it.path}: weight=${it.weight}, cursor=${cursor}`)
+        if ((cursor -= it.weight) <= 0) {
+          console.log(`  ✅ Selected: ${it.path}`)
+          return it
+        }
       }
+      console.log(`  ⚠️ Fallback to last item: ${items[items.length - 1].path}`)
       return items[items.length - 1]
     }
 

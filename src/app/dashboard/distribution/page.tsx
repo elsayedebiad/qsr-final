@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react'
 import { 
   Network, Users, Activity, BarChart3, RefreshCw, 
   ArrowUp, ArrowDown, Target, Zap, Globe, Settings, TrendingUp,
-  ExternalLink, Percent, Info, Save, Eye, MousePointerClick
+  ExternalLink, Percent, Info, Save, Eye, MousePointerClick, 
+  Database, HardDrive, AlertTriangle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import DashboardLayout from '@/components/DashboardLayout'
+import { saveDistributionRules, loadDistributionRules } from '@/lib/distribution-storage'
 
 interface PageStats {
   salesPageId: string
@@ -69,6 +71,8 @@ export default function DistributionPage() {
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [refreshInterval, setRefreshInterval] = useState(30) // بالثواني
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [dataSource, setDataSource] = useState<'database' | 'localStorage' | 'default'>('default')
+  const [lastSaveTime, setLastSaveTime] = useState<string | null>(null)
   const [rules, setRules] = useState<DistributionRule[]>([
     { path: '/sales1', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
     { path: '/sales2', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
@@ -82,6 +86,7 @@ export default function DistributionPage() {
     { path: '/sales10', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
     { path: '/sales11', googleWeight: 9.01, otherWeight: 9.01, isActive: true, targetConversions: 100 },
   ])
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -104,26 +109,44 @@ export default function DistributionPage() {
 
   const fetchDistributionRules = async () => {
     try {
-      const res = await fetch('/api/distribution/rules')
-      const data = await res.json()
+      const result = await loadDistributionRules()
       
-      if (data.success && data.rules) {
-        // تحويل البيانات من قاعدة البيانات لصيغة state
-        const formattedRules = data.rules.map((rule: {
-          salesPageId: string
-          googleWeight: number
-          otherWeight: number
-          isActive: boolean
-        }) => ({
-          path: `/sales${rule.salesPageId.replace('sales', '')}`,
-          googleWeight: rule.googleWeight || 0,
-          otherWeight: rule.otherWeight || 0,
-          isActive: rule.isActive
-        }))
-        setRules(formattedRules)
+      if (result.rules && result.rules.length > 0) {
+        setRules(result.rules)
+        setHasUnsavedChanges(false)
+        setDataSource(result.source)
+        
+        // الحصول على معلومات آخر حفظ من localStorage
+        const savedData = localStorage.getItem('qsr_distribution_rules')
+        if (savedData) {
+          try {
+            const parsed = JSON.parse(savedData)
+            if (parsed.timestamp) {
+              setLastSaveTime(new Date(parsed.timestamp).toLocaleString('ar-EG'))
+            }
+          } catch (e) {
+            console.error('Error parsing saved time', e)
+          }
+        }
+        
+        // عرض رسالة توضح مصدر البيانات
+        if (result.source === 'localStorage') {
+          toast.success('📦 تم تحميل القواعد من التخزين المحلي', {
+            duration: 3000,
+            icon: '💾'
+          })
+        } else if (result.source === 'database') {
+          console.log('✅ تم تحميل القواعد من قاعدة البيانات')
+        } else {
+          toast('📝 تم تحميل القواعد الافتراضية', {
+            duration: 3000,
+            icon: 'ℹ️'
+          })
+        }
       }
     } catch (error) {
       console.error('Failed to fetch distribution rules:', error)
+      toast.error('❌ فشل تحميل قواعد التوزيع')
     }
   }
 
@@ -550,27 +573,57 @@ export default function DistributionPage() {
 
           {showSettings && (
             <>
-              {/* مؤشر حالة النظام */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg border-2 border-green-200 dark:border-green-700">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-green-500 rounded-lg">
-                      <Zap className="h-5 w-5 text-white" />
+              {/* معلومات مصدر البيانات وآخر حفظ */}
+              <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-blue-300 dark:border-gray-600">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-4">
+                    {/* مصدر البيانات */}
+                    <div className="flex items-center gap-2">
+                      {dataSource === 'database' ? (
+                        <>
+                          <Database className="h-5 w-5 text-green-600 dark:text-green-400" />
+                          <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                            مصدر البيانات: قاعدة البيانات
+                          </span>
+                        </>
+                      ) : dataSource === 'localStorage' ? (
+                        <>
+                          <HardDrive className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                            مصدر البيانات: التخزين المحلي
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Info className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                          <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                            مصدر البيانات: القيم الافتراضية
+                          </span>
+                        </>
+                      )}
                     </div>
-                    <div>
-                      <h3 className="font-bold text-green-800 dark:text-green-300">نظام التوزيع نشط ✅</h3>
-                      <p className="text-xs text-green-600 dark:text-green-400">يعمل في <code className="bg-white/50 px-1 rounded">/sales</code></p>
-                    </div>
+                    {/* آخر حفظ */}
+                    {lastSaveTime && (
+                      <div className="flex items-center gap-2">
+                        <Save className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          آخر حفظ: {lastSaveTime}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-xs text-green-700 dark:text-green-300 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span>يتم التوزيع حسب الأوزان المحددة أدناه</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span>يحفظ الزائر في نفس الصفحة لمدة 7 أيام (Cookie)</span>
-                    </div>
+                  {/* مؤشر التوافق */}
+                  <div className="flex items-center gap-2">
+                    {dataSource === 'localStorage' && (
+                      <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-xs font-medium">
+                        ⚠️ قاعدة البيانات غير متاحة - يتم استخدام التخزين المحلي
+                      </span>
+                    )}
+                    {hasUnsavedChanges && (
+                      <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full text-xs font-medium animate-pulse">
+                        لديك تغييرات غير محفوظة
+                      </span>
+                    )}
                   </div>
                 </div>
                 
@@ -649,6 +702,7 @@ export default function DistributionPage() {
                                 const newRules = [...rules]
                                 newRules[index].googleWeight = parseFloat(e.target.value) || 0
                                 setRules(newRules)
+                                setHasUnsavedChanges(true)
                               }}
                               disabled={!rule.isActive}
                               className="w-20 px-2 py-1 text-center border rounded dark:bg-gray-700 dark:border-gray-600"
@@ -666,6 +720,7 @@ export default function DistributionPage() {
                                 const newRules = [...rules]
                                 newRules[index].otherWeight = parseFloat(e.target.value) || 0
                                 setRules(newRules)
+                                setHasUnsavedChanges(true)
                               }}
                               disabled={!rule.isActive}
                               className="w-20 px-2 py-1 text-center border rounded dark:bg-gray-700 dark:border-gray-600"
@@ -704,6 +759,7 @@ export default function DistributionPage() {
                               const newRules = [...rules]
                               newRules[index].isActive = !newRules[index].isActive
                               setRules(newRules)
+                              setHasUnsavedChanges(true)
                             }}
                             className={`px-3 py-1 rounded text-xs ${
                               rule.isActive
@@ -1095,6 +1151,23 @@ export default function DistributionPage() {
                 </div>
               </div>
 
+              {/* تحذير التغييرات غير المحفوظة */}
+              {hasUnsavedChanges && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl border-2 border-amber-500 dark:border-amber-600 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-500 rounded-lg animate-bounce">
+                      <AlertTriangle className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-amber-900 dark:text-amber-100 text-lg">⚠️ لديك تغييرات غير محفوظة!</p>
+                      <p className="text-sm text-amber-800 dark:text-amber-200 mt-1">
+                        يجب الضغط على زر &ldquo;حفظ التغييرات&rdquo; أدناه لتطبيق النسب الجديدة في التحويل
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="mt-4 flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={async () => {
@@ -1103,38 +1176,49 @@ export default function DistributionPage() {
                       const activePages = rules.filter(r => r.isActive && ((r.googleWeight > 0) || (r.otherWeight > 0)))
                       const loadingToast = toast.loading(`جاري حفظ القواعد... (${activePages.length} صفحة نشطة)`)
                       
-                      const res = await fetch('/api/distribution/rules', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ rules })
-                      })
-                      
-                      const data = await res.json()
+                      const result = await saveDistributionRules(rules)
                       
                       toast.dismiss(loadingToast)
                       
-                      if (data.success) {
-                        // رسالة تفصيلية
+                      if (result.success) {
+                        // رسالة تفصيلية حسب طريقة الحفظ
                         const googlePages = rules.filter(r => r.isActive && r.googleWeight > 0).length
                         const otherPages = rules.filter(r => r.isActive && r.otherWeight > 0).length
+                        
+                        let icon = '✅'
+                        let methodText = ''
+                        
+                        if (result.method === 'database') {
+                          icon = '☁️'
+                          methodText = '\n📊 تم الحفظ في قاعدة البيانات'
+                        } else if (result.method === 'localStorage') {
+                          icon = '💾'
+                          methodText = '\n💾 تم الحفظ محلياً (قاعدة البيانات غير متاحة)'
+                        }
+                        
                         toast.success(
-                          `✅ تم الحفظ بنجاح!\n📊 Google: ${googlePages} صفحة\n🌍 Other: ${otherPages} صفحة\n🚀 القواعد نشطة في /sales`, 
-                          { duration: 6000 }
+                          `${icon} تم الحفظ بنجاح!${methodText}\n📊 Google: ${googlePages} صفحة\n🌍 Other: ${otherPages} صفحة\n🚀 القواعد نشطة الآن`, 
+                          { duration: 8000 }
                         )
+                        
                         // إعادة جلب القواعد للتأكيد
                         await fetchDistributionRules()
+                        setHasUnsavedChanges(false)
+                        setLastSaveTime(new Date().toLocaleString('ar-EG'))
                       } else {
-                        toast.error(data.error || 'فشل حفظ القواعد')
+                        toast.error(result.message || 'فشل حفظ القواعد')
                       }
                     } catch (error) {
                       console.error('Save error:', error)
                       toast.error('حدث خطأ أثناء الحفظ')
                     }
                   }}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl font-semibold"
+                  className={`px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl font-semibold ${
+                    hasUnsavedChanges ? 'ring-4 ring-amber-400 animate-pulse' : ''
+                  }`}
                 >
                   <Save className="h-5 w-5" />
-                  <span>حفظ التغييرات وتطبيقها فوراً</span>
+                  <span>{hasUnsavedChanges ? '💾 حفظ التغييرات وتطبيقها فوراً' : 'حفظ التغييرات'}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -1151,7 +1235,8 @@ export default function DistributionPage() {
                       { path: '/sales10', googleWeight: 9.09, otherWeight: 9.09, isActive: true, targetConversions: 100 },
                       { path: '/sales11', googleWeight: 9.01, otherWeight: 9.01, isActive: true, targetConversions: 100 },
                     ])
-                    toast.success('تم إعادة تعيين الإعدادات الافتراضية (جميع الصفحات الـ 11 متساوية)')
+                    setHasUnsavedChanges(true)
+                    toast.success('تم إعادة تعيين الإعدادات الافتراضية (تذكر: اضغط حفظ!)')
                   }}
                   className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
                 >

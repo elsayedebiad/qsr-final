@@ -5,7 +5,7 @@ import {
   Eye, Globe, MousePointerClick, TrendingUp, MapPin, 
   Calendar, Link as LinkIcon, RefreshCw, Users, BarChart3,
   Filter, X, Archive, CheckSquare, Square, ChevronLeft, ChevronRight,
-  FileSpreadsheet
+  FileSpreadsheet, Trash2, AlertTriangle
 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 import toast from 'react-hot-toast'
@@ -69,6 +69,17 @@ export default function VisitsReportPage() {
   const [showArchiveModal, setShowArchiveModal] = useState(false)
   const [archiveProgress, setArchiveProgress] = useState(0)
   const [archiveStatus, setArchiveStatus] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteProgress, setDeleteProgress] = useState(0)
+  const [deleteStatus, setDeleteStatus] = useState('')
+  const [deleteType, setDeleteType] = useState<'selected' | 'filtered' | 'single'>('selected')
+  
+  // Delete confirmation states
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmType, setDeleteConfirmType] = useState<'selected' | 'filtered' | 'single'>('selected')
+  const [deleteConfirmCount, setDeleteConfirmCount] = useState(0)
+  const [singleDeleteId, setSingleDeleteId] = useState<number | null>(null)
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -179,6 +190,173 @@ export default function VisitsReportPage() {
       setSelectedVisits([])
     } else {
       setSelectedVisits(filteredVisits.map(v => v.id))
+    }
+  }
+  
+  // عرض popup التأكيد للحذف المحدد
+  const showDeleteConfirmation = (type: 'selected' | 'filtered' | 'single', count: number, singleId?: number) => {
+    setDeleteConfirmType(type)
+    setDeleteConfirmCount(count)
+    if (singleId) {
+      setSingleDeleteId(singleId)
+    }
+    setShowDeleteConfirm(true)
+  }
+
+  // تنفيذ الحذف بعد التأكيد
+  const executeDelete = async () => {
+    setShowDeleteConfirm(false)
+    
+    if (deleteConfirmType === 'single' && singleDeleteId) {
+      setSelectedVisits([singleDeleteId])
+      performDeleteSelected([singleDeleteId])
+    } else if (deleteConfirmType === 'selected') {
+      performDeleteSelected(selectedVisits)
+    } else if (deleteConfirmType === 'filtered') {
+      performDeleteFiltered()
+    }
+  }
+
+  // إلغاء الحذف
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false)
+    setSingleDeleteId(null)
+    setDeleteConfirmCount(0)
+  }
+
+  // حذف الزيارات المحددة نهائياً
+  const deleteSelected = () => {
+    if (selectedVisits.length === 0) {
+      toast.error('يرجى تحديد زيارات للحذف')
+      return
+    }
+    showDeleteConfirmation('selected', selectedVisits.length)
+  }
+
+  // الدالة الفعلية لتنفيذ الحذف المحدد
+  const performDeleteSelected = async (visitsToDelete: number[]) => {
+    setDeleteType('selected')
+    setShowDeleteModal(true)
+    setDeleting(true)
+    setDeleteProgress(0)
+    setDeleteStatus('جاري تجهيز الحذف...')
+    
+    try {
+      const progressInterval = setInterval(() => {
+        setDeleteProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 200)
+      
+      setDeleteStatus(`جاري حذف ${visitsToDelete.length} زيارة نهائياً...`)
+      
+      const res = await fetch('/api/visits/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visitIds: visitsToDelete })
+      })
+      
+      const data = await res.json()
+      
+      clearInterval(progressInterval)
+      setDeleteProgress(100)
+      
+      if (data.success) {
+        setDeleteStatus('✅ تم الحذف بنجاح!')
+        setTimeout(() => {
+          setShowDeleteModal(false)
+          setSelectedVisits([])
+          fetchStats(currentPage)
+          toast.success(data.message)
+        }, 1500)
+      } else {
+        setDeleteStatus('❌ فشل الحذف')
+        toast.error(data.error || 'فشل الحذف')
+        setTimeout(() => setShowDeleteModal(false), 2000)
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+      setDeleteStatus('❌ حدث خطأ أثناء الحذف')
+      toast.error('حدث خطأ أثناء الحذف')
+      setTimeout(() => setShowDeleteModal(false), 2000)
+    } finally {
+      setDeleting(false)
+    }
+  }
+  
+  // حذف جميع الزيارات المفلترة نهائياً
+  const deleteFiltered = () => {
+    if (filteredVisits.length === 0) {
+      toast.error('لا توجد زيارات للحذف')
+      return
+    }
+    showDeleteConfirmation('filtered', filteredVisits.length)
+  }
+
+  // الدالة الفعلية لتنفيذ الحذف المفلتر
+  const performDeleteFiltered = async () => {
+    setDeleteType('filtered')
+    setShowDeleteModal(true)
+    setDeleting(true)
+    setDeleteProgress(0)
+    setDeleteStatus('جاري تجهيز الحذف...')
+    
+    try {
+      const progressInterval = setInterval(() => {
+        setDeleteProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 200)
+      
+      setDeleteStatus(`جاري حذف ${filteredVisits.length} زيارة نهائياً...`)
+      
+      const res = await fetch('/api/visits/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          deleteAll: true,
+          filters: {
+            country: countryFilter !== 'ALL' ? countryFilter : undefined,
+            targetPage: pageFilter !== 'ALL' ? pageFilter : undefined,
+            dateFrom: dateFrom || undefined,
+            dateTo: dateTo || undefined
+          }
+        })
+      })
+      
+      const data = await res.json()
+      
+      clearInterval(progressInterval)
+      setDeleteProgress(100)
+      
+      if (data.success) {
+        setDeleteStatus('✅ تم الحذف بنجاح!')
+        setTimeout(() => {
+          setShowDeleteModal(false)
+          setSelectedVisits([])
+          fetchStats(currentPage)
+          toast.success(data.message)
+        }, 1500)
+      } else {
+        setDeleteStatus('❌ فشل الحذف')
+        toast.error(data.error || 'فشل الحذف')
+        setTimeout(() => setShowDeleteModal(false), 2000)
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+      setDeleteStatus('❌ حدث خطأ أثناء الحذف')
+      toast.error('حدث خطأ أثناء الحذف')
+      setTimeout(() => setShowDeleteModal(false), 2000)
+    } finally {
+      setDeleting(false)
     }
   }
   
@@ -622,7 +800,7 @@ export default function VisitsReportPage() {
                   </span>
                 )}
               </h2>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={exportToExcel}
                   disabled={exporting || filteredVisits.length === 0}
@@ -641,6 +819,8 @@ export default function VisitsReportPage() {
                     </>
                   )}
                 </button>
+                
+                {/* أزرار الأرشفة */}
                 {selectedVisits.length > 0 && (
                   <button
                     onClick={archiveSelected}
@@ -659,6 +839,29 @@ export default function VisitsReportPage() {
                   <Archive className="h-4 w-4" />
                   أرشفة الكل ({filteredVisits.length})
                 </button>
+                
+                {/* أزرار الحذف النهائي */}
+                {selectedVisits.length > 0 && (
+                  <button
+                    onClick={deleteSelected}
+                    disabled={deleting}
+                    className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm flex items-center gap-1 disabled:opacity-50 shadow-md hover:shadow-lg transition-all"
+                    title="حذف نهائي - لا يمكن التراجع"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    حذف المحدد ({selectedVisits.length})
+                  </button>
+                )}
+                <button
+                  onClick={deleteFiltered}
+                  disabled={deleting || filteredVisits.length === 0}
+                  className="px-3 py-1.5 bg-red-700 text-white rounded-lg hover:bg-red-800 text-sm flex items-center gap-1 disabled:opacity-50 shadow-md hover:shadow-lg transition-all"
+                  title="حذف نهائي - لا يمكن التراجع"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  حذف الكل ({filteredVisits.length})
+                </button>
+                
                 <button
                   onClick={() => router.push('/dashboard/visits-archive')}
                   className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm flex items-center gap-1"
@@ -804,12 +1007,13 @@ export default function VisitsReportPage() {
                     <th className="text-right py-3 px-4" style={{ width: '120px' }}>الجهاز</th>
                     <th className="text-right py-3 px-4" style={{ width: '110px' }}>المصدر</th>
                     <th className="text-right py-3 px-4" style={{ width: '180px' }}>الحملة</th>
+                    <th className="text-center py-3 px-4" style={{ width: '60px' }}>إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredVisits.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
                         <Filter className="h-12 w-12 mx-auto mb-2 opacity-50" />
                         <p>لا توجد زيارات تطابق الفلاتر المحددة</p>
                       </td>
@@ -922,6 +1126,17 @@ export default function VisitsReportPage() {
                             <span className="text-gray-400 text-xs">-</span>
                           )}
                         </div>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          onClick={() => {
+                            showDeleteConfirmation('single', 1, visit.id)
+                          }}
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                          title="حذف نهائي"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -1097,6 +1312,151 @@ export default function VisitsReportPage() {
 
               {/* Decorative Elements */}
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-600 rounded-t-2xl"></div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Popup */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
+            <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all animate-scaleIn">
+              {/* Close Button */}
+              <button
+                onClick={cancelDelete}
+                className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </button>
+              
+              {/* Header */}
+              <div className="text-center mb-6">
+                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                  <AlertTriangle className="h-10 w-10 text-white animate-pulse" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  تأكيد الحذف النهائي
+                </h3>
+                <p className="text-red-600 dark:text-red-400 text-sm font-semibold">
+                  ⚠️ تحذير: لا يمكن التراجع عن هذا الإجراء
+                </p>
+              </div>
+
+              {/* Content */}
+              <div className="mb-6">
+                <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-4">
+                  <p className="text-gray-700 dark:text-gray-300 text-center text-lg">
+                    {deleteConfirmType === 'single' && (
+                      <>هل أنت متأكد من حذف هذه الزيارة نهائياً؟</>
+                    )}
+                    {deleteConfirmType === 'selected' && (
+                      <>
+                        هل أنت متأكد من حذف 
+                        <span className="font-bold text-red-600 dark:text-red-400 mx-1">
+                          {deleteConfirmCount}
+                        </span>
+                        زيارة محددة نهائياً؟
+                      </>
+                    )}
+                    {deleteConfirmType === 'filtered' && (
+                      <>
+                        هل أنت متأكد من حذف جميع الزيارات المفلترة 
+                        <span className="font-bold text-red-600 dark:text-red-400 mx-1">
+                          ({deleteConfirmCount} زيارة)
+                        </span>
+                        نهائياً؟
+                      </>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center mt-3">
+                    سيتم حذف البيانات من قاعدة البيانات بشكل نهائي
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={executeDelete}
+                  className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="h-5 w-5" />
+                  نعم، احذف نهائياً
+                </button>
+                <button
+                  onClick={cancelDelete}
+                  className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-bold py-3 px-6 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                >
+                  <X className="h-5 w-5" />
+                  إلغاء
+                </button>
+              </div>
+
+              {/* Decorative Elements */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-red-600 to-red-700 rounded-t-2xl"></div>
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-red-500/10 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-red-500/10 rounded-full blur-3xl"></div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+              {/* Header */}
+              <div className="text-center mb-6">
+                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                  <AlertTriangle className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  حذف نهائي
+                </h3>
+                <p className="text-red-600 dark:text-red-400 text-sm font-semibold mb-2">
+                  ⚠️ تحذير: لا يمكن التراجع عن هذا الإجراء
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  {deleteStatus}
+                </p>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-6">
+                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  <span>التقدم</span>
+                  <span className="font-bold">{deleteProgress}%</span>
+                </div>
+                <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-red-500 via-red-600 to-red-700 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${deleteProgress}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Icon */}
+              <div className="text-center">
+                {deleteProgress < 100 ? (
+                  <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400">
+                    <RefreshCw className="h-5 w-5 animate-spin" />
+                    <span className="text-sm font-medium">جاري الحذف...</span>
+                  </div>
+                ) : deleteStatus.includes('✅') ? (
+                  <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                    <CheckSquare className="h-5 w-5" />
+                    <span className="text-sm font-medium">تم الحذف بنجاح!</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400">
+                    <X className="h-5 w-5" />
+                    <span className="text-sm font-medium">فشلت العملية</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Decorative Elements */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-red-600 to-red-700 rounded-t-2xl"></div>
             </div>
           </div>
         )}

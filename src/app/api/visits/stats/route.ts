@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { verifyAuth } from '@/lib/auth'
 
+// تعريف نوع لشروط البحث
+interface VisitWhereCondition {
+  isArchived: boolean
+  country?: string
+  utmCampaign?: string | null
+  timestamp?: {
+    gte?: Date
+    lte?: Date
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     // التحقق من صلاحيات المستخدم (ADMIN والـ DEVELOPER فقط)
@@ -36,7 +47,7 @@ export async function GET(request: NextRequest) {
     const dateTo = searchParams.get('dateTo')
 
     // بناء where condition للفلاتر (بدون فلتر الصفحة - سنفلتره في الذاكرة)
-    const whereCondition: any = { isArchived: false }
+    const whereCondition: VisitWhereCondition = { isArchived: false }
     
     if (countryFilter) {
       whereCondition.country = countryFilter
@@ -46,7 +57,7 @@ export async function GET(request: NextRequest) {
     // لأن البيانات في DB قد تكون بتنسيقات مختلفة (/sales1, sales1, etc)
     
     if (campaignFilter) {
-      if (campaignFilter === 'No Campaign') {
+      if (campaignFilter === 'No Campaign' || campaignFilter === 'null') {
         whereCondition.utmCampaign = null
       } else {
         whereCondition.utmCampaign = campaignFilter
@@ -69,7 +80,7 @@ export async function GET(request: NextRequest) {
     let visits = await db.visit.findMany({
       where: whereCondition,
       orderBy: { id: 'desc' },
-      take: 10000 // زيادة للحصول على بيانات كافية قبل الفلترة
+      take: 50000 // زيادة كبيرة للحصول على جميع البيانات المتاحة قبل الفلترة
     })
     
     // تطبيق فلتر الصفحة في الذاكرة (للمطابقة الدقيقة)
@@ -84,8 +95,8 @@ export async function GET(request: NextRequest) {
     // حساب إجمالي الزيارات بعد الفلترة
     const totalVisitsCount = visits.length
     
-    // أخذ أول 1000 زيارة للإحصائيات
-    const statsVisits = visits.slice(0, 1000)
+    // أخذ جميع الزيارات للإحصائيات (حتى 5000 زيارة كحد أقصى)
+    const statsVisits = visits.slice(0, 5000)
     
     // جلب الزيارات للصفحة الحالية (مع pagination)
     const paginatedVisits = visits.slice(skip, skip + limit)
@@ -210,7 +221,9 @@ export async function GET(request: NextRequest) {
 
     // الزيارات حسب الحملة
     const campaignStats = statsVisits.reduce((acc, visit) => {
-      const campaign = visit.utmCampaign || 'No Campaign'
+      const campaign = (visit.utmCampaign && visit.utmCampaign.trim() !== '') 
+        ? visit.utmCampaign 
+        : 'No Campaign'
       acc[campaign] = (acc[campaign] || 0) + 1
       return acc
     }, {} as Record<string, number>)
@@ -357,8 +370,11 @@ export async function GET(request: NextRequest) {
 
     const allCampaigns = Array.from(new Set(
       allVisitsForFilters
-        .map(v => v.utmCampaign || 'No Campaign')
+        .map(v => v.utmCampaign)
+        .filter(c => c !== null && c !== undefined && c !== '')
     )).sort()
+    // إضافة "No Campaign" في البداية للحملات الفارغة
+    allCampaigns.unshift('No Campaign')
 
     return NextResponse.json({
       success: true,

@@ -23,23 +23,54 @@ export async function DELETE(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { visitIds } = body
+    const { visitIds, deleteAll, filters } = body
 
-    if (!visitIds || !Array.isArray(visitIds) || visitIds.length === 0) {
+    let result
+
+    if (deleteAll && filters) {
+      // حذف جماعي حسب الفلاتر
+      const where: any = { isArchived: false }
+      
+      if (filters.country) {
+        where.country = filters.country
+      }
+      
+      if (filters.targetPage) {
+        where.targetPage = filters.targetPage
+      }
+      
+      if (filters.dateFrom) {
+        where.timestamp = {
+          ...where.timestamp,
+          gte: new Date(filters.dateFrom)
+        }
+      }
+      
+      if (filters.dateTo) {
+        const endDate = new Date(filters.dateTo)
+        endDate.setHours(23, 59, 59, 999)
+        where.timestamp = {
+          ...where.timestamp,
+          lte: endDate
+        }
+      }
+
+      result = await db.visit.deleteMany({ where })
+    } else if (visitIds && Array.isArray(visitIds) && visitIds.length > 0) {
+      // حذف زيارات محددة بالـ IDs
+      result = await db.visit.deleteMany({
+        where: {
+          id: {
+            in: visitIds
+          }
+        }
+      })
+    } else {
       return NextResponse.json(
         { error: 'يرجى تحديد زيارات للحذف' },
         { status: 400 }
       )
     }
-
-    // حذف الزيارات المحددة نهائياً من قاعدة البيانات
-    const result = await db.visit.deleteMany({
-      where: {
-        id: {
-          in: visitIds
-        }
-      }
-    })
 
     // تسجيل في Activity Log
     try {
@@ -47,8 +78,10 @@ export async function DELETE(request: NextRequest) {
         data: {
           userId: user.id,
           action: 'DELETE_VISITS',
-          entityId: visitIds.join(','),
-          details: `Deleted ${result.count} visits permanently`,
+          entityId: visitIds ? visitIds.join(',') : 'bulk_delete',
+          details: deleteAll 
+            ? `Deleted ${result.count} visits permanently (bulk delete with filters)` 
+            : `Deleted ${result.count} visits permanently`,
           ipAddress: request.headers.get('x-forwarded-for') || 
                     request.headers.get('x-real-ip') || 
                     'Unknown'
