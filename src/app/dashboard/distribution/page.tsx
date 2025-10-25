@@ -293,23 +293,34 @@ export default function DistributionPage() {
     }
   }
 
-  const handleAutoDistribute = async (strategy: string) => {
+  const handleAutoDistribute = async (strategy: string, source: string = 'other') => {
     try {
+      // عرض رسالة تحذير إذا كانت هناك تغييرات غير محفوظة
+      if (hasUnsavedChanges && strategy === 'WEIGHTED') {
+        toast.error('⚠️ يجب حفظ التغييرات أولاً لتطبيق الأوزان المحدثة!', { duration: 5000 })
+        return
+      }
+      
+      const loadingToast = toast.loading(`جاري تطبيق التوزيع ${strategy === 'WEIGHTED' ? 'المرجح' : ''}...`)
+      
       const res = await fetch('/api/distribution/auto-simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ strategy, count: 100 })
+        body: JSON.stringify({ strategy, count: 100, source })
       })
 
       const data = await res.json()
       
+      toast.dismiss(loadingToast)
+      
       if (data.success) {
-        toast.success(data.message)
+        toast.success(data.message, { duration: 5000 })
         fetchData()
       } else {
-        toast.error(data.error || 'فشل التوزيع التلقائي')
+        toast.error(data.error || data.message || 'فشل التوزيع التلقائي', { duration: 6000 })
       }
-    } catch {
+    } catch (error) {
+      console.error('Distribution error:', error)
       toast.error('حدث خطأ في التوزيع التلقائي')
     }
   }
@@ -1253,39 +1264,113 @@ export default function DistributionPage() {
             <Zap className="h-5 w-5 text-yellow-500" />
             التوزيع التلقائي
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => handleAutoDistribute('EQUAL')}
-              className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all"
-            >
-              <div className="text-center">
-                <BarChart3 className="h-8 w-8 mx-auto mb-2" />
-                <div className="font-semibold">توزيع متساوي</div>
-                <div className="text-xs opacity-90">توزيع السير بالتساوي على الصفحات</div>
+          
+          {/* التوزيع المرجح - NEW */}
+          <div className="mb-6 p-6 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-red-900/20 rounded-2xl border-3 border-amber-400 dark:border-amber-600 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+                <Percent className="h-7 w-7 text-white" />
               </div>
-            </button>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-amber-900 dark:text-amber-100">🎯 توزيع مرجح حسب الأوزان المحددة</h3>
+                <p className="text-sm text-amber-800 dark:text-amber-200">يطبق النسب التي أدخلتها في الجدول أعلاه بدقة 100%</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={() => handleAutoDistribute('WEIGHTED', 'google')}
+                disabled={hasUnsavedChanges}
+                className={`p-5 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg hover:shadow-xl relative overflow-hidden group ${
+                  hasUnsavedChanges ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                <div className="relative text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Globe className="h-10 w-10" />
+                    <span className="text-2xl">🎯</span>
+                  </div>
+                  <div className="font-bold text-lg mb-1">توزيع Google المرجح</div>
+                  <div className="text-xs opacity-90">يطبق أوزان Google من الجدول</div>
+                  {hasUnsavedChanges && (
+                    <div className="mt-2 text-xs bg-red-900/50 rounded px-2 py-1">
+                      ⚠️ احفظ التغييرات أولاً
+                    </div>
+                  )}
+                </div>
+              </button>
 
-            <button
-              onClick={() => handleAutoDistribute('RANDOM')}
-              className="p-4 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all"
-            >
-              <div className="text-center">
-                <Target className="h-8 w-8 mx-auto mb-2" />
-                <div className="font-semibold">توزيع عشوائي</div>
-                <div className="text-xs opacity-90">توزيع السير بشكل عشوائي</div>
+              <button
+                onClick={() => handleAutoDistribute('WEIGHTED', 'other')}
+                disabled={hasUnsavedChanges}
+                className={`p-5 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl relative overflow-hidden group ${
+                  hasUnsavedChanges ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                <div className="relative text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <MousePointerClick className="h-10 w-10" />
+                    <span className="text-2xl">🌍</span>
+                  </div>
+                  <div className="font-bold text-lg mb-1">توزيع Other المرجح</div>
+                  <div className="text-xs opacity-90">يطبق أوزان Other من الجدول</div>
+                  {hasUnsavedChanges && (
+                    <div className="mt-2 text-xs bg-blue-900/50 rounded px-2 py-1">
+                      ⚠️ احفظ التغييرات أولاً
+                    </div>
+                  )}
+                </div>
+              </button>
+            </div>
+            
+            {!hasUnsavedChanges && (
+              <div className="mt-4 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg text-center">
+                <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+                  ✅ القواعد محفوظة - جاهز للتوزيع!
+                </p>
               </div>
-            </button>
+            )}
+          </div>
+          
+          {/* التوزيع التقليدي */}
+          <div className="pt-4 border-t-2 dark:border-gray-700">
+            <h3 className="text-md font-semibold mb-3 text-gray-700 dark:text-gray-300">استراتيجيات التوزيع التقليدية:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button
+                onClick={() => handleAutoDistribute('EQUAL')}
+                className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+              >
+                <div className="text-center">
+                  <BarChart3 className="h-8 w-8 mx-auto mb-2" />
+                  <div className="font-semibold">توزيع متساوي</div>
+                  <div className="text-xs opacity-90">توزيع السير بالتساوي على الصفحات</div>
+                </div>
+              </button>
 
-            <button
-              onClick={() => handleAutoDistribute('BALANCED')}
-              className="p-4 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all"
-            >
-              <div className="text-center">
-                <Activity className="h-8 w-8 mx-auto mb-2" />
-                <div className="font-semibold">توزيع متوازن</div>
-                <div className="text-xs opacity-90">موازنة الحمل بين الصفحات</div>
-              </div>
-            </button>
+              <button
+                onClick={() => handleAutoDistribute('RANDOM')}
+                className="p-4 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+              >
+                <div className="text-center">
+                  <Target className="h-8 w-8 mx-auto mb-2" />
+                  <div className="font-semibold">توزيع عشوائي</div>
+                  <div className="text-xs opacity-90">توزيع السير بشكل عشوائي</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleAutoDistribute('BALANCED')}
+                className="p-4 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg"
+              >
+                <div className="text-center">
+                  <Activity className="h-8 w-8 mx-auto mb-2" />
+                  <div className="font-semibold">توزيع متوازن</div>
+                  <div className="text-xs opacity-90">موازنة الحمل بين الصفحات</div>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
 

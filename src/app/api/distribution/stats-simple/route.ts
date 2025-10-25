@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
           where: {
             action: 'CV_DISTRIBUTED',
             metadata: {
-              path: '$.salesPageId',
+              path: ['salesPageId'],
               equals: pageId
             }
           },
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
           where: {
             action: 'CV_REMOVED',
             metadata: {
-              path: '$.salesPageId',
+              path: ['salesPageId'],
               equals: pageId
             }
           },

@@ -2542,21 +2542,36 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                     <span className="hidden xs:inline">السابق</span>
                   </button>
 
-                  {/* Page Numbers */}
+                  {/* Page Numbers - نظام بسيط وثابت */}
                   <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-
-                      return (
+                    {/* الصفحة الأولى */}
+                    {currentPage > 2 && totalPages > 5 && (
+                      <>
+                        <button
+                          onClick={() => goToPage(1)}
+                          className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 bg-muted text-foreground hover:bg-muted/80"
+                        >
+                          1
+                        </button>
+                        {currentPage > 3 && <span className="px-1 text-muted-foreground">...</span>}
+                      </>
+                    )}
+                    
+                    {/* الصفحات المرئية */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        // اعرض الصفحة الحالية والصفحات المجاورة
+                        if (totalPages <= 5) return true; // اعرض كل الصفحات إذا كان المجموع 5 أو أقل
+                        if (page === currentPage) return true; // الصفحة الحالية
+                        if (page === currentPage - 1) return true; // الصفحة السابقة
+                        if (page === currentPage + 1) return true; // الصفحة التالية
+                        if (currentPage === 1 && page <= 3) return true; // في البداية، اعرض 3 صفحات
+                        if (currentPage === 2 && page <= 4) return true; // في البداية، اعرض 4 صفحات
+                        if (currentPage === totalPages && page >= totalPages - 2) return true; // في النهاية
+                        if (currentPage === totalPages - 1 && page >= totalPages - 3) return true; // قبل النهاية
+                        return false;
+                      })
+                      .map(pageNum => (
                         <button
                           key={pageNum}
                           onClick={() => goToPage(pageNum)}
@@ -2568,8 +2583,21 @@ import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bou
                         >
                           {pageNum}
                         </button>
-                      );
-                    })}
+                      ))
+                    }
+                    
+                    {/* الصفحة الأخيرة */}
+                    {currentPage < totalPages - 1 && totalPages > 5 && (
+                      <>
+                        {currentPage < totalPages - 2 && <span className="px-1 text-muted-foreground">...</span>}
+                        <button
+                          onClick={() => goToPage(totalPages)}
+                          className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 bg-muted text-foreground hover:bg-muted/80"
+                        >
+                          {totalPages}
+                        </button>
+                      </>
+                    )}
                   </div>
 
                   {/* Next Button */}

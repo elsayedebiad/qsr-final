@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAuth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import ActivityTracker from '@/lib/activity-tracker'
+import { loadDistributionRules } from '@/lib/distribution-storage'
 
 // POST: توزيع تلقائي بسيط
 export async function POST(request: NextRequest) {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { count = 100, strategy = 'EQUAL' } = body
+    const { count = 100, strategy = 'EQUAL', source = 'other' } = body
 
     const salesPages = [
       'sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6',
@@ -49,7 +50,92 @@ export async function POST(request: NextRequest) {
 
     const distributed: Record<string, number> = {}
 
-    if (strategy === 'EQUAL') {
+    if (strategy === 'WEIGHTED') {
+      // توزيع مرجح حسب الأوزان المخزنة
+      const rulesData = await loadDistributionRules()
+      const rules = rulesData.rules || []
+      
+      // تحديد المصدر (google أو other)
+      const weightKey = source === 'google' ? 'googleWeight' : 'otherWeight'
+      
+      // تصفية الصفحات النشطة التي لها وزن > 0
+      const activeRules = rules.filter(r => r.isActive && r[weightKey] > 0)
+      
+      if (activeRules.length === 0) {
+        return NextResponse.json({
+          success: false,
+          error: `لا توجد صفحات نشطة بأوزان ${source === 'google' ? 'Google' : 'Other'} > 0`,
+          message: 'يرجى التأكد من تفعيل الصفحات وإدخال أوزان أكبر من 0'
+        }, { status: 400 })
+      }
+      
+      // حساب مجموع الأوزان
+      const totalWeight = activeRules.reduce((sum, r) => sum + r[weightKey], 0)
+      
+      // حساب النسبة الفعلية لكل صفحة
+      const pageWeights = activeRules.map(r => ({
+        path: r.path,
+        weight: r[weightKey],
+        percentage: (r[weightKey] / totalWeight) * 100,
+        count: 0
+      }))
+      
+      // توزيع السير حسب النسب
+      for (let i = 0; i < newCVs.length; i++) {
+        const cv = newCVs[i]
+        
+        // اختيار الصفحة باستخدام التوزيع المرجح
+        const random = Math.random() * totalWeight
+        let cumulativeWeight = 0
+        let selectedPage = pageWeights[0].path
+        
+        for (const pw of pageWeights) {
+          cumulativeWeight += pw.weight
+          if (random <= cumulativeWeight) {
+            selectedPage = pw.path
+            break
+          }
+        }
+        
+        // تسجيل التوزيع
+        await db.activityLog.create({
+          data: {
+            userId: user.id,
+            cvId: cv.id,
+            action: 'CV_DISTRIBUTED',
+            description: `تم توزيع السيرة الذاتية "${cv.fullName}" على ${selectedPage} (توزيع مرجح ${source})`,
+            metadata: {
+              salesPageId: selectedPage,
+              strategy: 'WEIGHTED',
+              source,
+              weight: pageWeights.find(p => p.path === selectedPage)?.weight || 0,
+              nationality: cv.nationality,
+              position: cv.position
+            }
+          }
+        })
+        
+        distributed[selectedPage] = (distributed[selectedPage] || 0) + 1
+        
+        // تحديث العداد
+        const pw = pageWeights.find(p => p.path === selectedPage)
+        if (pw) pw.count++
+      }
+      
+      // طباعة معلومات التوزيع الفعلي للتحقق
+      console.log('🎯 توزيع مرجح:', {
+        source,
+        totalCVs: newCVs.length,
+        weights: pageWeights.map(pw => ({
+          page: pw.path,
+          weight: pw.weight,
+          expectedPercent: pw.percentage.toFixed(2) + '%',
+          actualCount: distributed[pw.path] || 0,
+          actualPercent: (((distributed[pw.path] || 0) / newCVs.length) * 100).toFixed(2) + '%'
+        }))
+      })
+      
+    } else if (strategy === 'EQUAL') {
       // توزيع متساوي
       const cvsPerPage = Math.ceil(newCVs.length / salesPages.length)
       let cvIndex = 0

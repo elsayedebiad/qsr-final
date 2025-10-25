@@ -95,6 +95,9 @@ export default function VisitsReportPage() {
   // Export state
   const [exporting, setExporting] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
+  
+  // Jump to page state
+  const [jumpToPage, setJumpToPage] = useState('')
 
   // استخدام useRef لتخزين current values دون إعادة render
   const currentPageRef = useRef(currentPage)
@@ -109,7 +112,16 @@ export default function VisitsReportPage() {
     itemsPerPageRef.current = itemsPerPage
   }, [itemsPerPage])
   
+  const fetchStatsInProgress = useRef(false)
+  
   const fetchStats = useCallback(async (page: number, resetToFirstPage = false) => {
+    // منع استدعاءات متعددة متزامنة
+    if (fetchStatsInProgress.current) {
+      return
+    }
+    
+    fetchStatsInProgress.current = true
+    
     try {
       // إذا كان resetToFirstPage = true، نرجع للصفحة الأولى
       const targetPage = resetToFirstPage ? 1 : page
@@ -140,6 +152,7 @@ export default function VisitsReportPage() {
     } finally {
       setLoading(false)
       setIsNavigating(false)
+      fetchStatsInProgress.current = false
     }
   }, [countryFilter, pageFilter, campaignFilter, dateFrom, dateTo])
 
@@ -535,26 +548,92 @@ export default function VisitsReportPage() {
     }
   }
   
+  // Ref لتخزين fetchStats لتجنب re-renders
+  const fetchStatsRef = useRef(fetchStats)
+  
+  useEffect(() => {
+    fetchStatsRef.current = fetchStats
+  }, [fetchStats])
+  
   // Initial load and when filters change - نرجع للصفحة الأولى
   useEffect(() => {
-    setCurrentPage(1) // هذا سيؤدي لاستدعاء useEffect التالي
+    setCurrentPage(1)
   }, [countryFilter, pageFilter, campaignFilter, dateFrom, dateTo, itemsPerPage])
   
   // Load data when page changes
   useEffect(() => {
-    fetchStats(currentPage)
-  }, [currentPage, fetchStats])
+    setIsNavigating(true)
+    fetchStatsRef.current(currentPage)
+  }, [currentPage])
   
   // Auto refresh effect - منفصل لتجنب التداخل
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
         // في التحديث التلقائي، نبقى في نفس الصفحة لكن نتحقق من الزيارات الجديدة
-        fetchStats(currentPageRef.current, false)
-      }, 5000) // تحديث كل 5 ثواني
+        // لا نستخدم isNavigating في التحديث التلقائي
+        const params = new URLSearchParams()
+        params.append('page', currentPageRef.current.toString())
+        params.append('limit', itemsPerPageRef.current.toString())
+        
+        if (countryFilter !== 'ALL') params.append('country', countryFilter)
+        if (pageFilter !== 'ALL') params.append('targetPage', pageFilter)
+        if (campaignFilter !== 'ALL') params.append('campaign', campaignFilter)
+        if (dateFrom) params.append('dateFrom', dateFrom)
+        if (dateTo) params.append('dateTo', dateTo)
+        
+        fetch(`/api/visits/stats?${params.toString()}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setStats(data)
+            }
+          })
+          .catch(err => console.error('Auto refresh error:', err))
+      }, 5000)
       return () => clearInterval(interval)
     }
-  }, [autoRefresh, fetchStats])
+  }, [autoRefresh, countryFilter, pageFilter, campaignFilter, dateFrom, dateTo])
+  
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return // Don't handle if user is typing in an input
+      }
+      
+      if (!stats || !stats.pagination) return
+      
+      if (e.key === 'ArrowRight' && stats.pagination.hasPreviousPage && !isNavigating) {
+        e.preventDefault()
+        setIsNavigating(true)
+        setCurrentPage(prev => prev - 1)
+      } else if (e.key === 'ArrowLeft' && stats.pagination.hasNextPage && !isNavigating) {
+        e.preventDefault()
+        setIsNavigating(true)
+        setCurrentPage(prev => prev + 1)
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [stats, isNavigating])
+  
+  // Handle jump to page
+  const handleJumpToPage = () => {
+    const pageNum = parseInt(jumpToPage)
+    if (!isNaN(pageNum) && stats && stats.pagination) {
+      if (pageNum >= 1 && pageNum <= stats.pagination.totalPages) {
+        if (!isNavigating) {
+          setIsNavigating(true)
+          setCurrentPage(pageNum)
+          setJumpToPage('')
+        }
+      } else {
+        toast.error(`الرجاء إدخال رقم صفحة بين 1 و ${stats.pagination.totalPages}`)
+      }
+    }
+  }
 
   if (loading || !stats) {
     return (
@@ -601,11 +680,17 @@ export default function VisitsReportPage() {
                   {autoRefresh ? '🟢 تحديث تلقائي' : '⚪ متوقف'}
                 </button>
                 <button
-                  onClick={() => fetchStats(1, true)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2"
+                  onClick={() => {
+                    if (!isNavigating) {
+                      setIsNavigating(true)
+                      setCurrentPage(1)
+                    }
+                  }}
+                  disabled={isNavigating}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="تحديث وعرض أحدث الزيارات"
                 >
-                  <RefreshCw className="h-5 w-5" />
+                  <RefreshCw className={`h-5 w-5 ${isNavigating ? 'animate-spin' : ''}`} />
                   <span className="text-sm font-medium">أحدث الزيارات</span>
                 </button>
               </div>
@@ -1145,56 +1230,108 @@ export default function VisitsReportPage() {
               </table>
             </div>
             
-            {/* Pagination Controls */}
+            {/* Pagination Controls - محسّن */}
             {stats && stats.pagination && stats.pagination.totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between border-t dark:border-gray-700 pt-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    عرض {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, stats.pagination.totalItems)} من {stats.pagination.totalItems} زيارة
-                  </span>
-                  <select
-                    value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value))
-                      setCurrentPage(1)
-                    }}
-                    className="px-3 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 text-sm"
-                  >
-                    <option value="25">25 / صفحة</option>
-                    <option value="50">50 / صفحة</option>
-                    <option value="100">100 / صفحة</option>
-                    <option value="200">200 / صفحة</option>
-                  </select>
+              <div className="mt-6 border-t dark:border-gray-700 pt-6">
+                {/* معلومات الصفحة وعدد العناصر */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        عرض {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, stats.pagination.totalItems)} من {stats.pagination.totalItems} زيارة
+                      </span>
+                    </div>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value))
+                        setCurrentPage(1)
+                      }}
+                      className="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+                    >
+                      <option value="25">25 / صفحة</option>
+                      <option value="50">50 / صفحة</option>
+                      <option value="100">100 / صفحة</option>
+                      <option value="200">200 / صفحة</option>
+                    </select>
+                  </div>
+                  
+                  {/* القفز إلى صفحة محددة */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                      الانتقال إلى:
+                    </span>
+                    <input
+                      type="number"
+                      min="1"
+                      max={stats.pagination.totalPages}
+                      value={jumpToPage}
+                      onChange={(e) => setJumpToPage(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleJumpToPage()
+                        }
+                      }}
+                      placeholder={`1-${stats.pagination.totalPages}`}
+                      className="w-20 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-center font-medium hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    />
+                    <button
+                      onClick={handleJumpToPage}
+                      disabled={!jumpToPage || isNavigating}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shadow-md hover:shadow-lg transition-all"
+                    >
+                      انتقل
+                    </button>
+                  </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                {/* أزرار التنقل */}
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {/* زر الصفحة الأولى */}
+                  <button
+                    onClick={() => {
+                      if (!isNavigating && currentPage !== 1) {
+                        setIsNavigating(true)
+                        setCurrentPage(1)
+                      }
+                    }}
+                    disabled={currentPage === 1 || isNavigating}
+                    className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-blue-50 dark:hover:bg-gray-700 hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-gray-300 dark:disabled:hover:border-gray-600 flex items-center gap-2 text-sm font-medium transition-all shadow-sm hover:shadow-md"
+                    title="الصفحة الأولى"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-4 w-4 -mr-4" />
+                    <span className="hidden sm:inline">الأولى</span>
+                  </button>
+                  
                   {/* زر السابق */}
                   <button
                     onClick={() => {
                       if (!isNavigating && stats.pagination.hasPreviousPage) {
                         setIsNavigating(true)
-                        fetchStats(currentPage - 1)
+                        setCurrentPage(prev => prev - 1)
                       }
                     }}
                     disabled={!stats.pagination.hasPreviousPage || isNavigating}
-                    className="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                    className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-blue-50 dark:hover:bg-gray-700 hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-gray-300 dark:disabled:hover:border-gray-600 flex items-center gap-2 text-sm font-medium transition-all shadow-sm hover:shadow-md"
+                    title="السابق (→)"
                   >
-                    <ChevronRight className="h-4 w-4" />
-                    السابق
+                    <ChevronRight className="h-5 w-5" />
+                    <span>السابق</span>
                   </button>
                   
                   {/* أرقام الصفحات */}
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, stats.pagination.totalPages) }, (_, i) => {
+                  <div className="flex items-center gap-1.5 px-2">
+                    {Array.from({ length: Math.min(7, stats.pagination.totalPages) }, (_, i) => {
                       let pageNum: number
-                      if (stats.pagination.totalPages <= 5) {
+                      if (stats.pagination.totalPages <= 7) {
                         pageNum = i + 1
-                      } else if (currentPage <= 3) {
+                      } else if (currentPage <= 4) {
                         pageNum = i + 1
-                      } else if (currentPage >= stats.pagination.totalPages - 2) {
-                        pageNum = stats.pagination.totalPages - 4 + i
+                      } else if (currentPage >= stats.pagination.totalPages - 3) {
+                        pageNum = stats.pagination.totalPages - 6 + i
                       } else {
-                        pageNum = currentPage - 2 + i
+                        pageNum = currentPage - 3 + i
                       }
                       
                       return (
@@ -1203,14 +1340,14 @@ export default function VisitsReportPage() {
                           onClick={() => {
                             if (!isNavigating && pageNum !== currentPage) {
                               setIsNavigating(true)
-                              fetchStats(pageNum)
+                              setCurrentPage(pageNum)
                             }
                           }}
                           disabled={isNavigating}
-                          className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
+                          className={`min-w-[40px] h-11 px-3 rounded-xl text-sm font-bold transition-all ${
                             currentPage === pageNum
-                              ? 'bg-blue-500 text-white shadow-lg'
-                              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50'
+                              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-110 border-2 border-blue-400'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 disabled:opacity-50'
                           }`}
                         >
                           {pageNum}
@@ -1218,18 +1355,18 @@ export default function VisitsReportPage() {
                       )
                     })}
                     
-                    {stats.pagination.totalPages > 5 && currentPage < stats.pagination.totalPages - 2 && (
+                    {stats.pagination.totalPages > 7 && currentPage < stats.pagination.totalPages - 3 && (
                       <>
-                        <span className="px-2 text-gray-500">...</span>
+                        <span className="px-2 text-gray-500 dark:text-gray-400 font-bold">...</span>
                         <button
                           onClick={() => {
                             if (!isNavigating && stats.pagination.totalPages !== currentPage) {
                               setIsNavigating(true)
-                              fetchStats(stats.pagination.totalPages)
+                              setCurrentPage(stats.pagination.totalPages)
                             }
                           }}
                           disabled={isNavigating}
-                          className="w-10 h-10 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 disabled:opacity-50"
+                          className="min-w-[40px] h-11 px-3 rounded-xl text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-transparent hover:border-blue-300 dark:hover:border-blue-700 disabled:opacity-50 transition-all"
                         >
                           {stats.pagination.totalPages}
                         </button>
@@ -1242,15 +1379,48 @@ export default function VisitsReportPage() {
                     onClick={() => {
                       if (!isNavigating && stats.pagination.hasNextPage) {
                         setIsNavigating(true)
-                        fetchStats(currentPage + 1)
+                        setCurrentPage(prev => prev + 1)
                       }
                     }}
                     disabled={!stats.pagination.hasNextPage || isNavigating}
-                    className="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                    className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-blue-50 dark:hover:bg-gray-700 hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-gray-300 dark:disabled:hover:border-gray-600 flex items-center gap-2 text-sm font-medium transition-all shadow-sm hover:shadow-md"
+                    title="التالي (←)"
                   >
-                    التالي
+                    <span>التالي</span>
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  
+                  {/* زر الصفحة الأخيرة */}
+                  <button
+                    onClick={() => {
+                      if (!isNavigating && currentPage !== stats.pagination.totalPages) {
+                        setIsNavigating(true)
+                        setCurrentPage(stats.pagination.totalPages)
+                      }
+                    }}
+                    disabled={currentPage === stats.pagination.totalPages || isNavigating}
+                    className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-blue-50 dark:hover:bg-gray-700 hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-gray-300 dark:disabled:hover:border-gray-600 flex items-center gap-2 text-sm font-medium transition-all shadow-sm hover:shadow-md"
+                    title="الصفحة الأخيرة"
+                  >
+                    <span className="hidden sm:inline">الأخيرة</span>
+                    <ChevronLeft className="h-4 w-4 -ml-4" />
                     <ChevronLeft className="h-4 w-4" />
                   </button>
+                </div>
+                
+                {/* تلميح اختصارات لوحة المفاتيح */}
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1">
+                      <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono">←</kbd>
+                      التالي
+                    </span>
+                    <span className="text-gray-400">•</span>
+                    <span className="inline-flex items-center gap-1">
+                      <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono">→</kbd>
+                      السابق
+                    </span>
+                  </p>
                 </div>
               </div>
             )}
