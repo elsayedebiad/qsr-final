@@ -43,17 +43,18 @@ export default function SalesRedirectPage() {
         let rulesData = null;
         let dataSource = 'default';
         
-        // محاولة 1: جلب من API
-        try {
-          const res = await fetch('/api/distribution/rules')
-          const data = await res.json()
-          if (data.success && data.rules && data.rules.length > 0) {
-            rulesData = data.rules
-            dataSource = 'API'
-          }
-        } catch {
-          console.log('⚠️ API failed, checking localStorage...')
-        }
+             // محاولة 1: جلب من API العام (بدون authentication)
+               try {
+                 const res = await fetch('/api/distribution/public-rules')
+                 const data = await res.json()
+                 if (data.success && data.rules && data.rules.length > 0) {
+                   rulesData = data.rules
+                   dataSource = 'API'
+                   console.log('✅ Rules loaded from public API')
+                 }
+               } catch (apiError) {
+                 console.log('⚠️ API failed, checking localStorage...', apiError)
+               }
         
         // محاولة 2: إذا فشل API، اقرأ من localStorage
         if (!rulesData) {

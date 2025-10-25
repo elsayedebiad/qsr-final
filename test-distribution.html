@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Distribution System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.danger {
+            background: #f44336;
+        }
+        button.danger:hover {
+            background: #da190b;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #2196F3;
+        }
+        .success {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 اختبار نظام التوزيع</h1>
+        
+        <div class="info">
+            <h3>📋 التوزيع الحالي:</h3>
+            <p>
+                ✅ <strong>sales1:</strong> 33.33%<br>
+                ✅ <strong>sales2:</strong> 33.33%<br>
+                ✅ <strong>sales3:</strong> 33.34%<br>
+                ❌ <strong>sales4-sales11:</strong> 0% (لن تحصل على أي زيارات)
+            </p>
+        </div>
+
+        <h3>🔧 خطوات الاختبار:</h3>
+        
+        <div style="margin: 20px 0;">
+            <button class="danger" onclick="clearCookies()">
+                🗑️ مسح الكوكيز
+            </button>
+            <button onclick="clearLocalStorage()">
+                🗑️ مسح localStorage
+            </button>
+            <button onclick="testSalesRedirect()">
+                🔄 اختبار التوجيه (يجب أن يكون sales1-3 فقط)
+            </button>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <button onclick="testMultipleTimes(10)">
+                🎲 اختبار 10 مرات
+            </button>
+            <button onclick="testMultipleTimes(50)">
+                🎲 اختبار 50 مرة
+            </button>
+            <button onclick="testMultipleTimes(100)">
+                🎲 اختبار 100 مرة
+            </button>
+        </div>
+
+        <div id="results" class="results" style="display: none;">
+            <h3>📊 نتائج الاختبار:</h3>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        function clearCookies() {
+            // مسح جميع الكوكيز
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            alert('✅ تم مسح جميع الكوكيز!\n\nالكوكيز المحذوفة:\n- td_bucket\n- td_rules_version');
+            console.log('✅ Cookies cleared');
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('qsr_distribution_rules');
+            alert('✅ تم مسح localStorage!');
+            console.log('✅ localStorage cleared');
+        }
+
+        function testSalesRedirect() {
+            // فتح صفحة /sales في نافذة جديدة
+            window.open('/sales', '_blank');
+        }
+
+        async function simulateRedirect() {
+            // محاكاة التوجيه بدون فتح صفحة جديدة
+            try {
+                const res = await fetch('/api/distribution/public-rules');
+                const data = await res.json();
+                
+                if (!data.success || !data.rules || data.rules.length === 0) {
+                    return 'error';
+                }
+
+                // فلترة الصفحات النشطة مع وزن > 0
+                const activeRules = data.rules.filter(r => 
+                    r.isActive && (r.googleWeight > 0 || r.otherWeight > 0)
+                );
+
+                // استخدام otherWeight للاختبار
+                const weightedRules = activeRules
+                    .filter(r => r.otherWeight > 0)
+                    .map(r => ({
+                        path: `/sales${r.salesPageId.replace('sales', '')}`,
+                        weight: r.otherWeight
+                    }));
+
+                if (weightedRules.length === 0) {
+                    return 'no-rules';
+                }
+
+                // اختيار صفحة عشوائية
+                const totalWeight = weightedRules.reduce((sum, r) => sum + r.weight, 0);
+                const random = Math.random() * totalWeight;
+                let cursor = random;
+
+                for (const rule of weightedRules) {
+                    if ((cursor -= rule.weight) <= 0) {
+                        return rule.path.replace('/sales', 'sales');
+                    }
+                }
+
+                return weightedRules[weightedRules.length - 1].path.replace('/sales', 'sales');
+            } catch (error) {
+                console.error('Test error:', error);
+                return 'error';
+            }
+        }
+
+        async function testMultipleTimes(count) {
+            const results = document.getElementById('results');
+            const resultsContent = document.getElementById('resultsContent');
+            
+            results.style.display = 'block';
+            resultsContent.innerHTML = `<p>⏳ جاري الاختبار ${count} مرة...</p>`;
+
+            const distribution = {};
+            
+            for (let i = 0; i < count; i++) {
+                const result = await simulateRedirect();
+                distribution[result] = (distribution[result] || 0) + 1;
+            }
+
+            // عرض النتائج
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<tr style="border-bottom: 2px solid #ddd;"><th style="text-align: right; padding: 10px;">الصفحة</th><th style="padding: 10px;">العدد</th><th style="padding: 10px;">النسبة</th><th style="padding: 10px;">التقييم</th></tr>';
+            
+            const sortedKeys = Object.keys(distribution).sort();
+            
+            for (const page of sortedKeys) {
+                const count_val = distribution[page];
+                const percentage = ((count_val / count) * 100).toFixed(2);
+                
+                let evaluation = '✅ صحيح';
+                let rowStyle = 'background: #e8f5e9;';
+                
+                // التحقق: يجب أن تكون فقط sales1, sales2, sales3
+                if (page === 'sales1' || page === 'sales2' || page === 'sales3') {
+                    evaluation = '✅ صحيح (متوقع)';
+                    rowStyle = 'background: #e8f5e9;';
+                } else {
+                    evaluation = '❌ خطأ (يجب أن يكون 0%)';
+                    rowStyle = 'background: #ffebee;';
+                }
+                
+                html += `<tr style="${rowStyle}">`;
+                html += `<td style="padding: 10px; text-align: right;"><strong>${page}</strong></td>`;
+                html += `<td style="padding: 10px; text-align: center;">${count_val}</td>`;
+                html += `<td style="padding: 10px; text-align: center;">${percentage}%</td>`;
+                html += `<td style="padding: 10px; text-align: center;">${evaluation}</td>`;
+                html += '</tr>';
+            }
+            html += '</table>';
+
+            // التحقق النهائي
+            const hasUnexpected = Object.keys(distribution).some(page => 
+                page !== 'sales1' && page !== 'sales2' && page !== 'sales3' && page !== 'error'
+            );
+
+            if (hasUnexpected) {
+                html += '<div style="background: #ffebee; padding: 15px; margin-top: 20px; border-radius: 5px; border-left: 4px solid #f44336;">';
+                html += '<strong>❌ تحذير:</strong> تم العثور على توجيه إلى صفحات غير متوقعة!<br>';
+                html += 'يجب أن يكون التوجيه فقط إلى sales1, sales2, sales3';
+                html += '</div>';
+            } else {
+                html += '<div style="background: #e8f5e9; padding: 15px; margin-top: 20px; border-radius: 5px; border-left: 4px solid #4CAF50;">';
+                html += '<strong>✅ نجاح:</strong> جميع التوجيهات إلى الصفحات الصحيحة (sales1, sales2, sales3)';
+                html += '</div>';
+            }
+
+            resultsContent.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
+
