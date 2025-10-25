@@ -911,12 +911,16 @@ export default function Sales3Page() {
       const cleanPhone = whatsappNumber.replace(/\D/g, '');
       
       // إنشاء الرسالة مع تنسيق محسن
-      const message = `مرحباً، أريد الاستفسار عن السيرة الذاتية:
-الاسم: ${cv.fullName || 'غير محدد'}
-${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''}${cv.referenceCode ? `الكود المرجعي: ${cv.referenceCode}\n` : ''}${cv.nationality ? `الجنسية: ${cv.nationality}\n` : ''}${cv.position ? `الوظيفة: ${cv.position}\n` : ''}${cv.experience ? `الخبرة: ${cv.experience}\n` : ''}${cv.age ? `العمر: ${cv.age} سنة\n` : ''}
-🔗 رابط السيرة الذاتية: ${window.location.origin}/cv/${cv.id}?from=sales3
+      const message = `هلا والله 
+حبيت أستفسر عن العامل رقم ${cv.referenceCode || 'غير محدد'}
+الاسم: ${cv.fullNameArabic || cv.fullName || 'غير محدد'}
+الجنسية: ${cv.nationality || 'غير محددة'}
+المهنة: ${cv.position || 'غير محددة'}
+عنده خبرة ${cv.experience || 'غير محددة'}، وعمره ${cv.age || 'غير محدد'} سنة
 
-من صفحة: Sales 3`;
+هذا رابط سيرته: ${window.location.origin}/cv/${cv.id}?from=sales3
+
+إذا متوفر علمّوني الله يعطيكم العافية `;
 
       const encodedMessage = encodeURIComponent(message);
       const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
