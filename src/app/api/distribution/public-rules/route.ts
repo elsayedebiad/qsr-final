@@ -57,9 +57,25 @@ export async function GET() {
       })
     }
 
+    // ✅ حساب رقم النسخة من القواعد نفسها (hash بسيط)
+    // إذا تغيرت القواعد، سيتغير رقم النسخة تلقائياً
+    const rulesString = rules.map(r => 
+      `${r.salesPageId}:${r.googleWeight}:${r.otherWeight}:${r.isActive}`
+    ).join('|')
+    
+    // hash بسيط - يمكن استبداله بـ crypto.createHash
+    let hash = 0
+    for (let i = 0; i < rulesString.length; i++) {
+      const char = rulesString.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash
+    }
+    const rulesVersion = `v${Math.abs(hash)}`
+
     return NextResponse.json({
       success: true,
-      rules
+      rules,
+      rulesVersion // إرجاع رقم النسخة
     })
   } catch (error) {
     console.error('Public distribution rules get error:', error)

@@ -121,10 +121,17 @@ export async function POST(request: NextRequest) {
       )
     )
 
+    // ✅ توليد رقم نسخة جديد لإلغاء الكوكيز القديمة تلقائياً
+    const rulesVersion = `v${Date.now()}`
+    console.log('✅ Distribution rules saved successfully')
+    console.log(`   New rules version: ${rulesVersion}`)
+    console.log('   🔄 All user cookies will be reset on next visit')
+
     return NextResponse.json({
       success: true,
       message: 'تم حفظ القواعد بنجاح',
-      rules: updatedRules
+      rules: updatedRules,
+      rulesVersion // إرجاع رقم النسخة الجديد
     })
   } catch (error) {
     console.error('Distribution rules save error:', error)

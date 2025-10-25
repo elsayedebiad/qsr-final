@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
             value: `
               default-src 'self';
               script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:
+                https://*.run.app
                 https://www.googletagmanager.com 
                 https://tagmanager.google.com 
                 https://www.google-analytics.com 
@@ -34,15 +35,20 @@ const nextConfig: NextConfig = {
                 https://*.google.com
                 https://www.clarity.ms
                 https://*.clarity.ms
+                https://c.clarity.ms
                 https://www.googleadservices.com
                 https://*.googleadservices.com
                 https://googleads.g.doubleclick.net
                 https://*.doubleclick.net
+                https://googleleads.g.doubleclick.net
                 https://connect.facebook.net 
                 https://www.facebook.com
+                https://*.facebook.com
                 https://analytics.tiktok.com
-                https://*.tiktok.com;
+                https://*.tiktok.com
+                https://*.conversionsapigateway.com;
               script-src-elem 'self' 'unsafe-inline' blob:
+                https://*.run.app
                 https://www.googletagmanager.com 
                 https://tagmanager.google.com 
                 https://www.google-analytics.com 
@@ -53,17 +59,22 @@ const nextConfig: NextConfig = {
                 https://*.google.com
                 https://www.clarity.ms
                 https://*.clarity.ms
+                https://c.clarity.ms
                 https://www.googleadservices.com
                 https://*.googleadservices.com
                 https://googleads.g.doubleclick.net
                 https://*.doubleclick.net
+                https://googleleads.g.doubleclick.net
                 https://connect.facebook.net
                 https://*.facebook.net
                 https://www.facebook.com
                 https://*.facebook.com
                 https://analytics.tiktok.com
-                https://*.tiktok.com;
+                https://*.tiktok.com
+                https://*.conversionsapigateway.com;
               connect-src 'self' 
+                https://*.run.app
+                wss://*.run.app
                 https://www.google-analytics.com 
                 https://analytics.google.com 
                 https://stats.g.doubleclick.net 
@@ -78,10 +89,12 @@ const nextConfig: NextConfig = {
                 https://*.google.com
                 https://www.clarity.ms
                 https://*.clarity.ms
+                https://c.clarity.ms
                 https://www.googleadservices.com
                 https://*.googleadservices.com
                 https://googleads.g.doubleclick.net
                 https://*.doubleclick.net
+                https://googleleads.g.doubleclick.net
                 https://connect.facebook.net
                 https://*.facebook.net
                 https://www.facebook.com
@@ -105,8 +118,11 @@ const nextConfig: NextConfig = {
                 https://*.sharepoint.com 
                 https://view.officeapps.live.com 
                 https://office.live.com 
-                https://*.office.com;
+                https://*.office.com
+                https://*.conversionsapigateway.com
+                wss://*;
               img-src 'self' data: blob: https: http: 
+                https://*.run.app
                 https://www.google-analytics.com 
                 https://ssl.google-analytics.com 
                 https://www.googletagmanager.com 
@@ -118,10 +134,12 @@ const nextConfig: NextConfig = {
                 https://*.googletagmanager.com 
                 https://www.clarity.ms
                 https://*.clarity.ms
+                https://c.clarity.ms
                 https://www.googleadservices.com
                 https://*.googleadservices.com
                 https://googleads.g.doubleclick.net
                 https://*.doubleclick.net
+                https://googleleads.g.doubleclick.net
                 https://www.facebook.com
                 https://*.facebook.com
                 https://*.facebook.net
@@ -132,7 +150,8 @@ const nextConfig: NextConfig = {
                 https://*.googleusercontent.com 
                 https://docs.google.com 
                 https://images.weserv.nl 
-                https://wsrv.nl;
+                https://wsrv.nl
+                https://*.conversionsapigateway.com;
               style-src 'self' 'unsafe-inline' 
                 https://fonts.googleapis.com 
                 https://www.googletagmanager.com 
@@ -160,6 +179,7 @@ const nextConfig: NextConfig = {
                 https://office.live.com 
                 https://*.office.com;
               frame-src 'self' 
+                https://*.run.app
                 https://www.googletagmanager.com 
                 https://tagmanager.google.com 
                 https://analytics.google.com 
@@ -173,6 +193,7 @@ const nextConfig: NextConfig = {
                 https://*.facebook.net
                 https://analytics.tiktok.com
                 https://*.tiktok.com
+                https://*.conversionsapigateway.com
                 https://www.youtube.com 
                 https://youtube.com 
                 https://player.vimeo.com 
