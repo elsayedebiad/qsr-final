@@ -155,10 +155,15 @@ const nextConfig: NextConfig = {
               style-src 'self' 'unsafe-inline' 
                 https://fonts.googleapis.com 
                 https://www.googletagmanager.com 
-                https://tagmanager.google.com;
-              font-src 'self' 
+                https://tagmanager.google.com
+                https://www.clarity.ms
+                https://*.clarity.ms
+                https://c.clarity.ms;
+              font-src 'self' data:
                 https://fonts.gstatic.com 
-                https://fonts.googleapis.com;
+                https://fonts.googleapis.com
+                https://www.clarity.ms
+                https://*.clarity.ms;
               media-src 'self' data: blob: https: http: 
                 https://www.youtube.com 
                 https://youtube.com 
