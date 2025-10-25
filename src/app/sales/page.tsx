@@ -39,25 +39,25 @@ export default function SalesRedirectPage() {
       ]
 
       // محاولة جلب القواعد المخصصة - من API أولاً ثم من localStorage
+      let apiRulesVersion = null
       try {
         let rulesData = null;
         let dataSource = 'default';
         
-             // محاولة 1: جلب من API العام (بدون authentication)
-               let apiRulesVersion = null
-               try {
-                 const res = await fetch('/api/distribution/public-rules')
-                 const data = await res.json()
-                 if (data.success && data.rules && data.rules.length > 0) {
-                   rulesData = data.rules
-                   apiRulesVersion = data.rulesVersion || 'v2' // استخدام rulesVersion من API
-                   dataSource = 'API'
-                   console.log('✅ Rules loaded from public API')
-                   console.log(`   Rules version from API: ${apiRulesVersion}`)
-                 }
-               } catch (apiError) {
-                 console.log('⚠️ API failed, checking localStorage...', apiError)
-               }
+        // محاولة 1: جلب من API العام (بدون authentication)
+        try {
+          const res = await fetch('/api/distribution/public-rules')
+          const data = await res.json()
+          if (data.success && data.rules && data.rules.length > 0) {
+            rulesData = data.rules
+            apiRulesVersion = data.rulesVersion || 'v2' // استخدام rulesVersion من API
+            dataSource = 'API'
+            console.log('✅ Rules loaded from public API')
+            console.log(`   Rules version from API: ${apiRulesVersion}`)
+          }
+        } catch (apiError) {
+          console.log('⚠️ API failed, checking localStorage...', apiError)
+        }
         
         // محاولة 2: إذا فشل API، اقرأ من localStorage
         if (!rulesData) {
@@ -213,29 +213,29 @@ export default function SalesRedirectPage() {
     // الحصول على referer
     const referer = document.referrer || ''
     
-           // التحقق من الكوكي للثبات
-           const cookieName = 'td_bucket'
-           // استخدام rulesVersion من API (يتغير تلقائياً عند تغيير القواعد)
-           const rulesVersion = apiRulesVersion || 'v2'
-           const versionCookieName = 'td_rules_version'
+    // التحقق من الكوكي للثبات
+    const cookieName = 'td_bucket'
+    // استخدام rulesVersion من API (يتغير تلقائياً عند تغيير القواعد)
+    const rulesVersion = apiRulesVersion || 'v2'
+    const versionCookieName = 'td_rules_version'
 
-           // التحقق من نسخة القواعد
-           const existingVersion = document.cookie
-             .split('; ')
-             .find(row => row.startsWith(versionCookieName + '='))
+    // التحقق من نسخة القواعد
+    const existingVersion = document.cookie
+      .split('; ')
+      .find(row => row.startsWith(versionCookieName + '='))
 
-           const currentVersion = existingVersion?.split('=')[1]
+    const currentVersion = existingVersion?.split('=')[1]
 
-           // إذا تغيرت القواعد، امسح الـ cookie القديم
-           let shouldResetCookie = false
-           if (currentVersion !== rulesVersion) {
-             shouldResetCookie = true
-             console.log('🔄 Rules version changed!')
-             console.log(`   Old version: ${currentVersion || 'none'}`)
-             console.log(`   New version: ${rulesVersion}`)
-             console.log('   → Resetting user cookie to apply new rules')
-             document.cookie = `${versionCookieName}=${rulesVersion}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax`
-           }
+    // إذا تغيرت القواعد، امسح الـ cookie القديم
+    let shouldResetCookie = false
+    if (currentVersion !== rulesVersion) {
+      shouldResetCookie = true
+      console.log('🔄 Rules version changed!')
+      console.log(`   Old version: ${currentVersion || 'none'}`)
+      console.log(`   New version: ${rulesVersion}`)
+      console.log('   → Resetting user cookie to apply new rules')
+      document.cookie = `${versionCookieName}=${rulesVersion}; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax`
+    }
     
     const existingCookie = document.cookie
       .split('; ')
