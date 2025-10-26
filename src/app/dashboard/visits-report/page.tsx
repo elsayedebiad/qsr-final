@@ -651,33 +651,33 @@ export default function VisitsReportPage() {
     <DashboardLayout>
       {() => (
         <>
-        <div className="space-y-6">
+        <div className="space-y-6 w-full overflow-x-hidden px-1 md:px-0">
           {/* Header */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
-                  <Eye className="h-8 w-8 text-white" />
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3 md:gap-4">
+                <div className="p-2 md:p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
+                  <Eye className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
                     تقرير الزيارات المباشر
                   </h1>
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
                     تتبع لحظي لجميع الزيارات والإعلانات
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-end">
                 <button
                   onClick={() => setAutoRefresh(!autoRefresh)}
-                  className={`px-4 py-2 rounded-lg transition-all ${
+                  className={`px-3 md:px-4 py-2 rounded-lg transition-all text-xs md:text-sm ${
                     autoRefresh
                       ? 'bg-green-500 text-white'
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }`}
                 >
-                  {autoRefresh ? '🟢 تحديث تلقائي' : '⚪ متوقف'}
+                  {autoRefresh ? '🟢 تحديث' : '⚪ متوقف'}
                 </button>
                 <button
                   onClick={() => {
@@ -687,11 +687,11 @@ export default function VisitsReportPage() {
                     }
                   }}
                   disabled={isNavigating}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 md:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all flex items-center gap-1 md:gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="تحديث وعرض أحدث الزيارات"
                 >
-                  <RefreshCw className={`h-5 w-5 ${isNavigating ? 'animate-spin' : ''}`} />
-                  <span className="text-sm font-medium">أحدث الزيارات</span>
+                  <RefreshCw className={`h-4 w-4 md:h-5 md:w-5 ${isNavigating ? 'animate-spin' : ''}`} />
+                  <span className="text-xs md:text-sm font-medium hidden sm:inline">أحدث</span>
                 </button>
               </div>
             </div>
@@ -748,7 +748,7 @@ export default function VisitsReportPage() {
                 <MousePointerClick className="h-5 w-5 text-blue-500" />
                 الزيارات حسب الصفحة
               </h2>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                 {(() => {
                   // دمج الصفحات المكررة (حالة مختلفة و / في البداية)
                   const mergedPages = new Map<string, number>()
@@ -790,7 +790,7 @@ export default function VisitsReportPage() {
                 <MapPin className="h-5 w-5 text-green-500" />
                 الزيارات حسب الدولة
               </h2>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                 {Object.entries(stats.countryStats)
                   .sort(([, a], [, b]) => b - a)
                   .map(([country, count]) => (
@@ -819,7 +819,7 @@ export default function VisitsReportPage() {
                 <Globe className="h-5 w-5 text-purple-500" />
                 المصادر
               </h2>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                 {Object.entries(stats.sourceStats)
                   .sort(([, a], [, b]) => b - a)
                   .map(([source, count]) => (
@@ -848,7 +848,7 @@ export default function VisitsReportPage() {
                 <LinkIcon className="h-5 w-5 text-orange-500" />
                 الحملات الإعلانية
               </h2>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
                 {Object.entries(stats.campaignStats)
                   .sort(([, a], [, b]) => b - a)
                   .map(([campaign, count]) => (
@@ -873,34 +873,34 @@ export default function VisitsReportPage() {
           </div>
 
           {/* Recent Visits */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+              <h2 className="text-base md:text-lg font-semibold flex items-center gap-2 flex-wrap">
                 <Eye className="h-5 w-5 text-blue-500" />
-                آخر الزيارات (Live)
-                <span className="text-sm font-normal text-gray-500">({filteredVisits.length} زيارة)</span>
+                <span>آخر الزيارات (Live)</span>
+                <span className="text-xs md:text-sm font-normal text-gray-500">({filteredVisits.length})</span>
                 {selectedVisits.length > 0 && (
-                  <span className="text-sm font-normal text-blue-500">
+                  <span className="text-xs md:text-sm font-normal text-blue-500">
                     ({selectedVisits.length} محدد)
                   </span>
                 )}
               </h2>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
                 <button
                   onClick={exportToExcel}
                   disabled={exporting || filteredVisits.length === 0}
-                  className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 text-sm flex items-center gap-1 disabled:opacity-50 shadow-md hover:shadow-lg transition-all"
+                  className="px-2 sm:px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 text-xs sm:text-sm flex items-center gap-1 disabled:opacity-50 shadow-md hover:shadow-lg transition-all"
                   title="تصدير إلى Excel مع إحصائيات مفصلة"
                 >
                   {exporting ? (
                     <>
                       <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                      جاري التصدير...
+                      <span className="hidden sm:inline">جاري التصدير...</span>
                     </>
                   ) : (
                     <>
                       <FileSpreadsheet className="h-4 w-4" />
-                      تصدير Excel
+                      <span className="hidden sm:inline">تصدير Excel</span>
                     </>
                   )}
                 </button>
@@ -910,19 +910,19 @@ export default function VisitsReportPage() {
                   <button
                     onClick={archiveSelected}
                     disabled={archiving}
-                    className="px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm flex items-center gap-1 disabled:opacity-50"
+                    className="px-2 sm:px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-xs sm:text-sm flex items-center gap-1 disabled:opacity-50"
                   >
                     <Archive className="h-4 w-4" />
-                    أرشفة المحدد ({selectedVisits.length})
+                    <span className="hidden sm:inline">أرشفة ({selectedVisits.length})</span>
                   </button>
                 )}
                 <button
                   onClick={archiveFiltered}
                   disabled={archiving || filteredVisits.length === 0}
-                  className="px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm flex items-center gap-1 disabled:opacity-50"
+                  className="px-2 sm:px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-xs sm:text-sm flex items-center gap-1 disabled:opacity-50"
                 >
                   <Archive className="h-4 w-4" />
-                  أرشفة الكل ({filteredVisits.length})
+                  <span className="hidden sm:inline">أرشفة الكل</span>
                 </button>
                 
                 {/* أزرار الحذف النهائي */}
@@ -930,42 +930,42 @@ export default function VisitsReportPage() {
                   <button
                     onClick={deleteSelected}
                     disabled={deleting}
-                    className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm flex items-center gap-1 disabled:opacity-50 shadow-md hover:shadow-lg transition-all"
+                    className="px-2 sm:px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs sm:text-sm flex items-center gap-1 disabled:opacity-50 shadow-md hover:shadow-lg transition-all"
                     title="حذف نهائي - لا يمكن التراجع"
                   >
                     <Trash2 className="h-4 w-4" />
-                    حذف المحدد ({selectedVisits.length})
+                    <span className="hidden sm:inline">حذف ({selectedVisits.length})</span>
                   </button>
                 )}
                 <button
                   onClick={deleteFiltered}
                   disabled={deleting || filteredVisits.length === 0}
-                  className="px-3 py-1.5 bg-red-700 text-white rounded-lg hover:bg-red-800 text-sm flex items-center gap-1 disabled:opacity-50 shadow-md hover:shadow-lg transition-all"
+                  className="px-2 sm:px-3 py-1.5 bg-red-700 text-white rounded-lg hover:bg-red-800 text-xs sm:text-sm flex items-center gap-1 disabled:opacity-50 shadow-md hover:shadow-lg transition-all"
                   title="حذف نهائي - لا يمكن التراجع"
                 >
                   <Trash2 className="h-4 w-4" />
-                  حذف الكل ({filteredVisits.length})
+                  <span className="hidden sm:inline">حذف الكل</span>
                 </button>
                 
                 <button
                   onClick={() => router.push('/dashboard/visits-archive')}
-                  className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm flex items-center gap-1"
+                  className="px-2 sm:px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs sm:text-sm flex items-center gap-1"
                 >
                   <Archive className="h-4 w-4" />
-                  الأرشيف
+                  <span className="hidden sm:inline">الأرشيف</span>
                 </button>
                 <button
                   onClick={resetFilters}
-                  className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm flex items-center gap-1"
+                  className="px-2 sm:px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-xs sm:text-sm flex items-center gap-1"
                 >
                   <X className="h-4 w-4" />
-                  إعادة تعيين
+                  <span className="hidden sm:inline">إعادة تعيين</span>
                 </button>
               </div>
             </div>
             
             {/* Filters - محسّن */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 p-6 bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-4 p-6 bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
               {/* فلتر الدولة */}
               <div className="group">
                 <label className="block text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700 dark:text-gray-200">
@@ -1071,11 +1071,11 @@ export default function VisitsReportPage() {
                 />
               </div>
             </div>
-            <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>
-              <table className="w-full min-w-[1200px]" style={{ tableLayout: 'fixed' }}>
+            <div className="overflow-hidden w-full">
+              <table className="w-full" style={{ tableLayout: 'auto' }}>
                 <thead>
                   <tr className="border-b dark:border-gray-700 text-sm">
-                    <th className="text-center py-3 px-2" style={{ width: '50px' }}>
+                    <th className="text-center py-3 px-2 w-12">
                       <button onClick={toggleAllVisits} className="hover:text-blue-500">
                         {selectedVisits.length === filteredVisits.length && filteredVisits.length > 0 ? (
                           <CheckSquare className="h-5 w-5" />
@@ -1084,15 +1084,15 @@ export default function VisitsReportPage() {
                         )}
                       </button>
                     </th>
-                    <th className="text-right py-3 px-4" style={{ width: '140px' }}>التاريخ والوقت</th>
-                    <th className="text-right py-3 px-4" style={{ width: '110px' }}>IP</th>
-                    <th className="text-right py-3 px-4" style={{ width: '100px' }}>الدولة</th>
-                    <th className="text-right py-3 px-4" style={{ width: '100px' }}>المدينة</th>
-                    <th className="text-right py-3 px-4" style={{ width: '100px' }}>الصفحة</th>
-                    <th className="text-right py-3 px-4" style={{ width: '120px' }}>الجهاز</th>
-                    <th className="text-right py-3 px-4" style={{ width: '110px' }}>المصدر</th>
-                    <th className="text-right py-3 px-4" style={{ width: '180px' }}>الحملة</th>
-                    <th className="text-center py-3 px-4" style={{ width: '60px' }}>إجراءات</th>
+                    <th className="text-right py-3 px-2 whitespace-nowrap">التاريخ والوقت</th>
+                    <th className="text-right py-3 px-2 whitespace-nowrap">IP</th>
+                    <th className="text-right py-3 px-2 whitespace-nowrap">الدولة</th>
+                    <th className="text-right py-3 px-2 whitespace-nowrap hidden md:table-cell">المدينة</th>
+                    <th className="text-right py-3 px-2 whitespace-nowrap">الصفحة</th>
+                    <th className="text-right py-3 px-2 whitespace-nowrap hidden lg:table-cell">الجهاز</th>
+                    <th className="text-right py-3 px-2 whitespace-nowrap">المصدر</th>
+                    <th className="text-right py-3 px-2 whitespace-nowrap w-48">الحملة</th>
+                    <th className="text-center py-3 px-2 w-12">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1146,65 +1146,60 @@ export default function VisitsReportPage() {
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4" title={visit.ipAddress}>
+                      <td className="py-3 px-2" title={visit.ipAddress}>
                         <span className="font-mono text-xs block overflow-hidden text-ellipsis whitespace-nowrap">{visit.ipAddress}</span>
                       </td>
-                      <td className="py-3 px-4" title={visit.country || '-'}>
-                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap">{visit.country || '-'}</span>
+                      <td className="py-3 px-2" title={visit.country || '-'}>
+                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap text-xs">{visit.country || '-'}</span>
                       </td>
-                      <td className="py-3 px-4" title={visit.city || '-'}>
-                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap">{visit.city || '-'}</span>
+                      <td className="py-3 px-2 hidden md:table-cell" title={visit.city || '-'}>
+                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap text-xs">{visit.city || '-'}</span>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-2">
                         <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs block overflow-hidden text-ellipsis whitespace-nowrap" title={visit.targetPage}>
-                          {visit.targetPage}
+                          {visit.targetPage.length > 10 ? visit.targetPage.substring(0, 10) + '...' : visit.targetPage}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-2 hidden lg:table-cell">
                         <div className="flex flex-col gap-0.5">
                           <span className="text-xs font-medium">
-                            {visit.device === 'mobile' && '📱 Mobile'}
-                            {visit.device === 'tablet' && '📱 Tablet'}
-                            {visit.device === 'desktop' && '💻 Desktop'}
+                            {visit.device === 'mobile' && '📱'}
+                            {visit.device === 'tablet' && '📱'}
+                            {visit.device === 'desktop' && '💻'}
                             {!visit.device && '-'}
                           </span>
-                          {visit.browser && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 block overflow-hidden text-ellipsis whitespace-nowrap">
-                              {visit.browser} • {visit.os}
-                            </span>
-                          )}
                         </div>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-2">
                         <span className={`px-2 py-1 rounded text-xs block overflow-hidden text-ellipsis whitespace-nowrap ${
                           visit.isGoogle
                             ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                         }`} title={visit.utmSource || (visit.isGoogle ? 'Google' : 'Direct')}>
-                          {visit.utmSource || (visit.isGoogle ? 'Google' : 'Direct')}
+                          {visit.utmSource?.substring(0, 8) || (visit.isGoogle ? 'Google' : 'Direct')}
                         </span>
                       </td>
-                      <td className="py-3 px-4" style={{ maxWidth: '180px', overflow: 'hidden' }}>
-                        <div className="w-full" style={{ wordBreak: 'break-all', overflowWrap: 'break-word' }}>
+                      <td className="py-3 px-2 max-w-[192px]">
+                        <div className="max-h-16 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', wordBreak: 'break-word' }}>
                           {visit.gclid && (
-                            <div className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded w-full" title={`Google Ads: ${visit.gclid}`} style={{ wordBreak: 'break-all' }}>
-                              <div className="font-semibold mb-0.5">🎯 Google Ads</div>
-                              <div className="font-mono text-[9px] leading-tight opacity-70" style={{ wordBreak: 'break-all', maxWidth: '100%' }}>
-                                {visit.gclid.substring(0, 25)}...
+                            <div className="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded mb-1" title={`Google Ads: ${visit.gclid}`}>
+                              <div className="font-semibold">🎯 Google Ads</div>
+                              <div className="font-mono text-[9px] leading-tight opacity-70 break-all">
+                                {visit.gclid.substring(0, 20)}...
                               </div>
                             </div>
                           )}
                           {visit.fbclid && (
-                            <div className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded w-full" title={`Facebook Ads: ${visit.fbclid}`} style={{ wordBreak: 'break-all' }}>
-                              <div className="font-semibold mb-0.5">📘 Facebook Ads</div>
-                              <div className="font-mono text-[9px] leading-tight opacity-70" style={{ wordBreak: 'break-all', maxWidth: '100%' }}>
-                                {visit.fbclid.substring(0, 25)}...
+                            <div className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded mb-1" title={`Facebook Ads: ${visit.fbclid}`}>
+                              <div className="font-semibold">📘 Facebook</div>
+                              <div className="font-mono text-[9px] leading-tight opacity-70 break-all">
+                                {visit.fbclid.substring(0, 20)}...
                               </div>
                             </div>
                           )}
                           {visit.utmCampaign && !visit.gclid && !visit.fbclid && (
-                            <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded block w-full" title={visit.utmCampaign} style={{ wordBreak: 'break-all', overflowWrap: 'break-word', maxWidth: '100%' }}>
-                              {visit.utmCampaign.length > 30 ? visit.utmCampaign.substring(0, 30) + '...' : visit.utmCampaign}
+                            <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded block break-words" title={visit.utmCampaign}>
+                              {visit.utmCampaign.length > 40 ? visit.utmCampaign.substring(0, 40) + '...' : visit.utmCampaign}
                             </span>
                           )}
                           {!visit.utmCampaign && !visit.gclid && !visit.fbclid && (
@@ -1212,7 +1207,7 @@ export default function VisitsReportPage() {
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-2 text-center">
                         <button
                           onClick={() => {
                             showDeleteConfirmation('single', 1, visit.id)
