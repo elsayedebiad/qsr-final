@@ -87,7 +87,18 @@ export async function POST(request: NextRequest) {
         const cv = newCVs[i]
         const selectedPage = distributionArray[i]
         
-        // تسجيل التوزيع
+        // حفظ في جدول CVDistribution
+        await db.cVDistribution.create({
+          data: {
+            cvId: cv.id,
+            salesPageId: selectedPage,
+            assignedBy: user.id,
+            isActive: true,
+            assignedAt: new Date()
+          }
+        })
+        
+        // تسجيل التوزيع في ActivityLog
         await db.activityLog.create({
           data: {
             userId: user.id,
@@ -131,8 +142,20 @@ export async function POST(request: NextRequest) {
         const pageCVs = newCVs.slice(cvIndex, cvIndex + cvsPerPage)
         
         if (pageCVs.length > 0) {
-          // تسجيل التوزيع في سجل الأنشطة
+          // حفظ التوزيع في CVDistribution وActivityLog
           for (const cv of pageCVs) {
+            // حفظ في جدول CVDistribution
+            await db.cVDistribution.create({
+              data: {
+                cvId: cv.id,
+                salesPageId: pageId,
+                assignedBy: user.id,
+                isActive: true,
+                assignedAt: new Date()
+              }
+            })
+            
+            // تسجيل في ActivityLog
             await db.activityLog.create({
               data: {
                 userId: user.id,
@@ -159,6 +182,18 @@ export async function POST(request: NextRequest) {
       for (const cv of newCVs) {
         const randomPage = salesPages[Math.floor(Math.random() * salesPages.length)]
         
+        // حفظ في جدول CVDistribution
+        await db.cVDistribution.create({
+          data: {
+            cvId: cv.id,
+            salesPageId: randomPage,
+            assignedBy: user.id,
+            isActive: true,
+            assignedAt: new Date()
+          }
+        })
+        
+        // تسجيل في ActivityLog
         await db.activityLog.create({
           data: {
             userId: user.id,
@@ -180,29 +215,16 @@ export async function POST(request: NextRequest) {
       // توزيع متوازن بناءً على العدد الحالي
       const pageCounts: Record<string, number> = {}
       
-      // حساب العدد الحالي لكل صفحة
+      // حساب العدد الحالي لكل صفحة من CVDistribution
       for (const pageId of salesPages) {
-        const count = await db.activityLog.count({
+        const count = await db.cVDistribution.count({
           where: {
-            action: 'CV_DISTRIBUTED',
-            metadata: {
-              path: '$.salesPageId',
-              equals: pageId
-            }
+            salesPageId: pageId,
+            isActive: true
           }
         })
         
-        const removedCount = await db.activityLog.count({
-          where: {
-            action: 'CV_REMOVED',
-            metadata: {
-              path: '$.salesPageId',
-              equals: pageId
-            }
-          }
-        })
-        
-        pageCounts[pageId] = Math.max(0, count - removedCount)
+        pageCounts[pageId] = count
       }
 
       // توزيع السير على الصفحات الأقل عدداً
@@ -212,6 +234,18 @@ export async function POST(request: NextRequest) {
         
         const targetPage = sortedPages[0][0]
         
+        // حفظ في جدول CVDistribution
+        await db.cVDistribution.create({
+          data: {
+            cvId: cv.id,
+            salesPageId: targetPage,
+            assignedBy: user.id,
+            isActive: true,
+            assignedAt: new Date()
+          }
+        })
+        
+        // تسجيل في ActivityLog
         await db.activityLog.create({
           data: {
             userId: user.id,
