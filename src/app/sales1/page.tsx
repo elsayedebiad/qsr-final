@@ -22,7 +22,8 @@ import {
   Play,
   Image as ImageIcon,
   MapPin,
-  Phone
+  Phone,
+  Mail
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
@@ -2201,6 +2202,10 @@ export default function Sales1Page() {
                 </a>
               </>
             )}
+            <a href="mailto:info@qsr.sa" className="flex items-center gap-2 hover:text-yellow-300 transition-colors">
+              <Mail className="h-5 w-5" />
+              <span className="font-semibold" dir="ltr">info@qsr.sa</span>
+            </a>
           </div>
           
           <div className="pt-4 border-t border-blue-700">
