@@ -18,55 +18,52 @@ export async function GET(request: NextRequest) {
       'sales7', 'sales8', 'sales9', 'sales10', 'sales11'
     ]
 
-    // جلب عدد السير في كل صفحة من ActivityLog
+    // جلب عدد السير الحقيقي من CVDistribution
     const pageStats = await Promise.all(
       salesPages.map(async (pageId) => {
-        // عد السير من سجل الأنشطة (التوزيع)
-        const distributions = await db.activityLog.findMany({
+        // عد السير الموزعة الفعلية من جدول CVDistribution
+        const activeCount = await db.cVDistribution.count({
           where: {
-            action: 'CV_DISTRIBUTED',
-            metadata: {
-              path: ['salesPageId'],
-              equals: pageId
-            }
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 100
+            salesPageId: pageId,
+            isActive: true
+          }
         })
 
-        // عد السير المحذوفة
-        const removals = await db.activityLog.findMany({
-          where: {
-            action: 'CV_REMOVED',
-            metadata: {
-              path: ['salesPageId'],
-              equals: pageId
-            }
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 100
-        })
-
-        // حساب السير النشطة (موزعة - محذوفة)
-        const activeCount = distributions.length - removals.length
-
-        // عد أنشطة اليوم
+        // عد أنشطة اليوم من ActivityLog
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
-        const todayAssigned = distributions.filter(d => 
-          new Date(d.createdAt) >= today
-        ).length
+        const todayAssignedLogs = await db.activityLog.findMany({
+          where: {
+            action: 'CV_DISTRIBUTED',
+            createdAt: {
+              gte: today
+            },
+            metadata: {
+              path: ['salesPageId'],
+              equals: pageId
+            }
+          }
+        })
 
-        const todayRemoved = removals.filter(r => 
-          new Date(r.createdAt) >= today
-        ).length
+        const todayRemovedLogs = await db.activityLog.findMany({
+          where: {
+            action: 'CV_REMOVED',
+            createdAt: {
+              gte: today
+            },
+            metadata: {
+              path: ['salesPageId'],
+              equals: pageId
+            }
+          }
+        })
 
         return {
           salesPageId: pageId,
-          activeCount: Math.max(0, activeCount),
-          todayAssigned,
-          todayRemoved,
+          activeCount,
+          todayAssigned: todayAssignedLogs.length,
+          todayRemoved: todayRemovedLogs.length,
           dailyLimit: 100,
           totalLimit: 1000,
           autoDistribute: false,
