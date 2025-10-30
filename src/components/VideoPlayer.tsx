@@ -65,31 +65,40 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
   if (!videoUrl) return null
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
-      <div className="bg-white rounded-lg sm:rounded-2xl w-full max-w-[95vw] sm:max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-2xl transform animate-scaleIn">
-        {/* Header */}
-        <div className="flex justify-between items-center p-3 sm:p-5 border-b-2 border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="bg-gradient-to-br from-red-500 to-red-600 p-1.5 sm:p-2 rounded-lg">
-              <Play className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+    <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center z-50 p-1 sm:p-4 animate-fadeIn">
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg sm:rounded-2xl w-full h-full sm:h-auto max-w-full sm:max-w-[95vw] lg:max-w-[90vw] xl:max-w-[85vw] sm:max-h-[98vh] overflow-y-auto shadow-2xl border-0 sm:border border-purple-500/20 transform animate-scaleIn">
+        {/* Header - تصميم احترافي بتدرج بنفسجي */}
+        <div className="relative flex justify-between items-center p-3 sm:p-6 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 overflow-hidden">
+          {/* خلفية متحركة */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/50 via-indigo-600/50 to-blue-600/50 animate-pulse"></div>
+          
+          <div className="relative z-10 flex items-center gap-2 sm:gap-4">
+            <div className="bg-white/20 backdrop-blur-sm p-1.5 sm:p-3 rounded-lg sm:rounded-xl shadow-lg animate-bounce">
+              <Play className="h-4 w-4 sm:h-6 sm:w-6 text-white fill-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900">فيديو السيرة الذاتية</h3>
+            <div>
+              <h3 className="text-sm sm:text-2xl font-bold text-white drop-shadow-lg">شوف طريقة استخراج التأشيرة</h3>
+              <p className="hidden sm:block text-xs sm:text-sm text-white/90 mt-0.5">شرح خطوة بخطوة</p>
+            </div>
           </div>
+          
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-red-600 transition-all duration-300 hover:rotate-90 hover:scale-110 p-1.5 sm:p-2 rounded-lg hover:bg-red-50"
+            className="relative z-10 text-white/80 hover:text-white transition-all duration-300 hover:rotate-90 hover:scale-110 p-1.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-white/20 backdrop-blur-sm group"
           >
-            <X className="h-5 w-5 sm:h-6 sm:w-6" />
+            <X className="h-5 w-5 sm:h-7 sm:w-7" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 animate-ping"></span>
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-2 sm:p-4 lg:p-6 bg-gray-50">
-          <div className="relative w-full aspect-video rounded-lg sm:rounded-xl overflow-hidden shadow-xl bg-black">
-            {/* Loading Spinner */}
+        {/* Content - تصميم محسن */}
+        <div className="flex-1 p-2 sm:p-4 lg:p-6 bg-gradient-to-br from-gray-900 to-gray-800 flex items-center">
+          <div className="relative w-full rounded-lg sm:rounded-2xl overflow-hidden shadow-2xl bg-black border border-purple-500/30 sm:border-2" style={{ aspectRatio: '16/9', width: '100%', maxHeight: '90vh' }}>
+            {/* Loading Spinner - تصميم احترافي */}
             {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                <Loader2 className="h-12 w-12 text-white animate-spin" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/90 to-indigo-900/90 backdrop-blur-sm z-10">
+                <Loader2 className="h-12 w-12 sm:h-20 sm:w-20 text-white animate-spin mb-3 sm:mb-4" />
+                <p className="text-white text-xs sm:text-base font-semibold animate-pulse px-4 text-center">جاري تحميل الفيديو...</p>
               </div>
             )}
 
@@ -121,7 +130,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                     }}
                     allow="autoplay; fullscreen"
                     allowFullScreen
-                    title="فيديو السيرة الذاتية"
+                    title="شوف طريقة استخراج التأشيرة"
                     onLoad={() => setIsLoading(false)}
                   />
                 </div>
@@ -150,7 +159,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                title="فيديو السيرة الذاتية"
+                title="شوف طريقة استخراج التأشيرة"
                 onLoad={() => setIsLoading(false)}
               />
             ) : videoType === 'vimeo' ? (
@@ -161,7 +170,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                 frameBorder="0"
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
-                title="فيديو السيرة الذاتية"
+                title="شوف طريقة استخراج التأشيرة"
                 onLoad={() => setIsLoading(false)}
               />
             ) : (
@@ -184,12 +193,8 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
             )}
           </div>
 
-          {/* معلومات إضافية لـ Google Drive */}
-          {videoType === 'drive' && (
-            <div className="mt-2 text-xs text-gray-500 text-center">
-              <p>إذا لم يظهر الفيديو بشكل صحيح، اضغط على زر التشغيل في المنتصف</p>
-            </div>
-          )}
+          {/* شريط زخرفي سفلي */}
+          <div className="mt-2 sm:mt-4 h-0.5 sm:h-1 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-full"></div>
         </div>
       </div>
     </div>

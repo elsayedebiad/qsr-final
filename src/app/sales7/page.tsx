@@ -2014,8 +2014,33 @@ export default function Sales7Page() {
                         </button>
                       </div>
                       
+                      {/* زر الفيديو - بتصميم احترافي */}
+                      <div className="mb-2 sm:mb-3">
+                        <button
+                          onClick={() => {
+                            if (cv.videoLink && cv.videoLink.trim() !== '') {
+                              setVideoModalKey(prev => prev + 1);
+                              setSelectedVideo(cv.videoLink);
+                            } else {
+                              toast.error('لا يوجد رابط فيديو لهذه السيرة');
+                            }
+                          }}
+                          className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] group relative overflow-hidden"
+                        >
+                          <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
+                          <span className="absolute inset-0 bg-white/10 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 blur-xl"></span>
+                          <div className="relative z-10 bg-white/20 rounded-full p-1 group-hover:bg-white/30 transition-all duration-300">
+                            <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
+                          </div>
+                          <span className="font-bold relative z-10 text-[11px] sm:text-sm">شوف طريقة استخراج التأشيرة</span>
+                          <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 relative z-10 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                          </svg>
+                        </button>
+                      </div>
+                      
                       {/* باقي الأزرار - محسّنة للموبايل */}
-                      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <button
                           onClick={() => shareSingleCV(cv)}
                           className="bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
@@ -2031,21 +2056,6 @@ export default function Sales7Page() {
                         >
                           <Eye className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
                           <span className="font-bold leading-tight">عرض</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (cv.videoLink && cv.videoLink.trim() !== '') {
-                              setVideoModalKey(prev => prev + 1);
-                              setVideoModalKey((prev: number) => prev + 1); setSelectedVideo(cv.videoLink);
-                            } else {
-                              toast.error('لا يوجد رابط فيديو لهذه السيرة');
-                            }
-                          }}
-                          className="bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
-                          title="مشاهدة الفيديو"
-                        >
-                          <Play className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
-                          <span className="font-bold leading-tight">فيديو</span>
                         </button>
                       </div>
                     </div>
@@ -2299,13 +2309,13 @@ export default function Sales7Page() {
                 {selectedCVForView.videoLink && (
                   <button
                     onClick={() => {
-                      setVideoModalKey((prev: number) => prev + 1); setSelectedVideo(selectedCVForView.videoLink || null);
+                      setSelectedVideo(selectedCVForView.videoLink || null);
                       setSelectedCVForView(null);
                     }}
-                    className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 border-2 border-purple-400/30"
                   >
-                    <Play className="h-5 w-5 sm:h-6 sm:w-6" />
-                    <span>فيديو</span>
+                    <Play className="h-5 w-5 sm:h-6 sm:w-6 animate-pulse" />
+                    <span>شوف طريقة استخراج التأشيرة</span>
                   </button>
                 )}
               </div>
