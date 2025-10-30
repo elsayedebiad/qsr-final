@@ -2031,7 +2031,7 @@ export default function Sales10Page() {
                           <div className="relative z-10 bg-white/20 rounded-full p-1 group-hover:bg-white/30 transition-all duration-300">
                             <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
                           </div>
-                          <span className="font-bold relative z-10 text-[9px] sm:text-sm leading-tight">شوف طريقة استخراج التأشيرة</span>
+                          <span className="font-bold relative z-10 text-[9px] sm:text-sm leading-tight">شاهد طريقة استخراج التأشيرة</span>
                           <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 relative z-10 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                           </svg>
@@ -2314,7 +2314,7 @@ export default function Sales10Page() {
                     className="flex items-center gap-2 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 border-2 border-purple-400/30"
                   >
                     <Play className="h-5 w-5 sm:h-6 sm:w-6 animate-pulse" />
-                    <span>شوف طريقة استخراج التأشيرة</span>
+                    <span>شاهد طريقة استخراج التأشيرة</span>
                   </button>
                 )}
               </div>

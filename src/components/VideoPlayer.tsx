@@ -83,7 +83,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
               <Play className="h-5 w-5 text-white fill-white" />
             </div>
             <div>
-              <h3 className="text-base sm:text-xl font-bold text-white drop-shadow-lg">شوف طريقة استخراج التأشيرة</h3>
+              <h3 className="text-base sm:text-xl font-bold text-white drop-shadow-lg">شاهد طريقة استخراج التأشيرة</h3>
               <p className="text-xs text-white/90 mt-0.5">شرح خطوة بخطوة</p>
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                     }}
                     allow="autoplay; fullscreen"
                     allowFullScreen
-                    title="شوف طريقة استخراج التأشيرة"
+                    title="شاهد طريقة استخراج التأشيرة"
                     onLoad={() => setIsLoading(false)}
                   />
                 </div>
@@ -165,7 +165,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                title="شوف طريقة استخراج التأشيرة"
+                title="شاهد طريقة استخراج التأشيرة"
                 onLoad={() => setIsLoading(false)}
               />
             ) : videoType === 'vimeo' ? (
@@ -176,7 +176,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                 frameBorder="0"
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
-                title="شوف طريقة استخراج التأشيرة"
+                title="شاهد طريقة استخراج التأشيرة"
                 onLoad={() => setIsLoading(false)}
               />
             ) : (
