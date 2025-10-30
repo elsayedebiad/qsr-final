@@ -65,35 +65,41 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
   if (!videoUrl) return null
 
   return (
-    <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center z-50 p-1 sm:p-4 animate-fadeIn">
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg sm:rounded-2xl w-full h-full sm:h-auto max-w-full sm:max-w-[95vw] lg:max-w-[90vw] xl:max-w-[85vw] sm:max-h-[98vh] overflow-y-auto shadow-2xl border-0 sm:border border-purple-500/20 transform animate-scaleIn">
+    <div 
+      className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4 sm:p-6 animate-fadeIn"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl w-full max-w-[95vw] sm:max-w-4xl md:max-w-5xl lg:max-w-6xl flex flex-col shadow-2xl border border-purple-500/30 transform animate-scaleIn"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header - تصميم احترافي بتدرج بنفسجي */}
-        <div className="relative flex justify-between items-center p-3 sm:p-6 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 overflow-hidden">
+        <div className="relative flex justify-between items-center p-4 sm:p-5 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 overflow-hidden rounded-t-2xl flex-shrink-0">
           {/* خلفية متحركة */}
           <div className="absolute inset-0 bg-gradient-to-r from-purple-600/50 via-indigo-600/50 to-blue-600/50 animate-pulse"></div>
           
-          <div className="relative z-10 flex items-center gap-2 sm:gap-4">
-            <div className="bg-white/20 backdrop-blur-sm p-1.5 sm:p-3 rounded-lg sm:rounded-xl shadow-lg animate-bounce">
-              <Play className="h-4 w-4 sm:h-6 sm:w-6 text-white fill-white" />
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="bg-white/20 backdrop-blur-sm p-2 rounded-xl shadow-lg">
+              <Play className="h-5 w-5 text-white fill-white" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-2xl font-bold text-white drop-shadow-lg">شوف طريقة استخراج التأشيرة</h3>
-              <p className="hidden sm:block text-xs sm:text-sm text-white/90 mt-0.5">شرح خطوة بخطوة</p>
+              <h3 className="text-base sm:text-xl font-bold text-white drop-shadow-lg">شوف طريقة استخراج التأشيرة</h3>
+              <p className="text-xs text-white/90 mt-0.5">شرح خطوة بخطوة</p>
             </div>
           </div>
           
           <button
             onClick={onClose}
-            className="relative z-10 text-white/80 hover:text-white transition-all duration-300 hover:rotate-90 hover:scale-110 p-1.5 sm:p-3 rounded-lg sm:rounded-xl hover:bg-white/20 backdrop-blur-sm group"
+            className="relative z-10 text-white/80 hover:text-white transition-all duration-300 hover:rotate-90 hover:scale-110 p-2 rounded-xl hover:bg-white/20 backdrop-blur-sm group"
           >
-            <X className="h-5 w-5 sm:h-7 sm:w-7" />
+            <X className="h-6 w-6" />
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 animate-ping"></span>
           </button>
         </div>
 
         {/* Content - تصميم محسن */}
-        <div className="flex-1 p-2 sm:p-4 lg:p-6 bg-gradient-to-br from-gray-900 to-gray-800 flex items-center">
-          <div className="relative w-full rounded-lg sm:rounded-2xl overflow-hidden shadow-2xl bg-black border border-purple-500/30 sm:border-2" style={{ aspectRatio: '16/9', width: '100%', maxHeight: '90vh' }}>
+        <div className="p-4 sm:p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-b-2xl">
+          <div className="relative w-full rounded-xl overflow-hidden shadow-2xl bg-black border-2 border-purple-500/30" style={{ aspectRatio: '16/9' }}>
             {/* Loading Spinner - تصميم احترافي */}
             {isLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/90 to-indigo-900/90 backdrop-blur-sm z-10">
@@ -193,8 +199,6 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
             )}
           </div>
 
-          {/* شريط زخرفي سفلي */}
-          <div className="mt-2 sm:mt-4 h-0.5 sm:h-1 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-full"></div>
         </div>
       </div>
     </div>
