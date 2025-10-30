@@ -2078,7 +2078,7 @@ export default function Sales1Page() {
                             <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
                           </div>
                           
-                          <span className="font-bold relative z-10 text-[11px] sm:text-sm">شوف طريقة استخراج التأشيرة</span>
+                          <span className="font-bold relative z-10 text-[9px] sm:text-sm leading-tight">شوف طريقة استخراج التأشيرة</span>
                           
                           {/* أيقونة سهم */}
                           <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 relative z-10 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
