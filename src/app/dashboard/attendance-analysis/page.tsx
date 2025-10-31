@@ -203,26 +203,54 @@ export default function AttendanceAnalysisPage() {
   const getEmployeeStats = (): EmployeeStats[] => {
     const stats: Record<string, EmployeeStats> = {}
     
-    // حساب الفترة الكاملة
-    const allDates = attendanceData.map(r => r.date)
-    const minDate = allDates.length > 0 ? new Date(Math.min(...allDates.map(d => new Date(d).getTime()))) : new Date()
-    const maxDate = allDates.length > 0 ? new Date(Math.max(...allDates.map(d => new Date(d).getTime()))) : new Date()
+    if (attendanceData.length === 0) return []
     
     uniqueEmployees.forEach(id => {
       const employeeRecords = filteredData.filter(r => r.id === id)
+      if (employeeRecords.length === 0) return
+      
       const totalHours = employeeRecords.reduce((sum, r) => sum + r.hours, 0)
       const workDays = employeeRecords.length
       
-      // حساب أيام الغياب
-      const employeeDates = new Set(employeeRecords.map(r => r.date))
-      let absentDays = 0
+      // حساب أيام الغياب من سجلات الموظف نفسه فقط
+      const employeeDatesArray = employeeRecords.map(r => r.date).sort()
+      const employeeDates = new Set(employeeDatesArray)
       
-      for (let d = new Date(minDate); d <= maxDate; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0]
-        const dayOfWeek = d.getDay()
+      // استخدام أول وآخر تاريخ من سجلات الموظف المحدد
+      const minDateStr = employeeDatesArray[0]
+      const maxDateStr = employeeDatesArray[employeeDatesArray.length - 1]
+      
+      // حساب الأيام باستخدام string comparison لتجنب مشاكل timezone
+      let absentDays = 0
+      const [minYear, minMonth, minDay] = minDateStr.split('-').map(Number)
+      const [maxYear, maxMonth, maxDay] = maxDateStr.split('-').map(Number)
+      
+      let currentYear = minYear
+      let currentMonth = minMonth
+      let currentDay = minDay
+      
+      while (currentYear < maxYear || 
+             (currentYear === maxYear && currentMonth < maxMonth) || 
+             (currentYear === maxYear && currentMonth === maxMonth && currentDay <= maxDay)) {
+        const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`
+        const tempDate = new Date(currentYear, currentMonth - 1, currentDay)
+        const dayOfWeek = tempDate.getDay()
+        
         // استثناء الجمعة (5) من حساب الغياب
         if (!employeeDates.has(dateStr) && dayOfWeek !== 5) {
           absentDays++
+        }
+        
+        // الانتقال لليوم التالي
+        currentDay++
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
+        if (currentDay > daysInMonth) {
+          currentDay = 1
+          currentMonth++
+          if (currentMonth > 12) {
+            currentMonth = 1
+            currentYear++
+          }
         }
       }
       
@@ -272,11 +300,11 @@ export default function AttendanceAnalysisPage() {
       return
     }
 
-    // دمج سجلات الحضور مع أيام الغياب
-    const allDates = attendanceData.map(r => r.date)
-    const minDate = new Date(Math.min(...allDates.map(d => new Date(d).getTime())))
-    const maxDate = new Date(Math.max(...allDates.map(d => new Date(d).getTime())))
-    const employeeDates = new Set(employeeRecords.map(r => r.date))
+    // دمج سجلات الحضور مع أيام الغياب من سجلات الموظف فقط
+    const employeeDatesArray = employeeRecords.map(r => r.date).sort()
+    const minDateStr = employeeDatesArray[0]
+    const maxDateStr = employeeDatesArray[employeeDatesArray.length - 1]
+    const employeeDates = new Set(employeeDatesArray)
     
     const allRecords: Array<{
       date: string
@@ -288,11 +316,23 @@ export default function AttendanceAnalysisPage() {
       isFriday: boolean
     }> = []
     
+    // حساب الأيام باستخدام string-based approach لتجنب timezone issues
     let absentDays = 0
-    for (let d = new Date(minDate); d <= maxDate; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0]
-      const dayOfWeek = d.getDay()
-      const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
+    const [minYear, minMonth, minDay] = minDateStr.split('-').map(Number)
+    const [maxYear, maxMonth, maxDay] = maxDateStr.split('-').map(Number)
+    
+    let currentYear = minYear
+    let currentMonth = minMonth
+    let currentDay = minDay
+    
+    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
+    
+    while (currentYear < maxYear || 
+           (currentYear === maxYear && currentMonth < maxMonth) || 
+           (currentYear === maxYear && currentMonth === maxMonth && currentDay <= maxDay)) {
+      const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`
+      const tempDate = new Date(currentYear, currentMonth - 1, currentDay)
+      const dayOfWeek = tempDate.getDay()
       const dayName = dayNames[dayOfWeek]
       const isFriday = dayOfWeek === 5
       
@@ -318,6 +358,18 @@ export default function AttendanceAnalysisPage() {
           isFriday: false
         })
         absentDays++
+      }
+      
+      // الانتقال لليوم التالي
+      currentDay++
+      const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
+      if (currentDay > daysInMonth) {
+        currentDay = 1
+        currentMonth++
+        if (currentMonth > 12) {
+          currentMonth = 1
+          currentYear++
+        }
       }
     }
 
