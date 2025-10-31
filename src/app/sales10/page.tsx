@@ -33,6 +33,7 @@ import { processImageUrl } from '@/lib/url-utils'
 import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 import ImageWithFallback from '@/components/ImageWithFallback'
+import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import VideoPlayer from '@/components/VideoPlayer'
 
 // إضافة أنيميشن CSS محسّن للأداء
@@ -1188,6 +1189,8 @@ export default function Sales10Page() {
     <div className="min-h-screen bg-white flex flex-col" dir="rtl">
       {/* Microsoft Clarity Analytics */}
       <ClarityScript />
+      {/* التحقق من نظام التوزيع */}
+      <SalesRedirectCheck />
       <style>{customStyles}</style>
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">

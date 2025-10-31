@@ -31,6 +31,7 @@ import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 import VideoPlayer from '@/components/VideoPlayer'
 import ImageWithFallback from '@/components/ImageWithFallback'
+import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -1294,6 +1295,8 @@ export default function Sales1Page() {
     <div className="min-h-screen bg-white flex flex-col" dir="rtl">
       {/* Microsoft Clarity Analytics */}
       <ClarityScript />
+      {/* التحقق من نظام التوزيع */}
+      <SalesRedirectCheck />
       <style>{customStyles}</style>
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">
