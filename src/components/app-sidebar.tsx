@@ -32,6 +32,7 @@ import {
   Wifi,
   BarChart3,
   Network,
+  Clock,
 } from "lucide-react"
 
 import {
@@ -362,6 +363,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       label: 'سجل الأنشطة',
       icon: Activity,
       href: '/dashboard/activity-log',
+      adminOnly: true
+    },
+    {
+      id: 'attendance-analysis',
+      label: 'تحليل الحضور',
+      icon: Clock,
+      href: '/dashboard/attendance-analysis',
       adminOnly: true
     },
     {
