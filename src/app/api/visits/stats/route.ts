@@ -76,11 +76,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // جلب جميع الزيارات حسب الفلاتر للإحصائيات
+    // جلب جميع الزيارات حسب الفلاتر للإحصائيات (بدون حد)
     let visits = await db.visit.findMany({
       where: whereCondition,
-      orderBy: { id: 'desc' },
-      take: 50000 // زيادة كبيرة للحصول على جميع البيانات المتاحة قبل الفلترة
+      orderBy: { id: 'desc' }
     })
     
     // تطبيق فلتر الصفحة في الذاكرة (للمطابقة الدقيقة)
@@ -95,14 +94,14 @@ export async function GET(request: NextRequest) {
     // حساب إجمالي الزيارات بعد الفلترة
     const totalVisitsCount = visits.length
     
-    // أخذ جميع الزيارات للإحصائيات (حتى 5000 زيارة كحد أقصى)
-    const statsVisits = visits.slice(0, 5000)
+    // استخدام جميع الزيارات للإحصائيات بدون حد أقصى
+    const statsVisits = visits
     
     // جلب الزيارات للصفحة الحالية (مع pagination)
     const paginatedVisits = visits.slice(skip, skip + limit)
 
-    // إحصائيات عامة (من البيانات المحدودة للإحصائيات)
-    const totalVisits = statsVisits.length
+    // إحصائيات عامة (من جميع البيانات)
+    const totalVisits = visits.length
     
     // عدد الزيارات لكل صفحة (مع تنظيف ودمج أسماء الصفحات المكررة)
     const pageStatsRaw = statsVisits.reduce((acc, visit) => {

@@ -59,6 +59,11 @@ interface VisitStats {
   pagination: Pagination
 }
 
+// دالة لتنسيق الأرقام بفواصل للقراءة السهلة
+const formatNumber = (num: number): string => {
+  return new Intl.NumberFormat('ar-SA').format(num)
+}
+
 export default function VisitsReportPage() {
   const router = useRouter()
   const [stats, setStats] = useState<VisitStats | null>(null)
@@ -699,42 +704,47 @@ export default function VisitsReportPage() {
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {/* إجمالي الزيارات */}
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md p-6 text-white">
               <div className="flex items-center justify-between mb-2">
                 <Users className="h-8 w-8" />
-                <span className="text-3xl font-bold">{stats.summary.totalVisits}</span>
+                <span className="text-4xl font-bold" dir="ltr">{formatNumber(stats.summary.totalVisits)}</span>
               </div>
               <h3 className="text-sm opacity-90">إجمالي الزيارات</h3>
             </div>
 
+            {/* زيارات اليوم */}
             <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-md p-6 text-white">
               <div className="flex items-center justify-between mb-2">
                 <Calendar className="h-8 w-8" />
-                <span className="text-3xl font-bold">{stats.summary.todayVisits}</span>
+                <span className="text-4xl font-bold" dir="ltr">{formatNumber(stats.summary.todayVisits)}</span>
               </div>
               <h3 className="text-sm opacity-90">زيارات اليوم</h3>
             </div>
 
+            {/* هذا الأسبوع */}
             <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md p-6 text-white">
               <div className="flex items-center justify-between mb-2">
                 <TrendingUp className="h-8 w-8" />
-                <span className="text-3xl font-bold">{stats.summary.weekVisits}</span>
+                <span className="text-4xl font-bold" dir="ltr">{formatNumber(stats.summary.weekVisits)}</span>
               </div>
               <h3 className="text-sm opacity-90">هذا الأسبوع</h3>
             </div>
 
+            {/* من Google */}
             <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-md p-6 text-white">
               <div className="flex items-center justify-between mb-2">
                 <Globe className="h-8 w-8" />
-                <span className="text-3xl font-bold">{stats.summary.googleVisits}</span>
+                <span className="text-4xl font-bold" dir="ltr">{formatNumber(stats.summary.googleVisits)}</span>
               </div>
               <h3 className="text-sm opacity-90">من Google</h3>
             </div>
 
+            {/* مصادر أخرى */}
             <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-md p-6 text-white">
               <div className="flex items-center justify-between mb-2">
                 <BarChart3 className="h-8 w-8" />
-                <span className="text-3xl font-bold">{stats.summary.otherVisits}</span>
+                <span className="text-4xl font-bold" dir="ltr">{formatNumber(stats.summary.otherVisits)}</span>
               </div>
               <h3 className="text-sm opacity-90">مصادر أخرى</h3>
             </div>
