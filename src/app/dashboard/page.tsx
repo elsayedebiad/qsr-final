@@ -1473,8 +1473,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
               <div className="relative card p-8 w-full max-w-md text-center animate-fade-in">
                 <div className="mx-auto mb-4 rounded-xl w-16 h-16 flex items-center justify-center bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 animate-pulse">
-                  <Download className="
-import VideoPlayer from '@/components/VideoPlayer'h-8 w-8 text-white animate-bounce" />
+                  <Download className="h-8 w-8 text-white animate-bounce" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-2">جاري تحميل الصور المحددة</h3>
                 <p className="text-sm text-muted-foreground mb-2">شكراً لانتظارك، سننتهي خلال لحظات</p>

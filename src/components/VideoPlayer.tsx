@@ -27,8 +27,23 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
         videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0] || ''
       } else if (videoUrl.includes('watch?v=')) {
         videoId = videoUrl.split('watch?v=')[1]?.split('&')[0] || ''
+      } else if (videoUrl.includes('/embed/')) {
+        videoId = videoUrl.split('/embed/')[1]?.split('?')[0] || ''
       }
-      setEmbedUrl(`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&playsinline=1&rel=0&modestbranding=1`)
+      // معاملات محسنة لليوتيوب
+      const params = [
+        'autoplay=1',           // تشغيل تلقائي
+        'mute=1',               // صوت مكتوم
+        'controls=1',           // إظهار التحكم
+        'playsinline=1',        // تشغيل داخل الصفحة (للموبايل)
+        'rel=0',                // عدم إظهار فيديوهات مقترحة
+        'modestbranding=1',     // إخفاء شعار يوتيوب
+        'fs=1',                 // السماح بملء الشاشة
+        'iv_load_policy=3',     // إخفاء التعليقات
+        'disablekb=0',          // السماح بالتحكم بالكيبورد
+        'enablejsapi=1'         // تفعيل JS API
+      ].join('&')
+      setEmbedUrl(`https://www.youtube.com/embed/${videoId}?${params}`)
     } 
     else if (videoUrl.includes('drive.google.com')) {
       setVideoType('drive')
@@ -108,76 +123,60 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
               </div>
             )}
 
-            {/* Video Container with special handling for Google Drive */}
-            {videoType === 'drive' ? (
-              <div className="google-drive-wrapper relative w-full h-full bg-black">
-                {/* Container محسن لـ Google Drive على الهواتف */}
-                <div 
-                  className="absolute inset-0"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    height: '100%',
-                  }}
-                >
-                  <iframe
-                    key={`drive-${videoModalKey}`}
-                    src={embedUrl}
-                    className="w-full h-full"
-                    style={{
-                      border: 'none',
-                      width: '100%',
-                      height: '100%',
-                      position: 'relative',
-                      zIndex: 10,
-                      backgroundColor: 'black'
-                    }}
-                    allow="autoplay; fullscreen"
-                    allowFullScreen
-                    title="شاهد طريقة استخراج التأشيرة"
-                    onLoad={() => setIsLoading(false)}
-                  />
-                </div>
-                
-                {/* Styles خاصة للموبايل */}
-                <style jsx global>{`
-                  @media (max-width: 768px) {
-                    .google-drive-wrapper iframe {
-                      transform: scale(1) !important;
-                      -webkit-transform: scale(1) !important;
-                      object-fit: contain !important;
-                    }
-                    
-                    /* إخفاء عناصر Google Drive غير المرغوبة */
-                    .google-drive-wrapper iframe[src*="drive.google.com"] {
-                      clip-path: inset(0px 0px 0px 0px);
-                    }
-                  }
-                `}</style>
-              </div>
-            ) : videoType === 'youtube' ? (
+            {/* Video Container - موحد لجميع الأنواع */}
+            {videoType === 'youtube' ? (
               <iframe
                 key={`youtube-${videoModalKey}`}
                 src={embedUrl}
-                className="absolute inset-0 w-full h-full"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                className="absolute inset-0 w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
-                title="شاهد طريقة استخراج التأشيرة"
+                title="فيديو السيرة الذاتية"
                 onLoad={() => setIsLoading(false)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }}
+              />
+            ) : videoType === 'drive' ? (
+              <iframe
+                key={`drive-${videoModalKey}`}
+                src={embedUrl}
+                className="absolute inset-0 w-full h-full border-0"
+                allow="autoplay; fullscreen"
+                allowFullScreen
+                title="فيديو السيرة الذاتية"
+                onLoad={() => setIsLoading(false)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }}
               />
             ) : videoType === 'vimeo' ? (
               <iframe
                 key={`vimeo-${videoModalKey}`}
                 src={embedUrl}
-                className="absolute inset-0 w-full h-full"
-                frameBorder="0"
+                className="absolute inset-0 w-full h-full border-0"
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
-                title="شاهد طريقة استخراج التأشيرة"
+                title="فيديو السيرة الذاتية"
                 onLoad={() => setIsLoading(false)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0
+                }}
               />
             ) : (
               <video

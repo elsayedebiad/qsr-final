@@ -7,7 +7,25 @@ export default function SalesRedirectPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // جلب قواعد التوزيع من API أو استخدام القيم الافتراضية
+    // التحقق من وجود معامل target (زيارة مباشرة لصفحة محددة)
+    const urlParams = new URLSearchParams(window.location.search)
+    const targetPage = urlParams.get('target')
+    
+    if (targetPage) {
+      console.log('🎯 Target page specified:', targetPage)
+      console.log('   Redirecting directly to:', `/${targetPage}`)
+      
+      // إزالة معامل target من الرابط
+      urlParams.delete('target')
+      
+      const finalUrl = `/${targetPage}${urlParams.toString() ? '?' + urlParams.toString() : ''}`
+      
+      // التحويل المباشر للصفحة المطلوبة
+      window.location.replace(finalUrl)
+      return // إيقاف التنفيذ هنا - لا تطبق نظام التوزيع
+    }
+    
+    // فقط إذا لم يكن هناك target، جلب قواعد التوزيع من API أو استخدام القيم الافتراضية
     async function redirect() {
       // القيم الافتراضية - توزيع متساوي على 11 صفحة (إجمالي 100%)
       let GOOGLE_WEIGHTED = [
@@ -331,8 +349,8 @@ export default function SalesRedirectPage() {
     }).catch(err => console.log('Track error:', err))
 
       // إعادة التوجيه مع الحفاظ على query parameters
-      const params = window.location.search
-      router.replace(target + params)
+      const finalParams = urlParams.toString()
+      window.location.replace(target + (finalParams ? '?' + finalParams : ''))
     }
     
     redirect()
