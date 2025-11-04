@@ -14,11 +14,13 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
   const [embedUrl, setEmbedUrl] = useState<string>('')
   const [videoType, setVideoType] = useState<'youtube' | 'drive' | 'vimeo' | 'direct'>('direct')
   const [hasError, setHasError] = useState(false)
+  const [originalUrl, setOriginalUrl] = useState<string>('')
 
   useEffect(() => {
     if (!videoUrl) return
 
     setIsLoading(true)
+    setOriginalUrl(videoUrl) // حفظ الرابط الأصلي
     
     // تحديد نوع الفيديو وإنشاء رابط التضمين
     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
@@ -31,10 +33,8 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
       } else if (videoUrl.includes('/embed/')) {
         videoId = videoUrl.split('/embed/')[1]?.split('?')[0] || ''
       }
-      // معاملات محسنة لليوتيوب
+      // معاملات محسنة لليوتيوب (بدون autoplay)
       const params = [
-        'autoplay=1',           // تشغيل تلقائي
-        'mute=1',               // صوت مكتوم
         'controls=1',           // إظهار التحكم
         'playsinline=1',        // تشغيل داخل الصفحة (للموبايل)
         'rel=0',                // عدم إظهار فيديوهات مقترحة
@@ -42,9 +42,11 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
         'fs=1',                 // السماح بملء الشاشة
         'iv_load_policy=3',     // إخفاء التعليقات
         'disablekb=0',          // السماح بالتحكم بالكيبورد
-        'enablejsapi=1'         // تفعيل JS API
+        'enablejsapi=1',        // تفعيل JS API
+        'origin=' + (typeof window !== 'undefined' ? window.location.origin : ''), // إضافة origin للمصادقة
+        'widget_referrer=' + (typeof window !== 'undefined' ? window.location.href : '') // referrer
       ].join('&')
-      setEmbedUrl(`https://www.youtube.com/embed/${videoId}?${params}`)
+      setEmbedUrl(`https://www.youtube-nocookie.com/embed/${videoId}?${params}`)
     } 
     else if (videoUrl.includes('drive.google.com')) {
       setVideoType('drive')
@@ -66,7 +68,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
     else if (videoUrl.includes('vimeo.com')) {
       setVideoType('vimeo')
       const videoId = videoUrl.split('vimeo.com/')[1]?.split('?')[0] || ''
-      setEmbedUrl(`https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&playsinline=1`)
+      setEmbedUrl(`https://player.vimeo.com/video/${videoId}?playsinline=1`)
     }
     else {
       setVideoType('direct')
@@ -132,20 +134,33 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                   <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <X className="h-8 w-8 text-red-300" />
                   </div>
-                  <h4 className="text-white text-lg sm:text-xl font-bold mb-3">عذراً، لا يمكن تشغيل الفيديو</h4>
+                  <h4 className="text-white text-lg sm:text-xl font-bold mb-3">عذراً، لا يمكن تشغيل الفيديو هنا</h4>
                   <p className="text-white/80 text-sm mb-4">قد يكون الفيديو:</p>
                   <ul className="text-white/70 text-sm space-y-2 text-right mb-6">
-                    <li>• محذوف من YouTube</li>
-                    <li>• خاص أو محظور</li>
+                    <li>• محظور من التشغيل المضمن</li>
+                    <li>• خاص أو محدود</li>
                     <li>• الرابط غير صحيح</li>
                     <li>• غير متاح في منطقتك</li>
                   </ul>
-                  <button
-                    onClick={onClose}
-                    className="bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg transition-colors duration-300 font-semibold"
-                  >
-                    إغلاق
-                  </button>
+                  <div className="flex gap-3 justify-center">
+                    {originalUrl && videoType === 'youtube' && (
+                      <a
+                        href={originalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg transition-colors duration-300 font-semibold flex items-center gap-2 shadow-lg"
+                      >
+                        <Play className="h-5 w-5" />
+                        مشاهدة على YouTube
+                      </a>
+                    )}
+                    <button
+                      onClick={onClose}
+                      className="bg-white/20 hover:bg-white/30 text-white px-6 py-2.5 rounded-lg transition-colors duration-300 font-semibold"
+                    >
+                      إغلاق
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -161,19 +176,27 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                 title="فيديو السيرة الذاتية"
                 onLoad={() => {
                   setIsLoading(false)
-                  // فحص بعد 3 ثواني إذا الفيديو شغال ولا لأ
-                  setTimeout(() => {
-                    const iframe = document.querySelector(`iframe[src*="${embedUrl}"]`)
+                  // فحص إذا الفيديو فشل في التحميل بعد 5 ثواني
+                  const errorTimeout = setTimeout(() => {
+                    const iframe = document.querySelector(`iframe[src*="${embedUrl}"]`) as HTMLIFrameElement
                     if (iframe) {
                       try {
-                        // إذا فيه مشكلة في الـ iframe ممكن نلاحظها
+                        // محاولة التحقق من حالة الـ iframe
+                        // إذا الفيديو ما اشتغل بعد 5 ثواني، ممكن يكون فيه مشكلة
+                        console.log('Video iframe loaded, checking status...')
                       } catch (e) {
-                        console.error('Video load error:', e)
+                        console.error('Video iframe error:', e)
+                        setHasError(true)
                       }
                     }
-                  }, 3000)
+                  }, 5000)
+                  
+                  return () => clearTimeout(errorTimeout)
                 }}
-                onError={() => setHasError(true)}
+                onError={() => {
+                  console.error('YouTube embed failed - video may be restricted')
+                  setHasError(true)
+                }}
                 style={{
                   width: '100%',
                   height: '100%',
@@ -226,8 +249,6 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                 key={`video-${videoModalKey}`}
                 src={embedUrl}
                 controls
-                autoPlay
-                muted
                 playsInline
                 className="absolute inset-0 w-full h-full bg-black object-contain"
                 preload="metadata"
