@@ -26,7 +26,8 @@ import {
   AlertTriangle,
   Camera,
   Phone,
-  Mail
+  Mail,
+  MapPin
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
@@ -664,26 +665,33 @@ export default function Sales11Page() {
         }
       })()
 
-      // فلتر الطول
+      // فلتر الطول - يتطابق مع النطاقات في الواجهة
       const matchesHeight = heightFilter === 'ALL' || (() => {
         if (!cv.height) return false
         const height = parseInt(cv.height)
         switch (heightFilter) {
-          case 'SHORT': return height < 160
-          case 'MEDIUM': return height >= 160 && height <= 170
-          case 'TALL': return height > 170
+          case '<155': return height < 155
+          case '155-160': return height >= 155 && height <= 160
+          case '160-165': return height >= 160 && height <= 165
+          case '165-170': return height >= 165 && height <= 170
+          case '170-175': return height >= 170 && height <= 175
+          case '>175': return height > 175
           default: return true
         }
       })()
 
-      // فلتر الوزن
+      // فلتر الوزن - يتطابق مع النطاقات في الواجهة
       const matchesWeight = weightFilter === 'ALL' || (() => {
         if (!cv.weight) return false
         const weight = parseInt(cv.weight)
         switch (weightFilter) {
-          case 'LIGHT': return weight < 60
-          case 'MEDIUM': return weight >= 60 && weight <= 80
-          case 'HEAVY': return weight > 80
+          case '<50': return weight < 50
+          case '50-55': return weight >= 50 && weight <= 55
+          case '55-60': return weight >= 55 && weight <= 60
+          case '60-65': return weight >= 60 && weight <= 65
+          case '65-70': return weight >= 65 && weight <= 70
+          case '70-75': return weight >= 70 && weight <= 75
+          case '>75': return weight > 75
           default: return true
         }
       })()
@@ -747,7 +755,18 @@ export default function Sales11Page() {
       .map(nationality => nationality.trim())
     
     // إزالة التكرارات
-    return Array.from(new Set(nationalities)).sort()
+    const unique = Array.from(new Set(nationalities)).sort()
+    console.log('الجنسيات الفريقة:', unique)
+    return unique
+  }, [cvs])
+
+  // استخراج المناطق الفريدة من البيانات
+  const uniqueLocations = useMemo(() => {
+    const locations = cvs
+      .map(cv => cv.livingTown)
+      .filter((location): location is string => !!location && location.trim() !== '')
+      .map(location => location.trim())
+    return Array.from(new Set(locations)).sort()
   }, [cvs])
 
   // خريطة تحويل الجنسيات من الإنجليزية للعربية
@@ -898,6 +917,33 @@ export default function Sales11Page() {
           
         case 'maritalStatus':
           return cv.maritalStatus === filterValue
+          
+        case 'height':
+          if (!cv.height) return false
+          const height = parseInt(cv.height)
+          if (filterValue === '<155') return height < 155
+          if (filterValue === '155-160') return height >= 155 && height < 160
+          if (filterValue === '160-165') return height >= 160 && height < 165
+          if (filterValue === '165-170') return height >= 165 && height < 170
+          if (filterValue === '170-175') return height >= 170 && height < 175
+          if (filterValue === '>175') return height >= 175
+          return false
+          
+        case 'weight':
+          if (!cv.weight) return false
+          const weight = parseInt(cv.weight)
+          if (filterValue === '<50') return weight < 50
+          if (filterValue === '50-55') return weight >= 50 && weight < 55
+          if (filterValue === '55-60') return weight >= 55 && weight < 60
+          if (filterValue === '60-65') return weight >= 60 && weight < 65
+          if (filterValue === '65-70') return weight >= 65 && weight < 70
+          if (filterValue === '70-75') return weight >= 70 && weight < 75
+          if (filterValue === '>75') return weight >= 75
+          return false
+          
+        case 'location':
+          const location = (cv.livingTown || '').toLowerCase()
+          return location.includes(filterValue.toLowerCase())
           
         default:
           return false
@@ -1831,6 +1877,66 @@ export default function Sales11Page() {
 
               </div>
 
+              {/* صف للفلاتر الجديدة: الطول والوزن والمنطقة */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                <div className="space-y-2">
+                  <label className="flex items-center text-sm font-semibold text-teal-600 mb-2">
+                    <BookOpen className="h-4 w-4 ml-2" /> الطول
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-teal-500 border border-gray-300"
+                    value={heightFilter}
+                    onChange={(e) => setHeightFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع الأطوال ({cvs.length})</option>
+                    <option value="<155">قصير: أقل من 155 سم ({getCountForFilter('height', '<155')})</option>
+                    <option value="155-160">من 155 إلى 160 سم ({getCountForFilter('height', '155-160')})</option>
+                    <option value="160-165">من 160 إلى 165 سم ({getCountForFilter('height', '160-165')})</option>
+                    <option value="165-170">من 165 إلى 170 سم ({getCountForFilter('height', '165-170')})</option>
+                    <option value="170-175">من 170 إلى 175 سم ({getCountForFilter('height', '170-175')})</option>
+                    <option value=">175">طويل: أكثر من 175 سم ({getCountForFilter('height', '>175')})</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="flex items-center text-sm font-semibold text-pink-600 mb-2">
+                    <BookOpen className="h-4 w-4 ml-2" /> الوزن
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-pink-500 border border-gray-300"
+                    value={weightFilter}
+                    onChange={(e) => setWeightFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع الأوزان ({cvs.length})</option>
+                    <option value="<50">خفيف: أقل من 50 كجم ({getCountForFilter('weight', '<50')})</option>
+                    <option value="50-55">من 50 إلى 55 كجم ({getCountForFilter('weight', '50-55')})</option>
+                    <option value="55-60">من 55 إلى 60 كجم ({getCountForFilter('weight', '55-60')})</option>
+                    <option value="60-65">من 60 إلى 65 كجم ({getCountForFilter('weight', '60-65')})</option>
+                    <option value="65-70">من 65 إلى 70 كجم ({getCountForFilter('weight', '65-70')})</option>
+                    <option value="70-75">من 70 إلى 75 كجم ({getCountForFilter('weight', '70-75')})</option>
+                    <option value=">75">ثقيل: أكثر من 75 كجم ({getCountForFilter('weight', '>75')})</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="flex items-center text-sm font-semibold text-indigo-600 mb-2">
+                    <MapPin className="h-4 w-4 ml-2" /> المنطقة
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 border border-gray-300"
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع المناطق ({cvs.length})</option>
+                    {uniqueLocations.map(location => (
+                      <option key={location} value={location}>
+                        {location} ({getCountForFilter('location', location)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="mt-4 flex justify-center">
                 <button
                   onClick={() => {
@@ -1843,6 +1949,10 @@ export default function Sales11Page() {
                     setArabicLevelFilter('ALL')
                     setEnglishLevelFilter('ALL')
                     setEducationFilter('ALL')
+                    setExperienceFilter('ALL')
+                    setHeightFilter('ALL')
+                    setWeightFilter('ALL')
+                    setLocationFilter('ALL')
                     setSearchTerm('')
                   }}
                   className="px-6 py-2 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium hover:from-red-500 hover:to-pink-500"
