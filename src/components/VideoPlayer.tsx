@@ -13,6 +13,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
   const [isLoading, setIsLoading] = useState(true)
   const [embedUrl, setEmbedUrl] = useState<string>('')
   const [videoType, setVideoType] = useState<'youtube' | 'drive' | 'vimeo' | 'direct'>('direct')
+  const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
     if (!videoUrl) return
@@ -73,6 +74,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
     }
 
     // محاكاة تحميل الفيديو
+    setHasError(false)
     const timer = setTimeout(() => setIsLoading(false), 800)
     return () => clearTimeout(timer)
   }, [videoUrl])
@@ -116,10 +118,35 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
         <div className="p-4 sm:p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-b-2xl">
           <div className="relative w-full rounded-xl overflow-hidden shadow-2xl bg-black border-2 border-purple-500/30" style={{ aspectRatio: '16/9' }}>
             {/* Loading Spinner - تصميم احترافي */}
-            {isLoading && (
+            {isLoading && !hasError && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/90 to-indigo-900/90 backdrop-blur-sm z-10">
                 <Loader2 className="h-12 w-12 sm:h-20 sm:w-20 text-white animate-spin mb-3 sm:mb-4" />
                 <p className="text-white text-xs sm:text-base font-semibold animate-pulse px-4 text-center">جاري تحميل الفيديو...</p>
+              </div>
+            )}
+
+            {/* Error Message - رسالة الخطأ */}
+            {hasError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-red-900/90 to-pink-900/90 backdrop-blur-sm z-20 p-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-md text-center border-2 border-red-400/30">
+                  <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <X className="h-8 w-8 text-red-300" />
+                  </div>
+                  <h4 className="text-white text-lg sm:text-xl font-bold mb-3">عذراً، لا يمكن تشغيل الفيديو</h4>
+                  <p className="text-white/80 text-sm mb-4">قد يكون الفيديو:</p>
+                  <ul className="text-white/70 text-sm space-y-2 text-right mb-6">
+                    <li>• محذوف من YouTube</li>
+                    <li>• خاص أو محظور</li>
+                    <li>• الرابط غير صحيح</li>
+                    <li>• غير متاح في منطقتك</li>
+                  </ul>
+                  <button
+                    onClick={onClose}
+                    className="bg-white/20 hover:bg-white/30 text-white px-6 py-2 rounded-lg transition-colors duration-300 font-semibold"
+                  >
+                    إغلاق
+                  </button>
+                </div>
               </div>
             )}
 
@@ -132,7 +159,21 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 title="فيديو السيرة الذاتية"
-                onLoad={() => setIsLoading(false)}
+                onLoad={() => {
+                  setIsLoading(false)
+                  // فحص بعد 3 ثواني إذا الفيديو شغال ولا لأ
+                  setTimeout(() => {
+                    const iframe = document.querySelector(`iframe[src*="${embedUrl}"]`)
+                    if (iframe) {
+                      try {
+                        // إذا فيه مشكلة في الـ iframe ممكن نلاحظها
+                      } catch (e) {
+                        console.error('Video load error:', e)
+                      }
+                    }
+                  }, 3000)
+                }}
+                onError={() => setHasError(true)}
                 style={{
                   width: '100%',
                   height: '100%',
@@ -151,6 +192,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                 allowFullScreen
                 title="فيديو السيرة الذاتية"
                 onLoad={() => setIsLoading(false)}
+                onError={() => setHasError(true)}
                 style={{
                   width: '100%',
                   height: '100%',
@@ -169,6 +211,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                 allowFullScreen
                 title="فيديو السيرة الذاتية"
                 onLoad={() => setIsLoading(false)}
+                onError={() => setHasError(true)}
                 style={{
                   width: '100%',
                   height: '100%',
@@ -189,6 +232,7 @@ export default function VideoPlayer({ videoUrl, onClose, videoModalKey = 0 }: Vi
                 className="absolute inset-0 w-full h-full bg-black object-contain"
                 preload="metadata"
                 onLoadedData={() => setIsLoading(false)}
+                onError={() => setHasError(true)}
               >
                 <source src={embedUrl} type="video/mp4" />
                 <source src={embedUrl} type="video/webm" />

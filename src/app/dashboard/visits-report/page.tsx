@@ -10,6 +10,7 @@ import {
 import DashboardLayout from '@/components/DashboardLayout'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
+import { formatSalesPageName } from '@/lib/sales-pages-config'
 
 interface Visit {
   id: number
@@ -96,7 +97,7 @@ export default function VisitsReportPage() {
   const [campaignFilter, setCampaignFilter] = useState<string>('ALL')
   const [dateFrom, setDateFrom] = useState<string>('')
   const [dateTo, setDateTo] = useState<string>('')
-  
+
   // Export state
   const [exporting, setExporting] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
@@ -888,7 +889,7 @@ export default function VisitsReportPage() {
                     
                     return (
                       <option key={page} value={page} className="py-2 hover:bg-blue-50">
-                        🔗 {page} ({count})
+                        🔗 {formatSalesPageName(page)} ({count})
                       </option>
                     )
                   })}
@@ -1034,8 +1035,8 @@ export default function VisitsReportPage() {
                         <span className="block overflow-hidden text-ellipsis whitespace-nowrap text-xs">{visit.city || '-'}</span>
                       </td>
                       <td className="py-3 px-2">
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs block overflow-hidden text-ellipsis whitespace-nowrap" title={visit.targetPage}>
-                          {visit.targetPage.length > 10 ? visit.targetPage.substring(0, 10) + '...' : visit.targetPage}
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs block overflow-hidden text-ellipsis whitespace-nowrap" title={formatSalesPageName(visit.targetPage)}>
+                          {formatSalesPageName(visit.targetPage)}
                         </span>
                       </td>
                       <td className="py-3 px-2 hidden lg:table-cell">

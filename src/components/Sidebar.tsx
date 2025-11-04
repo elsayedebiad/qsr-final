@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { getSalesPageName } from '@/lib/sales-pages-config'
 import { 
   FileText, 
   Plus, 
@@ -59,6 +60,25 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   const [expandedItems, setExpandedItems] = useState<string[]>(['cvs'])
   const [isResetting, setIsResetting] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
+  const [salesPageNames, setSalesPageNames] = useState<Record<string, string>>({})
+
+  // تحميل أسماء صفحات المبيعات
+  useEffect(() => {
+    const loadSalesPageNames = () => {
+      const names: Record<string, string> = {}
+      for (let i = 1; i <= 11; i++) {
+        names[`sales${i}`] = getSalesPageName(`sales${i}`)
+      }
+      setSalesPageNames(names)
+    }
+    
+    loadSalesPageNames()
+    
+    // الاستماع للتحديثات
+    const handleUpdate = () => loadSalesPageNames()
+    window.addEventListener('salesPagesConfigUpdated', handleUpdate)
+    return () => window.removeEventListener('salesPagesConfigUpdated', handleUpdate)
+  }, [])
 
   const toggleExpanded = (itemId: string) => {
     setExpandedItems(prev => 
@@ -207,67 +227,67 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
         },
         {
           id: 'sales1',
-          label: 'Sales 1',
+          label: salesPageNames['sales1'] || 'Sales 1',
           icon: ExternalLink,
           href: '/sales1'
         },
         {
           id: 'sales2',
-          label: 'Sales 2',
+          label: salesPageNames['sales2'] || 'Sales 2',
           icon: ExternalLink,
           href: '/sales2'
         },
         {
           id: 'sales3',
-          label: 'Sales 3',
+          label: salesPageNames['sales3'] || 'Sales 3',
           icon: ExternalLink,
           href: '/sales3'
         },
         {
           id: 'sales4',
-          label: 'Sales 4',
+          label: salesPageNames['sales4'] || 'Sales 4',
           icon: ExternalLink,
           href: '/sales4'
         },
         {
           id: 'sales5',
-          label: 'Sales 5',
+          label: salesPageNames['sales5'] || 'Sales 5',
           icon: ExternalLink,
           href: '/sales5'
         },
         {
           id: 'sales6',
-          label: 'Sales 6',
+          label: salesPageNames['sales6'] || 'Sales 6',
           icon: ExternalLink,
           href: '/sales6'
         },
         {
           id: 'sales7',
-          label: 'Sales 7',
+          label: salesPageNames['sales7'] || 'Sales 7',
           icon: ExternalLink,
           href: '/sales7'
         },
         {
           id: 'sales8',
-          label: 'Sales 8',
+          label: salesPageNames['sales8'] || 'Sales 8',
           icon: ExternalLink,
           href: '/sales8'
         },
         {
           id: 'sales9',
-          label: 'Sales 9',
+          label: salesPageNames['sales9'] || 'Sales 9',
           icon: ExternalLink,
           href: '/sales9'
         },
         {
           id: 'sales10',
-          label: 'Sales 10',
+          label: salesPageNames['sales10'] || 'Sales 10',
           icon: ExternalLink,
           href: '/sales10'
         },
         {
           id: 'sales11',
-          label: 'Sales 11',
+          label: salesPageNames['sales11'] || 'Sales 11',
           icon: ExternalLink,
           href: '/sales11'
         }

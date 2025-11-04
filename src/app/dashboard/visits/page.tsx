@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Globe, MapPin, Monitor, Calendar, Filter, Download,
   Eye, Users, TrendingUp, Clock, ExternalLink, Search,
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 import toast from 'react-hot-toast'
+import { formatSalesPageName } from '@/lib/sales-pages-config'
 
 interface Visit {
   id: number
@@ -205,7 +206,7 @@ export default function VisitsPage() {
                   <option value="">جميع الصفحات</option>
                   {stats?.pages.map(p => (
                     <option key={p.page} value={p.page}>
-                      {p.page} ({p.count})
+                      {formatSalesPageName(p.page)} ({p.count})
                     </option>
                   ))}
                 </select>

@@ -8,6 +8,7 @@ import {
 import DashboardLayout from '@/components/DashboardLayout'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
+import { formatSalesPageName } from '@/lib/sales-pages-config'
 
 interface ArchivedVisit {
   id: number
@@ -375,7 +376,7 @@ export default function VisitsArchivePage() {
                   <option value="ALL">جميع الصفحات ({stats.totalArchived})</option>
                   {uniquePages.map(page => (
                     <option key={page} value={page}>
-                      {page}
+                      {formatSalesPageName(page)}
                     </option>
                   ))}
                 </select>

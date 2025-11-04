@@ -5,11 +5,12 @@ import {
   Network, Users, Activity, BarChart3, RefreshCw, 
   ArrowUp, ArrowDown, Target, Zap, Globe, Settings, TrendingUp,
   ExternalLink, Percent, Info, Save, Eye, MousePointerClick, 
-  Database, HardDrive, AlertTriangle
+  Database, HardDrive, AlertTriangle, Edit2, X, Check
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import DashboardLayout from '@/components/DashboardLayout'
 import { saveDistributionRules, loadDistributionRules } from '@/lib/distribution-storage'
+import { getSalesPageName, updateSalesPageName, formatSalesPageName } from '@/lib/sales-pages-config'
 
 interface PageStats {
   salesPageId: string
@@ -87,11 +88,21 @@ export default function DistributionPage() {
     { path: '/sales11', googleWeight: 9.01, otherWeight: 9.01, isActive: true, targetConversions: 100 },
   ])
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [editingPageId, setEditingPageId] = useState<string | null>(null)
+  const [editingPageName, setEditingPageName] = useState('')
 
   useEffect(() => {
     fetchData()
     fetchVisitStats()
     fetchDistributionRules()
+    
+    // الاستماع لتحديثات الأسماء
+    const handleConfigUpdate = () => {
+      fetchData()
+      fetchVisitStats()
+    }
+    window.addEventListener('salesPagesConfigUpdated', handleConfigUpdate)
+    return () => window.removeEventListener('salesPagesConfigUpdated', handleConfigUpdate)
   }, [])
 
   // Auto-refresh للبيانات
@@ -510,7 +521,49 @@ export default function DistributionPage() {
             {visitStats.map(page => (
               <div key={page.salesPageId} className="border dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-lg">{page.salesPageId.toUpperCase()}</h3>
+                  {editingPageId === page.salesPageId ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input
+                        type="text"
+                        value={editingPageName}
+                        onChange={(e) => setEditingPageName(e.target.value)}
+                        className="flex-1 px-2 py-1 border dark:border-gray-600 rounded text-sm dark:bg-gray-700 dark:text-white"
+                        placeholder="اسم الصفحة"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => {
+                          if (updateSalesPageName(page.salesPageId, editingPageName)) {
+                            toast.success('تم تحديث الاسم')
+                            setEditingPageId(null)
+                          }
+                        }}
+                        className="p-1 bg-green-500 text-white rounded hover:bg-green-600"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setEditingPageId(null)}
+                        className="p-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-lg">{formatSalesPageName(page.salesPageId)}</h3>
+                      <button
+                        onClick={() => {
+                          setEditingPageId(page.salesPageId)
+                          setEditingPageName(getSalesPageName(page.salesPageId))
+                        }}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                        title="تعديل الاسم"
+                      >
+                        <Edit2 className="h-4 w-4 text-gray-500" />
+                      </button>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-sm">
                     <MousePointerClick className="h-4 w-4 text-blue-500" />
                     <span className="font-bold">{page.totalVisits}</span>
@@ -1380,11 +1433,53 @@ export default function DistributionPage() {
             <div key={page.salesPageId} className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               {/* Page Header */}
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1">
                   <Globe className="h-6 w-6 text-blue-500" />
-                  <h3 className="text-lg font-semibold">
-                    {page.salesPageId.toUpperCase()}
-                  </h3>
+                  {editingPageId === page.salesPageId ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input
+                        type="text"
+                        value={editingPageName}
+                        onChange={(e) => setEditingPageName(e.target.value)}
+                        className="flex-1 px-2 py-1 border dark:border-gray-600 rounded text-sm dark:bg-gray-700 dark:text-white"
+                        placeholder="اسم الصفحة"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => {
+                          if (updateSalesPageName(page.salesPageId, editingPageName)) {
+                            toast.success('تم تحديث الاسم')
+                            setEditingPageId(null)
+                          }
+                        }}
+                        className="p-1 bg-green-500 text-white rounded hover:bg-green-600"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setEditingPageId(null)}
+                        className="p-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold">
+                        {formatSalesPageName(page.salesPageId)}
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setEditingPageId(page.salesPageId)
+                          setEditingPageName(getSalesPageName(page.salesPageId))
+                        }}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                        title="تعديل الاسم"
+                      >
+                        <Edit2 className="h-4 w-4 text-gray-400" />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   {page.isActive && (

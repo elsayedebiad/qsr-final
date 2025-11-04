@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useRouter, usePathname } from 'next/navigation'
+import { getSalesPageName } from '@/lib/sales-pages-config'
 import { LucideIcon } from "lucide-react"
 import {
   FileText,
@@ -98,6 +99,25 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
   const { isMobile } = useSidebar()
   const [systemActive, setSystemActive] = React.useState(true)
   const [togglingSystem, setTogglingSystem] = React.useState(false)
+  const [salesPageNames, setSalesPageNames] = React.useState<Record<string, string>>({})
+
+  // تحميل أسماء صفحات المبيعات
+  React.useEffect(() => {
+    const loadSalesPageNames = () => {
+      const names: Record<string, string> = {}
+      for (let i = 1; i <= 11; i++) {
+        names[`sales${i}`] = getSalesPageName(`sales${i}`)
+      }
+      setSalesPageNames(names)
+    }
+    
+    loadSalesPageNames()
+    
+    // الاستماع للتحديثات
+    const handleUpdate = () => loadSalesPageNames()
+    window.addEventListener('salesPagesConfigUpdated', handleUpdate)
+    return () => window.removeEventListener('salesPagesConfigUpdated', handleUpdate)
+  }, [])
 
   // جلب حالة النظام للمطور
   React.useEffect(() => {
@@ -257,67 +277,67 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
         },
         {
           id: 'sales1',
-          label: 'Sales 1',
+          label: salesPageNames['sales1'] || 'Sales 1',
           icon: ExternalLink,
           href: '/sales1'
         },
         {
           id: 'sales2',
-          label: 'Sales 2',
+          label: salesPageNames['sales2'] || 'Sales 2',
           icon: ExternalLink,
           href: '/sales2'
         },
         {
           id: 'sales3',
-          label: 'Sales 3',
+          label: salesPageNames['sales3'] || 'Sales 3',
           icon: ExternalLink,
           href: '/sales3'
         },
         {
           id: 'sales4',
-          label: 'Sales 4',
+          label: salesPageNames['sales4'] || 'Sales 4',
           icon: ExternalLink,
           href: '/sales4'
         },
         {
           id: 'sales5',
-          label: 'Sales 5',
+          label: salesPageNames['sales5'] || 'Sales 5',
           icon: ExternalLink,
           href: '/sales5'
         },
         {
           id: 'sales6',
-          label: 'Sales 6',
+          label: salesPageNames['sales6'] || 'Sales 6',
           icon: ExternalLink,
           href: '/sales6'
         },
         {
           id: 'sales7',
-          label: 'Sales 7',
+          label: salesPageNames['sales7'] || 'Sales 7',
           icon: ExternalLink,
           href: '/sales7'
         },
         {
           id: 'sales8',
-          label: 'Sales 8',
+          label: salesPageNames['sales8'] || 'Sales 8',
           icon: ExternalLink,
           href: '/sales8'
         },
         {
           id: 'sales9',
-          label: 'Sales 9',
+          label: salesPageNames['sales9'] || 'Sales 9',
           icon: ExternalLink,
           href: '/sales9'
         },
         {
           id: 'sales10',
-          label: 'Sales 10',
+          label: salesPageNames['sales10'] || 'Sales 10',
           icon: ExternalLink,
           href: '/sales10'
         },
         {
           id: 'sales11',
-          label: 'Sales 11',
+          label: salesPageNames['sales11'] || 'Sales 11',
           icon: ExternalLink,
           href: '/sales11'
         }
