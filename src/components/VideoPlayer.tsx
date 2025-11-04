@@ -101,18 +101,55 @@ export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
             )}
 
             {/* YouTube Embed */}
-            <iframe
-              src={embedUrl}
-              className="absolute inset-0 w-full h-full"
-              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              title="فيديو السيرة الذاتية"
-              onLoad={() => setIsLoading(false)}
-              onError={() => setHasError(true)}
-              style={{
-                border: 'none'
-              }}
-            />
+            {!hasError && (
+              <iframe
+                src={embedUrl}
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                title="فيديو السيرة الذاتية"
+                onLoad={() => {
+                  setIsLoading(false)
+                  // كشف تلقائي لخطأ 153 بعد 3 ثواني
+                  setTimeout(() => {
+                    const iframe = document.querySelector('iframe[title="فيديو السيرة الذاتية"]')
+                    if (iframe && iframe.clientHeight === 0) {
+                      console.log('Video failed to load - likely embed restricted')
+                      setHasError(true)
+                    }
+                  }, 3000)
+                }}
+                onError={() => setHasError(true)}
+                style={{
+                  border: 'none'
+                }}
+              />
+            )}
+            
+            {/* رسالة بديلة عند فشل التشغيل */}
+            {hasError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 p-6">
+                <div className="text-center max-w-md">
+                  <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Play className="h-10 w-10 text-red-400" />
+                  </div>
+                  <h3 className="text-white text-xl font-bold mb-3">الفيديو محظور من التشغيل المضمن</h3>
+                  <p className="text-white/70 text-sm mb-6">
+                    صاحب الفيديو منع تشغيله هنا.<br />
+                    يمكنك مشاهدته مباشرة على YouTube
+                  </p>
+                  <a
+                    href={videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-4 rounded-xl transition-all duration-300 font-bold text-lg shadow-2xl transform hover:scale-105"
+                  >
+                    <Play className="h-6 w-6 fill-white" />
+                    افتح على YouTube
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>
