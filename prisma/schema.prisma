@@ -196,6 +196,7 @@ model SalesConfig {
   id             String   @id @default(cuid())
   salesPageId    String   @unique
   whatsappNumber String   @default("")
+  hideFilters    Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

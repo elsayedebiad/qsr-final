@@ -13,7 +13,7 @@ export async function GET(
     const salesId = resolvedParams.id
 
     // التحقق من أن salesId صحيح
-    if (!['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7', 'sales8', 'sales9', 'sales10', 'sales11', 'gallery'].includes(salesId)) {
+    if (!['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7', 'sales8', 'sales9', 'sales10', 'sales11', 'gallery', 'transfer-services'].includes(salesId)) {
       return NextResponse.json(
         { error: 'صفحة المبيعات غير موجودة' },
         { status: 404 }
@@ -35,7 +35,10 @@ export async function GET(
       })
     }
 
-    return NextResponse.json({ whatsappNumber: config.whatsappNumber })
+    return NextResponse.json({ 
+      whatsappNumber: config.whatsappNumber,
+      hideFilters: config.hideFilters || false
+    })
   } catch (error) {
     console.error('Error fetching sales config:', error)
     return NextResponse.json(
@@ -54,10 +57,10 @@ export async function PUT(
     const resolvedParams = await params
     const salesId = resolvedParams.id
     const body = await request.json()
-    const { whatsappNumber } = body
+    const { whatsappNumber, hideFilters } = body
 
     // التحقق من أن salesId صحيح
-    if (!['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7', 'sales8', 'sales9', 'sales10', 'sales11', 'gallery'].includes(salesId)) {
+    if (!['sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6', 'sales7', 'sales8', 'sales9', 'sales10', 'sales11', 'gallery', 'transfer-services'].includes(salesId)) {
       return NextResponse.json(
         { error: 'صفحة المبيعات غير موجودة' },
         { status: 404 }
@@ -74,17 +77,22 @@ export async function PUT(
     // تحديث أو إنشاء الإعدادات في قاعدة البيانات
     const config = await db.salesConfig.upsert({
       where: { salesPageId: salesId },
-      update: { whatsappNumber },
+      update: { 
+        whatsappNumber,
+        hideFilters: hideFilters !== undefined ? hideFilters : undefined
+      },
       create: {
         salesPageId: salesId,
-        whatsappNumber
+        whatsappNumber,
+        hideFilters: hideFilters || false
       }
     })
 
     return NextResponse.json({
-      message: 'تم تحديث رقم الواتساب بنجاح',
+      message: 'تم تحديث الإعدادات بنجاح',
       salesId,
-      whatsappNumber: config.whatsappNumber
+      whatsappNumber: config.whatsappNumber,
+      hideFilters: config.hideFilters
     })
   } catch (error) {
     console.error('Error updating sales config:', error)

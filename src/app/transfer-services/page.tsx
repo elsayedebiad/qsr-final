@@ -1397,17 +1397,9 @@ export default function TransferServicesPage() {
         )}
         <div className="h-6"></div>
 
-        {/* البحث والفلاتر - بتصميم qsr.sa */}
+        {/* البحث والفلاتر - تظهر فقط إذا لم يتم إخفاؤها من الإعدادات */}
+        {!hideFilters && (
         <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 sm:p-6 mb-6">
-          {/* تم إزالة البنرات من هذه الصفحة */}
-
-          {/* نص توجيهي */}
-          <div className="text-center mb-4">
-            <p className="text-xl font-bold text-[#1e3a8a]">معرض سير نقل الخدمات 🚚✨</p>
-          </div>
-
-          {/* البحث والفلاتر - تظهر فقط إذا لم يتم إخفاؤها من الإعدادات */}
-          {!hideFilters && (
           <>
           {/* البحث والفلترة */}
           <div className="flex items-center gap-3 mb-6">
@@ -1908,34 +1900,11 @@ export default function TransferServicesPage() {
 
               </div>
 
-              <div className="mt-4 flex justify-center">
-                <button
-                  onClick={() => {
-                    setReligionFilter('ALL')
-                    setNationalityFilter('ALL')
-                    setSkillFilters([])
-                    setPositionFilter('ALL')
-                    setAgeFilter('ALL')
-                    setMaritalStatusFilter('ALL')
-                    setArabicLevelFilter('ALL')
-                    setEnglishLevelFilter('ALL')
-                    setEducationFilter('ALL')
-                    setExperienceFilter('ALL')
-                    setHeightFilter('ALL')
-                    setWeightFilter('ALL')
-                    setLocationFilter('ALL')
-                    setSearchTerm('')
-                  }}
-                  className="px-6 py-2 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium hover:from-red-500 hover:to-pink-500"
-                >
-                  مسح جميع الفلاتر
-                </button>
-              </div>
             </div>
           </div>
         </>
+        </div>
         )}
-      </div>
 
       {/* عرض السير الذاتية */}
       <div ref={cvsContainerRef} className="min-h-[400px]">
@@ -2050,8 +2019,8 @@ export default function TransferServicesPage() {
                         </button>
                       </div>
                       
-                      {/* زر الفيديو - أيقونة احترافية فقط */}
-                      <div className="mb-2 sm:mb-3">
+                      {/* الأزرار - محسّنة للموبايل */}
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3">
                         <button
                           onClick={() => {
                             if (cv.videoLink && cv.videoLink.trim() !== '') {
@@ -2061,24 +2030,12 @@ export default function TransferServicesPage() {
                               toast.error('لا يوجد رابط فيديو لهذه السيرة');
                             }
                           }}
-                          className="w-full bg-gradient-to-r from-red-600 via-red-700 to-red-800 hover:from-red-700 hover:via-red-800 hover:to-red-900 text-white py-3 sm:py-3.5 px-3 sm:px-4 rounded-lg flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-red-500/50 hover:scale-105 group relative overflow-hidden"
+                          className="bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
                           title="شاهد فيديو"
                         >
-                          {/* تأثير توهج خلفي */}
-                          <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
-                          
-                          {/* دائرة متوهجة */}
-                          <span className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-700 blur-2xl"></span>
-                          
-                          {/* أيقونة Play احترافية كبيرة */}
-                          <div className="relative z-10 bg-white/30 backdrop-blur-sm rounded-full p-3 group-hover:bg-white/40 group-hover:scale-110 transition-all duration-300 shadow-2xl">
-                            <Play className="h-6 w-6 sm:h-7 sm:w-7 fill-current drop-shadow-lg" />
-                          </div>
+                          <Play className="h-5 w-5 sm:h-6 sm:w-6 mb-1 fill-current" />
+                          <span className="font-bold leading-tight">فيديو</span>
                         </button>
-                      </div>
-                      
-                      {/* باقي الأزرار - محسّنة للموبايل */}
-                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <button
                           onClick={() => shareSingleCV(cv)}
                           className="bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
