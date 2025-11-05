@@ -14,6 +14,8 @@ export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
   const [hasError, setHasError] = useState(false)
   const [embedUrl, setEmbedUrl] = useState('')
   const [originalUrl, setOriginalUrl] = useState('')
+  const [retryCount, setRetryCount] = useState(0)
+  const [useNoCookie, setUseNoCookie] = useState(false)
   
   useEffect(() => {
     if (!videoUrl) return
@@ -63,8 +65,25 @@ export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
       
       if (videoId && videoId.length >= 10) {
         console.log('YouTube Video ID extracted:', videoId)
-        // استخدام nocookie domain وإضافة معاملات لتحسين التوافق
-        setEmbedUrl(`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`)
+        
+        // محاولة استخدام طرق مختلفة للتضمين
+        const embedParams = [
+          'autoplay=0',          // إيقاف التشغيل التلقائي
+          'mute=0',              // السماح بالصوت
+          'controls=1',
+          'playsinline=1',
+          'rel=0',
+          'modestbranding=1',
+          'fs=1',
+          'iv_load_policy=3',
+          'disablekb=0',
+          'enablejsapi=1',
+          'origin=' + encodeURIComponent(window.location.origin)
+        ].join('&')
+        
+        // استخدام nocookie أو youtube.com حسب عدد المحاولات
+        const domain = useNoCookie ? 'youtube-nocookie.com' : 'youtube.com'
+        setEmbedUrl(`https://www.${domain}/embed/${videoId}?${embedParams}`)
       } else {
         console.error('Failed to extract YouTube video ID from:', videoUrl)
         setHasError(true)
@@ -72,7 +91,7 @@ export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
     } else {
       setEmbedUrl(videoUrl)
     }
-  }, [videoUrl])
+  }, [videoUrl, useNoCookie])
 
   if (!videoUrl) return null
 
@@ -127,12 +146,29 @@ export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
                   <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Play className="h-8 w-8 text-red-300" />
                   </div>
-                  <h4 className="text-white text-lg sm:text-xl font-bold mb-3">⚠️ الفيديو محظور من التشغيل المضمن</h4>
+                  <h4 className="text-white text-lg sm:text-xl font-bold mb-3">⚠️ الفيديو محظور من التضمين</h4>
                   <p className="text-white/80 text-sm mb-4">
-                    صاحب الفيديو منع تشغيله على هذا الموقع<br />
-                    اضغط على الزر لمشاهدته مباشرة على YouTube
+                    <strong>صاحب الفيديو على YouTube منع تشغيله على المواقع الأخرى</strong><br /><br />
+                    <strong>💡 الحل:</strong><br />
+                    • افتح إعدادات الفيديو على YouTube Studio<br />
+                    • فعّل خيار "السماح بالتضمين" (Allow embedding)<br />
+                    • أو استخدم فيديو من قناتك الخاصة<br /><br />
+                    📖 راجع ملف <code className="bg-white/20 px-2 py-0.5 rounded">VIDEO_BLOCKED_SOLUTION.md</code> للتفاصيل
                   </p>
                   <div className="flex flex-col gap-3">
+                    {retryCount < 2 && (
+                      <button
+                        onClick={() => {
+                          setRetryCount(prev => prev + 1)
+                          setUseNoCookie(!useNoCookie)
+                          setHasError(false)
+                          setIsLoading(true)
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-300 font-bold flex items-center justify-center gap-2"
+                      >
+                        🔄 حاول مرة أخرى
+                      </button>
+                    )}
                     <a
                       href={originalUrl}
                       target="_blank"
@@ -140,7 +176,7 @@ export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
                       className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg transition-all duration-300 font-bold flex items-center justify-center gap-2"
                     >
                       <Play className="h-5 w-5 fill-white" />
-                      افتح على YouTube
+                      افتح على YouTube مباشرة
                     </a>
                     <button
                       onClick={onClose}

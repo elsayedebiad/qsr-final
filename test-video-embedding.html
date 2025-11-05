@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار تضمين الفيديوهات - Video Embedding Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .btn-test {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-test:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-clear {
+            background: #f5f5f5;
+            color: #666;
+        }
+        
+        .btn-clear:hover {
+            background: #e0e0e0;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-right: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .info-box ul {
+            margin-right: 20px;
+        }
+        
+        .info-box li {
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        .examples {
+            background: #fff9e6;
+            border: 1px solid #ffd700;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .examples h3 {
+            color: #d4a017;
+            margin-bottom: 10px;
+        }
+        
+        .example-link {
+            display: block;
+            padding: 8px;
+            background: white;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .example-link:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 اختبار تضمين الفيديوهات</h1>
+        <p class="subtitle">Video Embedding Tester - تأكد من أن الفيديو يسمح بالتضمين قبل استخدامه</p>
+        
+        <div class="info-box">
+            <h3>📋 كيف تستخدم هذه الأداة؟</h3>
+            <ul>
+                <li>الصق رابط فيديو YouTube في الحقل أدناه</li>
+                <li>اضغط على "اختبار الفيديو"</li>
+                <li>إذا ظهر الفيديو بشكل صحيح = الفيديو يعمل ✅</li>
+                <li>إذا ظهرت رسالة خطأ = الفيديو محظور ❌</li>
+            </ul>
+        </div>
+        
+        <div class="input-group">
+            <label for="videoUrl">🔗 رابط الفيديو (YouTube URL)</label>
+            <input 
+                type="text" 
+                id="videoUrl" 
+                placeholder="مثال: https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            >
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-test" onclick="testVideo()">🎯 اختبار الفيديو</button>
+            <button class="btn-clear" onclick="clearTest()">🗑️ مسح</button>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <div id="videoFrame" style="display: none;">
+            <div class="video-container">
+                <iframe 
+                    id="embedFrame"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                ></iframe>
+            </div>
+        </div>
+        
+        <div class="examples">
+            <h3>💡 أمثلة على روابط YouTube مدعومة:</h3>
+            <a class="example-link" onclick="fillExample(this)" data-url="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                <code>https://www.youtube.com/watch?v=dQw4w9WgXcQ</code> - Standard URL
+            </a>
+            <a class="example-link" onclick="fillExample(this)" data-url="https://youtu.be/dQw4w9WgXcQ">
+                <code>https://youtu.be/dQw4w9WgXcQ</code> - Short URL
+            </a>
+            <a class="example-link" onclick="fillExample(this)" data-url="https://www.youtube.com/embed/dQw4w9WgXcQ">
+                <code>https://www.youtube.com/embed/dQw4w9WgXcQ</code> - Embed URL
+            </a>
+        </div>
+        
+        <div class="info-box" style="margin-top: 20px;">
+            <h3>⚠️ إذا لم يعمل الفيديو:</h3>
+            <ul>
+                <li><strong>الحل 1:</strong> افتح الفيديو على YouTube Studio → تفاصيل → فعّل "السماح بالتضمين"</li>
+                <li><strong>الحل 2:</strong> استخدم فيديو من قناتك الخاصة بدلاً من فيديوهات الآخرين</li>
+                <li><strong>الحل 3:</strong> جرب منصات أخرى مثل Vimeo أو Google Drive</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function extractYouTubeId(url) {
+            try {
+                const urlObj = new URL(url);
+                
+                // youtu.be/VIDEO_ID
+                if (url.includes('youtu.be/')) {
+                    return urlObj.pathname.substring(1).split('?')[0].split('/')[0];
+                }
+                
+                // youtube.com/shorts/VIDEO_ID
+                if (url.includes('youtube.com/shorts/')) {
+                    return urlObj.pathname.split('/shorts/')[1]?.split('?')[0].split('/')[0];
+                }
+                
+                // youtube.com/embed/VIDEO_ID
+                if (url.includes('youtube.com/embed/')) {
+                    return urlObj.pathname.split('/embed/')[1]?.split('?')[0].split('/')[0];
+                }
+                
+                // youtube.com/watch?v=VIDEO_ID
+                if (urlObj.searchParams.has('v')) {
+                    return urlObj.searchParams.get('v');
+                }
+                
+                return null;
+            } catch (e) {
+                console.error('URL parsing error:', e);
+                return null;
+            }
+        }
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.innerHTML = message;
+        }
+        
+        function testVideo() {
+            const input = document.getElementById('videoUrl');
+            const url = input.value.trim();
+            
+            if (!url) {
+                showStatus('❌ الرجاء إدخال رابط الفيديو', 'error');
+                return;
+            }
+            
+            const videoId = extractYouTubeId(url);
+            
+            if (!videoId) {
+                showStatus('❌ رابط غير صحيح. تأكد من أنه رابط YouTube صحيح', 'error');
+                return;
+            }
+            
+            // Show loading status
+            showStatus('⏳ جاري تحميل الفيديو...', 'info');
+            
+            // Create embed URL
+            const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`;
+            
+            // Update iframe
+            const iframe = document.getElementById('embedFrame');
+            const videoFrame = document.getElementById('videoFrame');
+            
+            iframe.src = embedUrl;
+            videoFrame.style.display = 'block';
+            
+            // Check if video loaded successfully
+            let checkCount = 0;
+            const checkInterval = setInterval(() => {
+                checkCount++;
+                
+                // Check after 2 seconds
+                if (checkCount === 4) {
+                    clearInterval(checkInterval);
+                    showStatus('✅ الفيديو يعمل بشكل صحيح! يمكنك استخدام هذا الرابط بأمان.', 'success');
+                }
+            }, 500);
+            
+            // Error handling
+            iframe.onerror = () => {
+                clearInterval(checkInterval);
+                showStatus('❌ فشل تحميل الفيديو. الفيديو محظور من التضمين أو الرابط غير صحيح.', 'error');
+            };
+        }
+        
+        function clearTest() {
+            document.getElementById('videoUrl').value = '';
+            document.getElementById('videoFrame').style.display = 'none';
+            document.getElementById('embedFrame').src = '';
+            document.getElementById('status').className = 'status';
+            document.getElementById('status').innerHTML = '';
+        }
+        
+        function fillExample(element) {
+            const url = element.getAttribute('data-url');
+            document.getElementById('videoUrl').value = url;
+            testVideo();
+        }
+        
+        // Auto-test on Enter key
+        document.getElementById('videoUrl').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                testVideo();
+            }
+        });
+    </script>
+</body>
+</html>
