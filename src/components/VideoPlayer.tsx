@@ -88,7 +88,53 @@ export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
         console.error('Failed to extract YouTube video ID from:', videoUrl)
         setHasError(true)
       }
-    } else {
+    } 
+    // معالجة روابط Vimeo
+    else if (videoUrl.includes('vimeo.com')) {
+      try {
+        const url = new URL(videoUrl)
+        let vimeoId = ''
+        
+        // استخراج معرف Vimeo
+        if (videoUrl.includes('vimeo.com/')) {
+          vimeoId = url.pathname.split('/').filter(Boolean)[0]
+        }
+        
+        if (vimeoId) {
+          console.log('Vimeo Video ID extracted:', vimeoId)
+          // معاملات Vimeo بدون autoplay ومع صوت
+          const vimeoParams = [
+            'autoplay=0',
+            'muted=0',
+            'controls=1',
+            'title=0',
+            'byline=0',
+            'portrait=0'
+          ].join('&')
+          setEmbedUrl(`https://player.vimeo.com/video/${vimeoId}?${vimeoParams}`)
+        } else {
+          setEmbedUrl(videoUrl)
+        }
+      } catch (e) {
+        console.error('Failed to parse Vimeo URL:', e)
+        setEmbedUrl(videoUrl)
+      }
+    }
+    // معالجة روابط Google Drive
+    else if (videoUrl.includes('drive.google.com')) {
+      // استخراج File ID من Google Drive
+      const fileIdMatch = videoUrl.match(/\/d\/([^/]+)/)
+      if (fileIdMatch && fileIdMatch[1]) {
+        const fileId = fileIdMatch[1]
+        console.log('Google Drive File ID extracted:', fileId)
+        // استخدام preview بدون autoplay
+        setEmbedUrl(`https://drive.google.com/file/d/${fileId}/preview`)
+      } else {
+        setEmbedUrl(videoUrl)
+      }
+    }
+    // أي رابط آخر (ملفات مباشرة)
+    else {
       setEmbedUrl(videoUrl)
     }
   }, [videoUrl, useNoCookie])
