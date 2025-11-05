@@ -7,9 +7,10 @@ interface VideoPlayerProps {
   videoUrl: string | null
   onClose: () => void
   videoModalKey?: number
+  title?: string
 }
 
-export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
+export default function VideoPlayer({ videoUrl, onClose, title = 'شاهد طريقة استخراج التأشيرة' }: VideoPlayerProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [embedUrl, setEmbedUrl] = useState('')
@@ -160,7 +161,7 @@ export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
               <Play className="h-5 w-5 text-white fill-white" />
             </div>
             <div>
-              <h3 className="text-base sm:text-xl font-bold text-white drop-shadow-lg">شاهد طريقة استخراج التأشيرة</h3>
+              <h3 className="text-base sm:text-xl font-bold text-white drop-shadow-lg">{title}</h3>
               <p className="text-xs text-white/90 mt-0.5">شرح خطوة بخطوة</p>
             </div>
           </div>
