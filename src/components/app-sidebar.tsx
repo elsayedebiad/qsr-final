@@ -244,12 +244,6 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       ]
     },
     {
-      id: 'gallery',
-      label: 'معرض السير الذاتية',
-      icon: Grid3X3,
-      href: '/gallery'
-    },
-    {
       id: 'sales',
       label: 'صفحات المبيعات',
       icon: Store,

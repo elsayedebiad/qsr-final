@@ -10,13 +10,15 @@ import {
   MessageCircle,
   ExternalLink,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  SlidersHorizontal
 } from 'lucide-react'
 import DashboardLayout from '../../../components/DashboardLayout'
 import PhoneInput from '../../../components/PhoneInput'
 
 interface SalesConfig {
   whatsappNumber: string
+  hideFilters?: boolean
 }
 
 interface SalesConfigs {
@@ -32,6 +34,7 @@ interface SalesConfigs {
   sales9: SalesConfig
   sales10: SalesConfig
   sales11: SalesConfig
+  'transfer-services': SalesConfig
 }
 
 export default function SalesConfigPage() {
@@ -47,7 +50,8 @@ export default function SalesConfigPage() {
     sales8: { whatsappNumber: '' },
     sales9: { whatsappNumber: '' },
     sales10: { whatsappNumber: '' },
-    sales11: { whatsappNumber: '' }
+    sales11: { whatsappNumber: '' },
+    'transfer-services': { whatsappNumber: '' }
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -97,7 +101,15 @@ export default function SalesConfigPage() {
   const updateWhatsappNumber = (salesId: keyof SalesConfigs, number: string) => {
     setConfigs(prev => ({
       ...prev,
-      [salesId]: { whatsappNumber: number }
+      [salesId]: { ...prev[salesId], whatsappNumber: number }
+    }))
+  }
+
+  // تحديث إخفاء الفلاتر
+  const toggleHideFilters = (salesId: keyof SalesConfigs) => {
+    setConfigs(prev => ({
+      ...prev,
+      [salesId]: { ...prev[salesId], hideFilters: !prev[salesId].hideFilters }
     }))
   }
 
@@ -149,18 +161,19 @@ export default function SalesConfigPage() {
   }
 
   const salesPages = [
-    { id: 'gallery', name: 'المعرض الرئيسي', color: 'from-blue-500 to-cyan-500', bgColor: 'bg-blue-100/50 dark:bg-blue-900/20', borderColor: 'border-blue-200 dark:border-blue-700', textColor: 'text-blue-900 dark:text-blue-100' },
-    { id: 'sales1', name: 'Sales 1', color: 'from-green-500 to-blue-500', bgColor: 'bg-green-100/50 dark:bg-green-900/20', borderColor: 'border-green-200 dark:border-green-700', textColor: 'text-green-900 dark:text-green-100' },
-    { id: 'sales2', name: 'Sales 2', color: 'from-purple-500 to-pink-500', bgColor: 'bg-purple-100/50 dark:bg-purple-900/20', borderColor: 'border-purple-200 dark:border-purple-700', textColor: 'text-purple-900 dark:text-purple-100' },
-    { id: 'sales3', name: 'Sales 3', color: 'from-orange-500 to-red-500', bgColor: 'bg-orange-100/50 dark:bg-orange-900/20', borderColor: 'border-orange-200 dark:border-orange-700', textColor: 'text-orange-900 dark:text-orange-100' },
-    { id: 'sales4', name: 'Sales 4', color: 'from-indigo-500 to-blue-500', bgColor: 'bg-indigo-100/50 dark:bg-indigo-900/20', borderColor: 'border-indigo-200 dark:border-indigo-700', textColor: 'text-indigo-900 dark:text-indigo-100' },
-    { id: 'sales5', name: 'Sales 5', color: 'from-pink-500 to-rose-500', bgColor: 'bg-pink-100/50 dark:bg-pink-900/20', borderColor: 'border-pink-200 dark:border-pink-700', textColor: 'text-pink-900 dark:text-pink-100' },
-    { id: 'sales6', name: 'Sales 6', color: 'from-teal-500 to-green-500', bgColor: 'bg-teal-100/50 dark:bg-teal-900/20', borderColor: 'border-teal-200 dark:border-teal-700', textColor: 'text-teal-900 dark:text-teal-100' },
-    { id: 'sales7', name: 'Sales 7', color: 'from-red-500 to-orange-500', bgColor: 'bg-red-100/50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-700', textColor: 'text-red-900 dark:text-red-100' },
-    { id: 'sales8', name: 'Sales 8', color: 'from-yellow-500 to-amber-500', bgColor: 'bg-yellow-100/50 dark:bg-yellow-900/20', borderColor: 'border-yellow-200 dark:border-yellow-700', textColor: 'text-yellow-900 dark:text-yellow-100' },
-    { id: 'sales9', name: 'Sales 9', color: 'from-cyan-500 to-blue-500', bgColor: 'bg-cyan-100/50 dark:bg-cyan-900/20', borderColor: 'border-cyan-200 dark:border-cyan-700', textColor: 'text-cyan-900 dark:text-cyan-100' },
-    { id: 'sales10', name: 'Sales 10', color: 'from-lime-500 to-green-500', bgColor: 'bg-lime-100/50 dark:bg-lime-900/20', borderColor: 'border-lime-200 dark:border-lime-700', textColor: 'text-lime-900 dark:text-lime-100' },
-    { id: 'sales11', name: 'Sales 11', color: 'from-fuchsia-500 to-purple-500', bgColor: 'bg-fuchsia-100/50 dark:bg-fuchsia-900/20', borderColor: 'border-fuchsia-200 dark:border-fuchsia-700', textColor: 'text-fuchsia-900 dark:text-fuchsia-100' }
+    { id: 'gallery', name: 'المعرض الرئيسي', description: 'صفحة معرض السير الذاتية', color: 'from-blue-500 to-cyan-500', bgColor: 'bg-blue-100/50 dark:bg-blue-900/20', borderColor: 'border-blue-200 dark:border-blue-700', textColor: 'text-blue-900 dark:text-blue-100' },
+    { id: 'transfer-services', name: 'معرض نقل الخدمات 🚚', description: 'سير نقل خدمات فقط - بدون بانر', color: 'from-amber-500 to-orange-600', bgColor: 'bg-amber-100/50 dark:bg-amber-900/20', borderColor: 'border-amber-200 dark:border-amber-700', textColor: 'text-amber-900 dark:text-amber-100' },
+    { id: 'sales1', name: 'Sales 1', description: 'صفحة معرض السير الذاتية', color: 'from-green-500 to-blue-500', bgColor: 'bg-green-100/50 dark:bg-green-900/20', borderColor: 'border-green-200 dark:border-green-700', textColor: 'text-green-900 dark:text-green-100' },
+    { id: 'sales2', name: 'Sales 2', description: 'صفحة معرض السير الذاتية', color: 'from-purple-500 to-pink-500', bgColor: 'bg-purple-100/50 dark:bg-purple-900/20', borderColor: 'border-purple-200 dark:border-purple-700', textColor: 'text-purple-900 dark:text-purple-100' },
+    { id: 'sales3', name: 'Sales 3', description: 'صفحة معرض السير الذاتية', color: 'from-orange-500 to-red-500', bgColor: 'bg-orange-100/50 dark:bg-orange-900/20', borderColor: 'border-orange-200 dark:border-orange-700', textColor: 'text-orange-900 dark:text-orange-100' },
+    { id: 'sales4', name: 'Sales 4', description: 'صفحة معرض السير الذاتية', color: 'from-indigo-500 to-blue-500', bgColor: 'bg-indigo-100/50 dark:bg-indigo-900/20', borderColor: 'border-indigo-200 dark:border-indigo-700', textColor: 'text-indigo-900 dark:text-indigo-100' },
+    { id: 'sales5', name: 'Sales 5', description: 'صفحة معرض السير الذاتية', color: 'from-pink-500 to-rose-500', bgColor: 'bg-pink-100/50 dark:bg-pink-900/20', borderColor: 'border-pink-200 dark:border-pink-700', textColor: 'text-pink-900 dark:text-pink-100' },
+    { id: 'sales6', name: 'Sales 6', description: 'صفحة معرض السير الذاتية', color: 'from-teal-500 to-green-500', bgColor: 'bg-teal-100/50 dark:bg-teal-900/20', borderColor: 'border-teal-200 dark:border-teal-700', textColor: 'text-teal-900 dark:text-teal-100' },
+    { id: 'sales7', name: 'Sales 7', description: 'صفحة معرض السير الذاتية', color: 'from-red-500 to-orange-500', bgColor: 'bg-red-100/50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-700', textColor: 'text-red-900 dark:text-red-100' },
+    { id: 'sales8', name: 'Sales 8', description: 'صفحة معرض السير الذاتية', color: 'from-yellow-500 to-amber-500', bgColor: 'bg-yellow-100/50 dark:bg-yellow-900/20', borderColor: 'border-yellow-200 dark:border-yellow-700', textColor: 'text-yellow-900 dark:text-yellow-100' },
+    { id: 'sales9', name: 'Sales 9', description: 'صفحة معرض السير الذاتية', color: 'from-cyan-500 to-blue-500', bgColor: 'bg-cyan-100/50 dark:bg-cyan-900/20', borderColor: 'border-cyan-200 dark:border-cyan-700', textColor: 'text-cyan-900 dark:text-cyan-100' },
+    { id: 'sales10', name: 'Sales 10', description: 'صفحة معرض السير الذاتية', color: 'from-lime-500 to-green-500', bgColor: 'bg-lime-100/50 dark:bg-lime-900/20', borderColor: 'border-lime-200 dark:border-lime-700', textColor: 'text-lime-900 dark:text-lime-100' },
+    { id: 'sales11', name: 'Sales 11', description: 'صفحة معرض السير الذاتية', color: 'from-fuchsia-500 to-purple-500', bgColor: 'bg-fuchsia-100/50 dark:bg-fuchsia-900/20', borderColor: 'border-fuchsia-200 dark:border-fuchsia-700', textColor: 'text-fuchsia-900 dark:text-fuchsia-100' }
   ]
 
   if (isLoading) {
@@ -247,7 +260,7 @@ export default function SalesConfigPage() {
                       </div>
                       <div>
                         <h3 className={`text-lg font-semibold ${page.textColor}`}>{page.name}</h3>
-                        <p className={`text-sm ${page.textColor} opacity-80`}>صفحة معرض السير الذاتية</p>
+                        <p className={`text-sm ${page.textColor} opacity-80`}>{page.description || 'صفحة معرض السير الذاتية'}</p>
                       </div>
                     </div>
                     
@@ -287,6 +300,42 @@ export default function SalesConfigPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* خيار إخفاء الفلاتر - فقط لصفحة transfer-services */}
+                  {page.id === 'transfer-services' && (
+                    <div className="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <label className="text-sm font-semibold text-foreground flex items-center gap-2 cursor-pointer">
+                            <SlidersHorizontal className="h-4 w-4 text-amber-600" />
+                            إخفاء الفلاتر
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            إخفاء جميع الفلاتر في صفحة نقل الخدمات
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => toggleHideFilters(page.id as keyof SalesConfigs)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
+                            config.hideFilters ? 'bg-amber-600' : 'bg-gray-300 dark:bg-gray-600'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              config.hideFilters ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      
+                      {config.hideFilters && (
+                        <div className="mt-3 flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-900/20 px-3 py-2 rounded-lg">
+                          <CheckCircle className="h-3 w-3" />
+                          الفلاتر مخفية - سيتم عرض السير الذاتية فقط
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="bg-muted/50 p-3 rounded-lg border border-border">
                     <h4 className="text-sm font-medium text-foreground mb-2">معلومات الصفحة:</h4>

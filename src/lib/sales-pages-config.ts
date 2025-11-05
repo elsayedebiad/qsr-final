@@ -19,6 +19,7 @@ const defaultConfigs: SalesPageConfig[] = [
   { id: 'sales9', path: '/sales9', defaultName: 'صفحة المبيعات 9' },
   { id: 'sales10', path: '/sales10', defaultName: 'صفحة المبيعات 10' },
   { id: 'sales11', path: '/sales11', defaultName: 'صفحة المبيعات 11' },
+  { id: 'transfer-services', path: '/transfer-services', defaultName: 'معرض نقل الخدمات' },
 ]
 
 const STORAGE_KEY = 'sales_pages_custom_names'

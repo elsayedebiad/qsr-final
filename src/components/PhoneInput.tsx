@@ -134,13 +134,13 @@ export default function PhoneInput({ value, onChange, placeholder, className = '
 
   return (
     <div className={`relative ${className}`}>
-      <div className="flex">
+      <div className="flex gap-0">
         {/* اختيار الدولة */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 px-3 py-3 border-2 border-r-0 border-gray-200 rounded-r-lg bg-gray-50 hover:bg-gray-100 transition-colors focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="h-[46px] flex items-center gap-2 px-4 border-2 border-l-0 border-gray-200 rounded-r-lg bg-gray-50 hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 whitespace-nowrap"
           >
             <span className="text-lg">{selectedCountry.flag}</span>
             <span className="text-sm font-medium text-gray-700">{selectedCountry.dialCode}</span>
@@ -149,7 +149,13 @@ export default function PhoneInput({ value, onChange, placeholder, className = '
 
           {/* قائمة الدول */}
           {isDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-hidden">
+            <>
+              {/* Backdrop لإغلاق القائمة عند النقر خارجها */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsDropdownOpen(false)}
+              />
+              <div className="absolute top-full right-0 z-50 mt-1 w-[320px] bg-white border border-gray-200 rounded-lg shadow-xl max-h-64 overflow-hidden">
               {/* شريط البحث */}
               <div className="p-3 border-b border-gray-200">
                 <input
@@ -187,18 +193,19 @@ export default function PhoneInput({ value, onChange, placeholder, className = '
                 )}
               </div>
             </div>
+            </>
           )}
         </div>
 
         {/* إدخال رقم الهاتف */}
         <div className="flex-1 relative">
-          <Phone className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+          <Phone className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
           <input
             type="tel"
             value={phoneNumber}
             onChange={handlePhoneNumberChange}
             placeholder={placeholder || "رقم الهاتف"}
-            className="w-full pr-10 pl-4 py-3 border-2 border-gray-200 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="h-[46px] w-full pr-10 pl-4 border-2 border-gray-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
             dir="ltr"
           />
         </div>

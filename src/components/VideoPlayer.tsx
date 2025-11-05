@@ -13,23 +13,62 @@ export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [embedUrl, setEmbedUrl] = useState('')
+  const [originalUrl, setOriginalUrl] = useState('')
   
   useEffect(() => {
     if (!videoUrl) return
     
+    setOriginalUrl(videoUrl)
+    setIsLoading(true)
+    setHasError(false)
+    
     // معالجة روابط YouTube
     if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
       let videoId = ''
-      if (videoUrl.includes('youtu.be/')) {
-        videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0] || ''
-      } else if (videoUrl.includes('watch?v=')) {
-        videoId = videoUrl.split('watch?v=')[1]?.split('&')[0] || ''
-      } else if (videoUrl.includes('/embed/')) {
-        videoId = videoUrl.split('/embed/')[1]?.split('?')[0] || ''
+      
+      try {
+        // إنشاء URL object لاستخراج المعاملات بشكل أفضل
+        const url = new URL(videoUrl)
+        
+        if (videoUrl.includes('youtu.be/')) {
+          // https://youtu.be/VIDEO_ID
+          videoId = url.pathname.substring(1).split('?')[0].split('/')[0]
+        } else if (videoUrl.includes('youtube.com/shorts/')) {
+          // https://www.youtube.com/shorts/VIDEO_ID
+          videoId = url.pathname.split('/shorts/')[1]?.split('?')[0].split('/')[0] || ''
+        } else if (videoUrl.includes('youtube.com/embed/')) {
+          // https://www.youtube.com/embed/VIDEO_ID
+          videoId = url.pathname.split('/embed/')[1]?.split('?')[0].split('/')[0] || ''
+        } else if (url.searchParams.has('v')) {
+          // https://www.youtube.com/watch?v=VIDEO_ID
+          videoId = url.searchParams.get('v') || ''
+        }
+        
+        // تنظيف videoId من أي معاملات إضافية
+        videoId = videoId.split('&')[0].split('?')[0].trim()
+        
+      } catch (e) {
+        // إذا فشل URL parsing، استخدم الطريقة القديمة
+        console.log('URL parsing failed, using fallback method')
+        if (videoUrl.includes('youtu.be/')) {
+          videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0].split('&')[0] || ''
+        } else if (videoUrl.includes('watch?v=')) {
+          videoId = videoUrl.split('watch?v=')[1]?.split('&')[0].split('?')[0] || ''
+        } else if (videoUrl.includes('/embed/')) {
+          videoId = videoUrl.split('/embed/')[1]?.split('?')[0].split('&')[0] || ''
+        } else if (videoUrl.includes('/shorts/')) {
+          videoId = videoUrl.split('/shorts/')[1]?.split('?')[0].split('&')[0] || ''
+        }
       }
       
-      // استخدام www.youtube.com عادي مع معاملات بسيطة
-      setEmbedUrl(`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`)
+      if (videoId && videoId.length >= 10) {
+        console.log('YouTube Video ID extracted:', videoId)
+        // استخدام nocookie domain وإضافة معاملات لتحسين التوافق
+        setEmbedUrl(`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`)
+      } else {
+        console.error('Failed to extract YouTube video ID from:', videoUrl)
+        setHasError(true)
+      }
     } else {
       setEmbedUrl(videoUrl)
     }
@@ -86,69 +125,97 @@ export default function VideoPlayer({ videoUrl, onClose }: VideoPlayerProps) {
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-red-900/90 to-pink-900/90 backdrop-blur-sm z-20 p-6">
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 max-w-md text-center border-2 border-red-400/30">
                   <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <X className="h-8 w-8 text-red-300" />
+                    <Play className="h-8 w-8 text-red-300" />
                   </div>
-                  <h4 className="text-white text-lg sm:text-xl font-bold mb-3">عذراً، لا يمكن تشغيل الفيديو</h4>
-                  <p className="text-white/80 text-sm mb-4">يرجى المحاولة مرة أخرى</p>
-                  <button
-                    onClick={onClose}
-                    className="bg-white/20 hover:bg-white/30 text-white px-6 py-2.5 rounded-lg transition-colors duration-300 font-semibold"
-                  >
-                    إغلاق
-                  </button>
+                  <h4 className="text-white text-lg sm:text-xl font-bold mb-3">⚠️ الفيديو محظور من التشغيل المضمن</h4>
+                  <p className="text-white/80 text-sm mb-4">
+                    صاحب الفيديو منع تشغيله على هذا الموقع<br />
+                    اضغط على الزر لمشاهدته مباشرة على YouTube
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <a
+                      href={originalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg transition-all duration-300 font-bold flex items-center justify-center gap-2"
+                    >
+                      <Play className="h-5 w-5 fill-white" />
+                      افتح على YouTube
+                    </a>
+                    <button
+                      onClick={onClose}
+                      className="bg-white/20 hover:bg-white/30 text-white px-6 py-2.5 rounded-lg transition-colors duration-300 font-semibold"
+                    >
+                      إغلاق
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* YouTube Embed */}
-            {!hasError && (
+            {!hasError && embedUrl && (
               <iframe
                 src={embedUrl}
                 className="absolute inset-0 w-full h-full"
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 title="فيديو السيرة الذاتية"
-                onLoad={() => {
-                  setIsLoading(false)
-                  // كشف تلقائي لخطأ 153 بعد 3 ثواني
-                  setTimeout(() => {
-                    const iframe = document.querySelector('iframe[title="فيديو السيرة الذاتية"]')
-                    if (iframe && iframe.clientHeight === 0) {
-                      console.log('Video failed to load - likely embed restricted')
+                loading="lazy"
+                onLoad={(e) => {
+                  const iframe = e.target as HTMLIFrameElement
+                  
+                  // كشف فوري للفيديوهات المحظورة
+                  const checkEmbed = () => {
+                    // فحص ارتفاع الـ iframe
+                    if (iframe.clientHeight === 0 || iframe.clientWidth === 0) {
+                      console.log('Video embed failed - dimensions are 0 (Error 153)')
+                      setIsLoading(false)
                       setHasError(true)
+                      return true
                     }
-                  }, 3000)
+                    
+                    // فحص محتوى الـ iframe
+                    try {
+                      if (iframe.contentDocument) {
+                        const body = iframe.contentDocument.body
+                        if (body && body.textContent?.includes('Video unavailable')) {
+                          console.log('Video unavailable message detected')
+                          setIsLoading(false)
+                          setHasError(true)
+                          return true
+                        }
+                      }
+                    } catch (e) {
+                      // خطأ CORS عادي - الفيديو يعمل على الأرجح
+                    }
+                    
+                    return false
+                  }
+                  
+                  // فحص فوري
+                  const hasError = checkEmbed()
+                  
+                  if (!hasError) {
+                    // إذا لم يكن هناك خطأ، أوقف التحميل بعد 500ms
+                    setTimeout(() => setIsLoading(false), 500)
+                    
+                    // فحص ثانوي بعد ثانية
+                    setTimeout(checkEmbed, 1000)
+                    
+                    // فحص نهائي بعد 2 ثانية
+                    setTimeout(checkEmbed, 2000)
+                  }
                 }}
-                onError={() => setHasError(true)}
+                onError={() => {
+                  console.log('iframe error occurred - video embed restricted')
+                  setIsLoading(false)
+                  setHasError(true)
+                }}
                 style={{
                   border: 'none'
                 }}
               />
-            )}
-            
-            {/* رسالة بديلة عند فشل التشغيل */}
-            {hasError && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800 p-6">
-                <div className="text-center max-w-md">
-                  <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Play className="h-10 w-10 text-red-400" />
-                  </div>
-                  <h3 className="text-white text-xl font-bold mb-3">الفيديو محظور من التشغيل المضمن</h3>
-                  <p className="text-white/70 text-sm mb-6">
-                    صاحب الفيديو منع تشغيله هنا.<br />
-                    يمكنك مشاهدته مباشرة على YouTube
-                  </p>
-                  <a
-                    href={videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-4 rounded-xl transition-all duration-300 font-bold text-lg shadow-2xl transform hover:scale-105"
-                  >
-                    <Play className="h-6 w-6 fill-white" />
-                    افتح على YouTube
-                  </a>
-                </div>
-              </div>
             )}
           </div>
 
