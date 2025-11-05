@@ -162,7 +162,7 @@ export default function Sales2Page() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [displayLimit, setDisplayLimit] = useState(20) // عرض 20 سيرة في البداية
   const [statusFilter] = useState<CVStatus | 'ALL'>('ALL')
-  const [nationalityFilter, setNationalityFilter] = useState<string>('ALL')
+  const [nationalityFilter, setNationalityFilter] = useState<string>('إثيوبيا')
   const [positionFilter, setPositionFilter] = useState<string>('ALL') // فلتر الوظيفة: سائق، خدمات
   const [skillFilters, setSkillFilters] = useState<string[]>([]) // تحديد متعدد للمهارات
   const [showSkillsDropdown, setShowSkillsDropdown] = useState(false)
