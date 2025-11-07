@@ -67,7 +67,8 @@ export async function POST(
           cvId: booking.cvId,
           identityNumber: identityNumber || booking.identityNumber,
           contractStartDate: contractDate ? new Date(contractDate) : new Date(),
-          contractEndDate: null
+          contractEndDate: null,
+          createdById: user.id
         },
         include: {
           cv: {
@@ -77,6 +78,14 @@ export async function POST(
               referenceCode: true,
               nationality: true,
               position: true
+            }
+          },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true
             }
           }
         }

@@ -39,6 +39,12 @@ interface Contract {
     cvImageUrl?: string
     status: string
   }
+  createdBy?: {
+    id: number
+    name: string
+    email: string
+    role: string
+  } | null
 }
 
 export default function ContractsPage() {
@@ -47,10 +53,16 @@ export default function ContractsPage() {
   const [filteredContracts, setFilteredContracts] = useState<Contract[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [employeeFilter, setEmployeeFilter] = useState<string>('')
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [selectedCVForView, setSelectedCVForView] = useState<Contract | null>(null)
+  
+  // قائمة الموظفين الفريدة
+  const uniqueEmployees = Array.from(
+    new Set(contracts.map(c => c.createdBy?.name).filter(Boolean))
+  ).sort()
 
   // جلب التعاقدات من قاعدة البيانات
   const fetchContracts = async () => {
@@ -109,20 +121,30 @@ export default function ContractsPage() {
     }
   }, [selectedCVForView])
 
-  // فلترة التعاقدات حسب البحث
+  // فلترة التعاقدات حسب البحث والموظف
   useEffect(() => {
-    if (searchTerm === '') {
-      setFilteredContracts(contracts)
-    } else {
-      const filtered = contracts.filter(contract =>
+    let filtered = contracts
+
+    // فلترة حسب البحث
+    if (searchTerm !== '') {
+      filtered = filtered.filter(contract =>
         contract.cv.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         contract.identityNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (contract.cv.referenceCode && contract.cv.referenceCode.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (contract.cv.nationality && contract.cv.nationality.toLowerCase().includes(searchTerm.toLowerCase()))
+        (contract.cv.nationality && contract.cv.nationality.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (contract.createdBy?.name && contract.createdBy.name.toLowerCase().includes(searchTerm.toLowerCase()))
       )
-      setFilteredContracts(filtered)
     }
-  }, [searchTerm, contracts])
+
+    // فلترة حسب الموظف
+    if (employeeFilter !== '') {
+      filtered = filtered.filter(contract => 
+        contract.createdBy?.name === employeeFilter
+      )
+    }
+
+    setFilteredContracts(filtered)
+  }, [searchTerm, employeeFilter, contracts])
 
   // تنسيق التاريخ والوقت (12 ساعة)
   const formatDateTime = (dateString: string) => {
@@ -229,17 +251,43 @@ export default function ContractsPage() {
             </div>
           </div>
 
-          {/* شريط البحث */}
-          <div className="bg-card p-4 rounded-lg border border-border">
+          {/* شريط البحث والفلاتر */}
+          <div className="bg-card p-4 rounded-lg border border-border space-y-4">
             <div className="relative">
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5 pointer-events-none z-10" />
               <input
                 type="text"
-                placeholder="البحث بالاسم أو رقم الهوية أو الكود المرجعي..."
+                placeholder="البحث بالاسم أو رقم الهوية أو الكود المرجعي أو اسم الموظف..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pr-12 pl-4 py-3 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
               />
+            </div>
+            
+            {/* فلتر الموظفين */}
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              <select
+                value={employeeFilter}
+                onChange={(e) => setEmployeeFilter(e.target.value)}
+                className="flex-1 px-4 py-2.5 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
+              >
+                <option value="">جميع الموظفين</option>
+                {uniqueEmployees.map((employee) => (
+                  <option key={employee} value={employee}>
+                    {employee}
+                  </option>
+                ))}
+              </select>
+              {employeeFilter && (
+                <button
+                  onClick={() => setEmployeeFilter('')}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  title="إلغاء الفلتر"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -252,6 +300,7 @@ export default function ContractsPage() {
                   <th>رقم الهوية</th>
                   <th>الجنسية</th>
                   <th>الوظيفة</th>
+                  <th>الموظف المنشئ</th>
                   <th>تاريخ وقت التعاقد</th>
                   <th>الإجراءات</th>
                 </tr>
@@ -292,6 +341,30 @@ export default function ContractsPage() {
                     </td>
                     <td className="text-muted-foreground">
                       {contract.cv.position || 'غير محدد'}
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <div className={`${contract.createdBy ? 'bg-primary/10' : 'bg-muted'} rounded-full p-1.5`}>
+                          <User className={`h-3.5 w-3.5 ${contract.createdBy ? 'text-primary' : 'text-muted-foreground'}`} />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-foreground">
+                            {contract.createdBy?.name || 'غير معروف'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {contract.createdBy ? (
+                              contract.createdBy.role === 'ADMIN' ? 'أدمن' :
+                              contract.createdBy.role === 'SUB_ADMIN' ? 'أبوريشن' :
+                              contract.createdBy.role === 'CUSTOMER_SERVICE' ? 'خدمة عملاء' :
+                              contract.createdBy.role === 'SALES' ? 'مبيعات' :
+                              contract.createdBy.role === 'DEVELOPER' ? 'مطور' :
+                              'موظف'
+                            ) : (
+                              'عقد قديم'
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td>
                       <div className="bg-muted rounded-lg p-3 space-y-2 border border-border">

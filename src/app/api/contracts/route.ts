@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { validateAuthFromRequest } from '@/lib/middleware-auth'
 
 const prisma = new PrismaClient()
 
@@ -19,7 +20,16 @@ export async function GET(request: NextRequest) {
             nationality: true,
             position: true,
             profileImage: true,
+            cvImageUrl: true,
             status: true
+          }
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
           }
         }
       },
@@ -46,10 +56,17 @@ export async function GET(request: NextRequest) {
 // POST - إنشاء تعاقد جديد
 export async function POST(request: NextRequest) {
   try {
+    // التحقق من المصادقة
+    const authResult = await validateAuthFromRequest(request)
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
+    }
+
+    const user = authResult.user
     const body = await request.json()
     const { cvId, identityNumber, contractDate, notes } = body
 
-    console.log('🔧 إنشاء تعاقد جديد:', { cvId, identityNumber })
+    console.log('🔧 إنشاء تعاقد جديد:', { cvId, identityNumber, createdBy: user.name })
 
     if (!cvId || !identityNumber) {
       return NextResponse.json(
@@ -90,7 +107,8 @@ export async function POST(request: NextRequest) {
           cvId: Number(cvId),
           identityNumber: identityNumber,
           contractStartDate: contractDate ? new Date(contractDate) : new Date(),
-          contractEndDate: null
+          contractEndDate: null,
+          createdById: user.id
         },
         include: {
           cv: {
@@ -100,6 +118,14 @@ export async function POST(request: NextRequest) {
               referenceCode: true,
               nationality: true,
               position: true
+            }
+          },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true
             }
           }
         }

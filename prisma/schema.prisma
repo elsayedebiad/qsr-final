@@ -23,6 +23,7 @@ model User {
   bookedCVs        Booking[]         @relation("BookedCVs")
   createdCVs       CV[]              @relation("CVCreatedBy")
   updatedCVs       CV[]              @relation("CVUpdatedBy")
+  createdContracts Contract[]        @relation("ContractCreatedBy")
   notifications    Notification[]
   sessions         Session[]
   loginActivations LoginActivation[]
@@ -151,9 +152,11 @@ model Contract {
   identityNumber    String
   contractStartDate DateTime  @default(now())
   contractEndDate   DateTime?
+  createdById       Int?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   cv                CV        @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  createdBy         User?     @relation("ContractCreatedBy", fields: [createdById], references: [id])
 
   @@map("contracts")
 }
