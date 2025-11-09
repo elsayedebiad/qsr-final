@@ -106,6 +106,12 @@ interface ExcelRow {
   'CV Image'?: string
   'CV Image URL'?: string
   'Resume Image'?: string
+  // Status columns
+  'الحالة'?: string
+  'الحاله'?: string
+  'حالة السيرة'?: string
+  'Status'?: string
+  'CV Status'?: string
   // Allow any additional columns that might exist in Excel files
   [key: string]: any
 }
@@ -164,6 +170,7 @@ interface ProcessedCV {
   profileImage?: string // Added for image handling
   cvImageUrl?: string // رابط صورة السيرة الكاملة المصممة
   videoUrl?: string // Added for video handling
+  status?: 'NEW' | 'BOOKED' | 'HIRED' | 'REJECTED' | 'RETURNED' | 'ARCHIVED' // حالة السيرة
 }
 
 // Interface for import results
@@ -190,6 +197,32 @@ const normalizeSkillLevel = (value?: string): 'YES' | 'NO' | 'WILLING' | undefin
   if (normalized === 'NO' || normalized === 'لا' || normalized === '0') return 'NO'
   if (normalized === 'WILLING' || normalized === 'راغب' || normalized === 'مستعد') return 'WILLING'
   return undefined
+}
+
+// Helper function to normalize CV status
+const normalizeCVStatus = (value?: string): 'NEW' | 'BOOKED' | 'HIRED' | 'REJECTED' | 'RETURNED' | 'ARCHIVED' | undefined => {
+  if (!value) return 'NEW' // القيمة الافتراضية
+  const normalized = value.toString().trim().toUpperCase()
+  
+  // جديد / NEW
+  if (normalized === 'NEW' || normalized === 'جديد' || normalized === 'جديدة') return 'NEW'
+  
+  // محجوز / BOOKED
+  if (normalized === 'BOOKED' || normalized === 'محجوز' || normalized === 'محجوزة' || normalized === 'حجز') return 'BOOKED'
+  
+  // متعاقد / HIRED
+  if (normalized === 'HIRED' || normalized === 'متعاقد' || normalized === 'متعاقدة' || normalized === 'عقد' || normalized === 'تعاقد') return 'HIRED'
+  
+  // مرفوض / REJECTED
+  if (normalized === 'REJECTED' || normalized === 'مرفوض' || normalized === 'مرفوضة' || normalized === 'رفض') return 'REJECTED'
+  
+  // مرتجع / RETURNED
+  if (normalized === 'RETURNED' || normalized === 'مرتجع' || normalized === 'مرتجعة' || normalized === 'ارتجاع' || normalized === 'راجع') return 'RETURNED'
+  
+  // أرشيف / ARCHIVED
+  if (normalized === 'ARCHIVED' || normalized === 'أرشيف' || normalized === 'ارشيف' || normalized === 'مؤرشف' || normalized === 'مؤرشفة') return 'ARCHIVED'
+  
+  return 'NEW' // القيمة الافتراضية إذا لم يتم التعرف على الحالة
 }
 
 // Helper function to normalize marital status
@@ -595,11 +628,97 @@ const processExcelRow = (row: ExcelRow, rowNumber: number): ProcessedCV => {
         row['Video URL'] ||
         row['Video'] ||
         row['Video Link']
-      ) // Process video URL with multiple column name attempts
+      ), // Process video URL with multiple column name attempts
+      status: normalizeCVStatus(
+        row['الحالة'] ||
+        row['الحاله'] ||
+        row['حالة السيرة'] ||
+        row['Status'] ||
+        row['CV Status']
+      ) // قراءة حالة السيرة من Excel
     }
   } catch (error) {
     console.error('Error processing row:', error)
     throw error
+  }
+}
+
+// Helper function to distribute CV based on status
+const distributeCVByStatus = async (cvId: number, status: string, userId: number) => {
+  try {
+    // تحديد الصفحة المناسبة حسب الحالة
+    let targetPage: string | null = null
+    
+    switch (status) {
+      case 'NEW':
+        // السير الجديدة تذهب لصفحات المبيعات (سيتم توزيعها تلقائيًا)
+        targetPage = null // سيتم التوزيع التلقائي
+        break
+      case 'BOOKED':
+        // السير المحجوزة تذهب لصفحة الحجوزات
+        targetPage = 'bookings'
+        break
+      case 'HIRED':
+        // السير المتعاقدة تذهب لصفحة التعاقدات
+        targetPage = 'contracts'
+        break
+      case 'REJECTED':
+        // السير المرفوضة تذهب لصفحة المرفوضات
+        targetPage = 'rejected'
+        break
+      case 'RETURNED':
+        // السير المرتجعة تذهب لصفحة المرتجعات
+        targetPage = 'returned'
+        break
+      case 'ARCHIVED':
+        // السير المؤرشفة تذهب لصفحة الأرشيف
+        targetPage = 'archived'
+        break
+      default:
+        targetPage = null
+    }
+    
+    // إذا كانت الحالة NEW، لا نحتاج لإزالة التوزيعات (سيتم التوزيع التلقائي)
+    if (status === 'NEW') {
+      console.log(`✅ السيرة ${cvId} بحالة جديدة - سيتم توزيعها تلقائيًا`)
+      return
+    }
+    
+    // إزالة السيرة من جميع صفحات المبيعات
+    await db.cVDistribution.updateMany({
+      where: {
+        cvId: cvId,
+        isActive: true
+      },
+      data: {
+        isActive: false,
+        removedAt: new Date(),
+        removedBy: userId,
+        notes: `تم النقل تلقائيًا بسبب تغيير الحالة إلى ${status}`
+      }
+    })
+    
+    console.log(`✅ تم إزالة السيرة ${cvId} من صفحات المبيعات بسبب الحالة: ${status}`)
+    
+    // تسجيل النشاط
+    await db.distributionLog.create({
+      data: {
+        action: 'REMOVED_BY_STATUS_CHANGE',
+        salesPageId: targetPage || 'all',
+        cvIds: [cvId],
+        userId: userId,
+        count: 1,
+        details: {
+          status: status,
+          reason: 'تغيير الحالة من الرفع الذكي',
+          targetPage: targetPage
+        }
+      }
+    })
+    
+  } catch (error) {
+    console.error(`خطأ في توزيع السيرة ${cvId} حسب الحالة:`, error)
+    // لا نرمي خطأ هنا لأننا لا نريد إيقاف عملية الاستيراد
   }
 }
 
@@ -832,7 +951,7 @@ export async function POST(request: NextRequest) {
             console.log(`📄 رابط صورة السيرة الكاملة: ${cvImageUrl}`)
           }
         
-          await db.cV.create({
+          const createdCV = await db.cV.create({
               data: {
                 fullName: cv.fullName,
                 fullNameArabic: cv.fullNameArabic || null,
@@ -879,6 +998,7 @@ export async function POST(request: NextRequest) {
                 summary: cv.summary || null,
                 notes: cv.notes || null,
                 priority: cv.priority || 'MEDIUM',
+                status: cv.status || 'NEW', // حفظ حالة السيرة من Excel
                 profileImage: finalProfileImage || null,
                 cvImageUrl: cvImageUrl || null,
                 videoLink: cv.videoUrl || null,
@@ -887,6 +1007,9 @@ export async function POST(request: NextRequest) {
                 updatedById: userId
               }
             })
+            
+          // توزيع السيرة حسب حالتها
+          await distributeCVByStatus(createdCV.id, cv.status || 'NEW', userId)
             
           // Log individual CV creation activity
           try {
@@ -930,6 +1053,20 @@ export async function POST(request: NextRequest) {
         if (cv.existingId) {
           try {
             console.log(`🔄 تحديث سجل موجود: ${cv.fullName} (ID: ${cv.existingId}, الصف ${cv.rowNumber})`)
+            
+            // جلب الحالة القديمة للتحقق من التغيير
+            const existingCV = await db.cV.findUnique({
+              where: { id: cv.existingId },
+              select: { status: true }
+            })
+            
+            const oldStatus = existingCV?.status || 'NEW'
+            const newStatus = cv.status || 'NEW'
+            const statusChanged = oldStatus !== newStatus
+            
+            if (statusChanged) {
+              console.log(`🔄 تغيرت الحالة من ${oldStatus} إلى ${newStatus}`)
+            }
             
             // Handle image URL download
             let finalProfileImage = cleanStringValue(cv.profileImage)
@@ -1042,12 +1179,18 @@ export async function POST(request: NextRequest) {
                   summary: cv.summary || null,
                   notes: cv.notes || null,
                   priority: cv.priority || 'MEDIUM',
+                  status: cv.status || 'NEW', // تحديث حالة السيرة من Excel
                   profileImage: finalProfileImage || null,
                   cvImageUrl: cvImageUrl || null,
                   videoLink: cv.videoUrl || null,
                   updatedById: userId
                 }
               })
+              
+            // إذا تغيرت الحالة، نقوم بتوزيع السيرة حسب الحالة الجديدة
+            if (statusChanged) {
+              await distributeCVByStatus(cv.existingId, newStatus, userId)
+            }
               
             // Log individual CV update activity
             try {
