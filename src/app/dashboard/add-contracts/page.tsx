@@ -208,8 +208,10 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   })
 
   // جلب البيانات
-  const fetchData = async () => {
-    setIsLoading(true)
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) {
+      setIsLoading(true)
+    }
     try {
       const [contractsRes, salesRepsRes] = await Promise.all([
         fetch('/api/new-contracts'),
@@ -220,6 +222,14 @@ function AddContractsPageContent({ userData }: { userData: any }) {
         const contractsData = await contractsRes.json()
         setContracts(contractsData)
         setFilteredContracts(contractsData)
+        
+        // تحديث العقد المعروض في المودال إذا كان مفتوحاً
+        if (selectedContractForView) {
+          const updatedContract = contractsData.find((c: Contract) => c.id === selectedContractForView.id)
+          if (updatedContract) {
+            setSelectedContractForView(updatedContract)
+          }
+        }
       }
 
       if (salesRepsRes.ok) {
@@ -230,7 +240,9 @@ function AddContractsPageContent({ userData }: { userData: any }) {
       console.error('❌ خطأ في جلب البيانات:', error)
       toast.error('حدث خطأ أثناء جلب البيانات')
     } finally {
-      setIsLoading(false)
+      if (showLoading) {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -379,17 +391,25 @@ function AddContractsPageContent({ userData }: { userData: any }) {
       })
 
       if (response.ok) {
+        const noteData = await response.json()
         toast.success('✅ تم إضافة الملاحظة بنجاح')
         setNewFollowUpNote('')
-        await fetchData() // تحديث البيانات
         
-        // تحديث العقد المعروض في المودال
-        if (selectedContractForView) {
-          const updatedContract = contracts.find(c => c.id === contractId)
-          if (updatedContract) {
-            setSelectedContractForView(updatedContract)
+        // تحديث البيانات بدون loading (سيحدث المودال تلقائياً من fetchData)
+        await fetchData(false)
+        
+        // التمرير للملاحظة الجديدة بعد تحديث الواجهة
+        setTimeout(() => {
+          const latestNote = document.getElementById('latest-note')
+          if (latestNote) {
+            latestNote.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+            // تأثير بصري للملاحظة الجديدة
+            latestNote.classList.add('ring-2', 'ring-primary', 'ring-offset-2')
+            setTimeout(() => {
+              latestNote.classList.remove('ring-2', 'ring-primary', 'ring-offset-2')
+            }, 2000)
           }
-        }
+        }, 100)
       } else {
         toast.error('❌ فشل إضافة الملاحظة')
       }
@@ -457,7 +477,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
         resetForm()
         setSelectedCV(null)
         setCvSearchMessage('')
-        fetchData()
+        fetchData(false)
       } else {
         const error = await response.json()
         toast.error(error.error || 'حدث خطأ أثناء إضافة العقد')
@@ -530,7 +550,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
         setShowEditModal(false)
         setSelectedContract(null)
         resetForm()
-        fetchData()
+        fetchData(false)
       } else {
         const error = await response.json()
         toast.error(error.error || 'حدث خطأ أثناء تحديث العقد')
@@ -558,7 +578,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
         toast.success('تم حذف العقد بنجاح')
         setShowDeleteModal(false)
         setSelectedContract(null)
-        fetchData()
+        fetchData(false)
       } else {
         const error = await response.json()
         toast.error(error.error || 'حدث خطأ أثناء حذف العقد')
@@ -659,7 +679,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
         toast.success('✅ تم تحديث حالة العقد بنجاح')
         setShowStatusEditModal(false)
         setSelectedContractForStatusEdit(null)
-        fetchData()
+        fetchData(false)
       } else {
         const error = await response.json()
         toast.error(error.error || 'حدث خطأ أثناء تحديث الحالة')
@@ -2679,10 +2699,10 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                       </h4>
 
                       {/* قائمة الملاحظات */}
-                      <div className="space-y-3 mb-4 max-h-[300px] overflow-y-auto">
+                      <div id="notes-container" className="space-y-3 mb-4 max-h-[300px] overflow-y-auto">
                         {selectedContractForView.followUpNotesHistory && selectedContractForView.followUpNotesHistory.length > 0 ? (
-                          selectedContractForView.followUpNotesHistory.map((note) => (
-                            <div key={note.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          selectedContractForView.followUpNotesHistory.map((note, index) => (
+                            <div key={note.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow" id={index === 0 ? 'latest-note' : undefined}>
                               <div className="flex items-start justify-between gap-3 mb-2">
                                 <div className="flex items-center gap-2">
                                   <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
