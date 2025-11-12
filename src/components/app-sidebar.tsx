@@ -248,24 +248,28 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       id: 'contracts',
       label: 'إدارة العقود',
       icon: Briefcase,
+      adminOnly: true,
       children: [
         {
           id: 'add-contract',
           label: 'إضافة عقد جديد',
           icon: Plus,
-          href: '/dashboard/add-contract'
+          href: '/dashboard/add-contract',
+          adminOnly: true
         },
         {
           id: 'all-contracts',
           label: 'جميع العقود',
           icon: Briefcase,
-          href: '/dashboard/add-contracts'
+          href: '/dashboard/add-contracts',
+          adminOnly: true
         },
         {
           id: 'old-contracts',
           label: 'العقود القديمة',
           icon: Briefcase,
-          href: '/dashboard/contracts'
+          href: '/dashboard/contracts',
+          adminOnly: true
         }
       ]
     },
@@ -460,16 +464,19 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       if (user?.role === 'DEVELOPER' || user?.email === 'developer@system.local') {
         // Developer sees everything - no restrictions
       }
-      // Allow SUB_ADMIN to see CV-related items only (add, import, smart-import, google-sheets)
+      // Allow SUB_ADMIN to see CV-related items and contracts
       else if (user?.role === 'SUB_ADMIN') {
-        const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
+        const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets', 'contracts']
         if (!subAdminAllowedItems.includes(item.id)) {
           return null
         }
       }
-      // CUSTOMER_SERVICE cannot see any admin-only items
+      // Allow CUSTOMER_SERVICE to see contracts only
       else if (user?.role === 'CUSTOMER_SERVICE') {
-        return null
+        const customerServiceAllowedItems = ['contracts']
+        if (!customerServiceAllowedItems.includes(item.id)) {
+          return null
+        }
       }
       // Hide from regular users
       else if (user?.role !== 'ADMIN') {
@@ -499,16 +506,19 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
                     if (user?.role === 'DEVELOPER' || user?.email === 'developer@system.local') {
                       // Developer sees everything - no restrictions
                     }
-                    // Allow SUB_ADMIN to see CV-related items only
+                    // Allow SUB_ADMIN to see CV-related items and contracts
                     else if (user?.role === 'SUB_ADMIN') {
-                      const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
+                      const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets', 'add-contract', 'all-contracts', 'old-contracts']
                       if (!subAdminAllowedItems.includes(child.id)) {
                         return null
                       }
                     }
-                    // CUSTOMER_SERVICE cannot see any admin-only items
+                    // Allow CUSTOMER_SERVICE to see contracts only
                     else if (user?.role === 'CUSTOMER_SERVICE') {
-                      return null
+                      const customerServiceAllowedItems = ['add-contract', 'all-contracts', 'old-contracts']
+                      if (!customerServiceAllowedItems.includes(child.id)) {
+                        return null
+                      }
                     }
                     // Hide from regular users
                     else if (user?.role !== 'ADMIN') {
