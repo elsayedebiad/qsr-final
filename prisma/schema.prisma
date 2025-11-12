@@ -31,6 +31,9 @@ model User {
   assignedDistributions CVDistribution[] @relation("DistributionAssigner")
   removedDistributions  CVDistribution[] @relation("DistributionRemover")
   distributionLogs      DistributionLog[]
+  contractStatusChanges ContractStatusChange[] @relation("ContractStatusChangedBy")
+  createdNewContracts   NewContract[]    @relation("NewContractCreatedBy")
+  followUpNotes         FollowUpNote[]   @relation("FollowUpNoteCreatedBy")
 
   @@map("users")
 }
@@ -114,6 +117,7 @@ model CV {
   createdBy          User           @relation("CVCreatedBy", fields: [createdById], references: [id])
   updatedBy          User?          @relation("CVUpdatedBy", fields: [updatedById], references: [id])
   distributions      CVDistribution[]
+  newContracts       NewContract[]  @relation("NewContractCV")
 
   @@map("cvs")
 }
@@ -453,4 +457,108 @@ model Visit {
   @@index([fbclid])
   @@index([device])
   @@map("visits")
+}
+
+// نظام العقود الجديد
+model NewContract {
+  id                       Int                    @id @default(autoincrement())
+  contractType             ContractType           // نوع العقد
+  salesRepName             String                 // اسم ممثل المبيعات
+  clientName               String                 // اسم العميل
+  contractNumber           String                 @unique // رقم العقد
+  supportMobileNumber      String?                // رقم الجوال المساند
+  salesMobileNumber        String?                // رقم المبيعات
+  currentMonth             Int                    // رقم الشهر الميلادي
+  currentDate              DateTime               @default(now()) // التاريخ الحالي
+  countryName              String                 // اسم الدولة
+  profession               String                 // المهنة
+  employerIdNumber         String                 // رقم هوية صاحب العمل
+  workerPassportNumber     String                 // رقم جواز العاملة
+  cvId                     Int?                   // ربط مع السيرة الذاتية
+  office                   String                 // المكتب المختار
+  status                   NewContractStatus      @default(CV_REQUEST) // الحالة
+  statusHistory            Json?                  // تاريخ الحالات
+  lastStatusUpdate         DateTime               @default(now()) // آخر تحديث للحالة
+  cvUploadRequestDate      DateTime?              // تاريخ طلب رفع السيرة
+  employmentRequestDate    DateTime?              // تاريخ طلب التوظيف
+  followUpNotes            String?                // ملاحظات المتابعة
+  hasCVIssue               Boolean                @default(false) // وجود مشكلة في السيرة
+  cvIssueType              String?                // نوع المشكلة (تبديل / توثيق)
+  createdById              Int                    // الموظف المنشئ
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  
+  statusChanges            ContractStatusChange[] // سجل تغييرات الحالة
+  followUpNotesHistory     FollowUpNote[]         // سجل ملاحظات المتابعة
+  cv                       CV?                    @relation("NewContractCV", fields: [cvId], references: [id])
+  createdBy                User                   @relation("NewContractCreatedBy", fields: [createdById], references: [id])
+  
+  @@index([contractNumber])
+  @@index([status])
+  @@index([createdById])
+  @@index([cvId])
+  @@index([workerPassportNumber])
+  @@map("new_contracts")
+}
+
+// سجل تغييرات حالة العقد
+model ContractStatusChange {
+  id              Int               @id @default(autoincrement())
+  contractId      Int
+  fromStatus      NewContractStatus?
+  toStatus        NewContractStatus
+  changedAt       DateTime          @default(now())
+  changedById     Int
+  notes           String?
+  
+  contract        NewContract       @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  changedBy       User              @relation("ContractStatusChangedBy", fields: [changedById], references: [id])
+  
+  @@index([contractId])
+  @@index([changedById])
+  @@map("contract_status_changes")
+}
+
+// سجل ملاحظات المتابعة
+model FollowUpNote {
+  id              Int         @id @default(autoincrement())
+  contractId      Int
+  note            String      @db.Text
+  createdById     Int
+  createdAt       DateTime    @default(now())
+  
+  contract        NewContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  createdBy       User        @relation("FollowUpNoteCreatedBy", fields: [createdById], references: [id])
+  
+  @@index([contractId])
+  @@index([createdById])
+  @@map("follow_up_notes")
+}
+
+// قائمة ممثلي المبيعات (قابلة للتعديل)
+model SalesRepresentative {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("sales_representatives")
+}
+
+enum ContractType {
+  SPECIFIC           // معين
+  BY_SPECIFICATIONS  // حسب المواصفات
+}
+
+enum NewContractStatus {
+  CV_REQUEST                  // طلب رفع سيرة
+  EXTERNAL_OFFICE_APPROVAL    // موافقة مكتب الإرسال الخارجي
+  FOREIGN_MINISTRY_APPROVAL   // موافقة وزارة العمل الأجنبية
+  VISA_ISSUED                 // تم إصدار التأشيرة
+  EMBASSY_SENT                // تم الإرسال للسفارة السعودية
+  EMBASSY_APPROVAL            // وصل للمملكة العربية السعودية
+  REJECTED                    // مرفوض
+  CANCELLED                   // ملغي
+  OUTSIDE_KINGDOM             // خارج المملكة
 }

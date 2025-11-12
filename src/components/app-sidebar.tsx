@@ -34,6 +34,7 @@ import {
   BarChart3,
   Network,
   Clock,
+  Briefcase,
 } from "lucide-react"
 
 import {
@@ -240,6 +241,31 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
           label: 'الأرشيف',
           icon: Archive,
           href: '/dashboard/archive'
+        }
+      ]
+    },
+    {
+      id: 'contracts',
+      label: 'إدارة العقود',
+      icon: Briefcase,
+      children: [
+        {
+          id: 'add-contract',
+          label: 'إضافة عقد جديد',
+          icon: Plus,
+          href: '/dashboard/add-contract'
+        },
+        {
+          id: 'all-contracts',
+          label: 'جميع العقود',
+          icon: Briefcase,
+          href: '/dashboard/add-contracts'
+        },
+        {
+          id: 'old-contracts',
+          label: 'العقود القديمة',
+          icon: Briefcase,
+          href: '/dashboard/contracts'
         }
       ]
     },

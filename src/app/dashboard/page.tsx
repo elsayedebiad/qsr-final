@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { CVStatus, Priority, SkillLevel } from '@prisma/client'
@@ -44,6 +44,7 @@ import {
   Grid3X3,
   List,
   RotateCcw,
+  MapPin,
 } from 'lucide-react'
 import DashboardLayout from '../../components/DashboardLayout'
 import BulkImageDownloader from '../../components/BulkImageDownloader'
@@ -119,6 +120,66 @@ interface CV {
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+// دالة تحويل الجنسية للعربي - helper function
+const getNationalityArabic = (nationality: string | null | undefined): string => {
+  if (!nationality) return 'غير محدد'
+  
+  const nationalityArabicMap: { [key: string]: string } = {
+    'FILIPINO': 'فلبينية',
+    'INDIAN': 'هندية', 
+    'BANGLADESHI': 'بنغلاديشية',
+    'ETHIOPIAN': 'إثيوبية',
+    'KENYAN': 'كينية',
+    'UGANDAN': 'أوغندية',
+    'BURUNDIAN': 'بوروندية',
+    'RWANDAN': 'رواندية',
+    'TANZANIAN': 'تنزانية',
+    'MALAWIAN': 'مالاوية',
+    'ZAMBIAN': 'زامبية',
+    'ZIMBABWEAN': 'زيمبابوية',
+    'GHANAIAN': 'غانية',
+    'NIGERIAN': 'نيجيرية',
+    'CAMEROONIAN': 'كاميرونية',
+    'CONGOLESE': 'كونغولية',
+    'SUDANESE': 'سودانية',
+    'SOMALI': 'صومالية',
+    'ERITREAN': 'إريترية',
+    'DJIBOUTIAN': 'جيبوتية',
+    'MALAGASY': 'مدغشقرية',
+    'MAURITIAN': 'موريشيوسية',
+    'SEYCHELLOIS': 'سيشيلية',
+    'COMORAN': 'قمرية',
+    'CAPE_VERDEAN': 'رأس أخضر',
+    'SAO_TOMEAN': 'ساو تومية',
+    'GUINEAN': 'غينية',
+    'SIERRA_LEONEAN': 'سيراليونية',
+    'LIBERIAN': 'ليبيرية',
+    'IVORIAN': 'عاجية',
+    'BURKINABE': 'بوركينية',
+    'MALIAN': 'مالية',
+    'SENEGALESE': 'سنغالية',
+    'GAMBIAN': 'غامبية',
+    'GUINEA_BISSAUAN': 'غينيا بيساو',
+    'MOROCCAN': 'مغربية',
+    'ALGERIAN': 'جزائرية',
+    'TUNISIAN': 'تونسية',
+    'LIBYAN': 'ليبية',
+    'EGYPTIAN': 'مصرية',
+    'PAKISTANI': 'باكستانية',
+    'SRI_LANKAN': 'سريلانكية',
+    'NEPALESE': 'نيبالية',
+    'BURMESE': 'ميانمارية',
+    'THAI': 'تايلاندية',
+    'VIETNAMESE': 'فيتنامية',
+    'CAMBODIAN': 'كمبودية',
+    'LAOTIAN': 'لاوسية',
+    'INDONESIAN': 'إندونيسية',
+    'MALAYSIAN': 'ماليزية'
+  }
+  
+  return nationalityArabicMap[nationality.toUpperCase()] || nationality
+}
+
 export default function CVsPage() {
   const router = useRouter()
 
@@ -130,6 +191,8 @@ export default function CVsPage() {
   const [religionFilter, setReligionFilter] = useState<string>('ALL')
   const [nationalityFilter, setNationalityFilter] = useState<string>('ALL')
   const [skillFilter, setSkillFilter] = useState<string>('ALL')
+  const [skillFilters, setSkillFilters] = useState<string[]>([])
+  const [showSkillsDropdown, setShowSkillsDropdown] = useState(false)
   const [maritalStatusFilter, setMaritalStatusFilter] = useState<string>('ALL')
   const [ageFilter, setAgeFilter] = useState<string>('ALL')
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
@@ -147,6 +210,31 @@ export default function CVsPage() {
   const [childrenFilter, setChildrenFilter] = useState<string>('ALL')
   const [locationFilter, setLocationFilter] = useState<string>('ALL')
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
+
+  // استخراج الجنسيات الفريدة من البيانات (مثل صفحات السلز)
+  const uniqueNationalities = useMemo(() => {
+    // استثناء السير المتعاقدة والمؤرشفة
+    const visibleCvs = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED)
+    
+    // استخراج الجنسيات وتوحيدها (تحويل للإنجليزي uppercase)
+    const nationalitiesSet = new Set<string>()
+    
+    visibleCvs.forEach(cv => {
+      if (cv.nationality && cv.nationality.trim() !== '') {
+        // تنظيف وتوحيد الجنسية
+        const cleanNationality = cv.nationality.trim().toUpperCase()
+        nationalitiesSet.add(cleanNationality)
+      }
+    })
+    
+    // تحويل إلى array وترتيب بالعربية
+    return Array.from(nationalitiesSet)
+      .sort((a, b) => {
+        const arabicA = getNationalityArabic(a)
+        const arabicB = getNationalityArabic(b)
+        return arabicA.localeCompare(arabicB, 'ar')
+      })
+  }, [cvs])
   const [videoModalKey, setVideoModalKey] = useState(0)
   const [viewingCv, setViewingCv] = useState<CV | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
@@ -201,10 +289,259 @@ export default function CVsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // دالة مطابقة الجنسية - منسوخة من صفحة السلز
+  const matchesNationalityFilter = useCallback((cvNationality: string | null | undefined, filter: string): boolean => {
+    if (filter === 'ALL') return true
+    if (!cvNationality) return false
+    
+    // خريطة تحويل من العربية إلى الإنجليزية للمطابقة
+    const arabicToEnglishMap: { [key: string]: string } = {
+      'فلبينية': 'FILIPINO',
+      'هندية': 'INDIAN',
+      'بنغلاديشية': 'BANGLADESHI',
+      'إثيوبية': 'ETHIOPIAN',
+      'كينية': 'KENYAN',
+      'أوغندية': 'UGANDAN',
+      'بوروندية': 'BURUNDIAN',
+      'رواندية': 'RWANDAN',
+      'تنزانية': 'TANZANIAN',
+      'مالاوية': 'MALAWIAN',
+      'زامبية': 'ZAMBIAN',
+      'زيمبابوية': 'ZIMBABWEAN',
+      'غانية': 'GHANAIAN',
+      'نيجيرية': 'NIGERIAN',
+      'كاميرونية': 'CAMEROONIAN',
+      'كونغولية': 'CONGOLESE',
+      'سودانية': 'SUDANESE',
+      'صومالية': 'SOMALI',
+      'إريترية': 'ERITREAN',
+      'جيبوتية': 'DJIBOUTIAN',
+      'مدغشقرية': 'MALAGASY',
+      'موريشيوسية': 'MAURITIAN',
+      'سيشيلية': 'SEYCHELLOIS',
+      'قمرية': 'COMORAN',
+      'رأس أخضر': 'CAPE_VERDEAN',
+      'ساو تومية': 'SAO_TOMEAN',
+      'غينية': 'GUINEAN',
+      'سيراليونية': 'SIERRA_LEONEAN',
+      'ليبيرية': 'LIBERIAN',
+      'عاجية': 'IVORIAN',
+      'بوركينية': 'BURKINABE',
+      'مالية': 'MALIAN',
+      'سنغالية': 'SENEGALESE',
+      'غامبية': 'GAMBIAN',
+      'غينيا بيساو': 'GUINEA_BISSAUAN',
+      'مغربية': 'MOROCCAN',
+      'جزائرية': 'ALGERIAN',
+      'تونسية': 'TUNISIAN',
+      'ليبية': 'LIBYAN',
+      'مصرية': 'EGYPTIAN',
+      'باكستانية': 'PAKISTANI',
+      'سريلانكية': 'SRI_LANKAN',
+      'نيبالية': 'NEPALESE',
+      'ميانمارية': 'BURMESE',
+      'تايلاندية': 'THAI',
+      'فيتنامية': 'VIETNAMESE',
+      'كمبودية': 'CAMBODIAN',
+      'لاوسية': 'LAOTIAN',
+      'إندونيسية': 'INDONESIAN',
+      'ماليزية': 'MALAYSIAN'
+    }
+    
+    // إذا كان الفلتر بالعربية، حوله للإنجليزية
+    const englishFilter = arabicToEnglishMap[filter] || filter
+    
+    // تنظيف البيانات للمقارنة
+    const cleanNationality = cvNationality.trim().toUpperCase()
+    const cleanFilter = englishFilter.toUpperCase()
+    
+    // مطابقة دقيقة فقط
+    return cleanNationality === cleanFilter
+  }, [])
+
+  // فلترة السير الذاتية - تم نسخها من صفحة السلز
+  const allFilteredCvs = useMemo(() => {
+    // التحقق من وجود البيانات أولاً
+    if (!cvs || cvs.length === 0) {
+      return []
+    }
+    
+    // إخفاء السير المتعاقدة والمؤرشفة، وإظهار السير المعادة
+    return cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED).filter(cv => {
+      // البحث الشامل في جميع البيانات
+      const term = searchTerm.toLowerCase()
+      const matchesSearch = searchTerm === '' || 
+        cv.fullName.toLowerCase().includes(term) ||
+        (cv.fullNameArabic || '').toLowerCase().includes(term) ||
+        (cv.nationality || '').toLowerCase().includes(term) ||
+        (cv.position || '').toLowerCase().includes(term) ||
+        (cv.referenceCode || '').toLowerCase().includes(term) ||
+        (cv.passportNumber || '').toLowerCase().includes(term) ||
+        (cv.email || '').toLowerCase().includes(term) ||
+        (cv.phone || '').includes(term) ||
+        (cv.religion || '').toLowerCase().includes(term) ||
+        (cv.maritalStatus || '').toLowerCase().includes(term) ||
+        (cv.education || '').toLowerCase().includes(term) ||
+        (cv.arabicLevel || '').toLowerCase().includes(term) ||
+        (cv.englishLevel || '').toLowerCase().includes(term) ||
+        (cv.experience || '').toLowerCase().includes(term) ||
+        (cv.livingTown || '').toLowerCase().includes(term) ||
+        cv.age?.toString().includes(term) ||
+        (cv.height?.toString() || '').includes(term) ||
+        (cv.weight?.toString() || '').includes(term)
+
+      // فلتر الديانة
+      const matchesReligion = religionFilter === 'ALL' || (() => {
+        if (!cv.religion) return false
+        if (religionFilter === 'مسلمة') return cv.religion.includes('مسلم') || cv.religion.includes('MUSLIM')
+        if (religionFilter === 'مسيحية') return cv.religion.includes('مسيحي') || cv.religion.includes('CHRISTIAN')
+        if (religionFilter === 'أخرى') return cv.religion && !cv.religion.includes('مسلم') && !cv.religion.includes('مسيحي')
+        return cv.religion === religionFilter
+      })()
+      
+      // فلتر الجنسية - باستخدام دالة المطابقة
+      const matchesNationality = matchesNationalityFilter(cv.nationality, nationalityFilter)
+      
+      // فلتر الحالة الاجتماعية
+      const matchesMaritalStatus = maritalStatusFilter === 'ALL' || cv.maritalStatus === maritalStatusFilter
+      
+      // فلتر العمر
+      const matchesAge = ageFilter === 'ALL' || (() => {
+        if (!cv.age) return false
+        switch (ageFilter) {
+          case '21-30': return cv.age >= 21 && cv.age <= 30
+          case '30-40': return cv.age >= 30 && cv.age <= 40
+          case '40-50': return cv.age >= 40 && cv.age <= 50
+          default: return true
+        }
+      })()
+
+      // فلتر المهارات - اختيار متعدد
+      const matchesSkill = skillFilters.length === 0 || skillFilters.some(skill => {
+        switch (skill) {
+          case 'babySitting': return cv.babySitting === 'YES' || cv.babySitting === 'WILLING'
+          case 'childrenCare': return cv.childrenCare === 'YES' || cv.childrenCare === 'WILLING'
+          case 'cleaning': return cv.cleaning === 'YES' || cv.cleaning === 'WILLING'
+          case 'arabicCooking': return cv.arabicCooking === 'YES' || cv.arabicCooking === 'WILLING'
+          case 'driving': return cv.driving === 'YES' || cv.driving === 'WILLING'
+          case 'washing': return cv.washing === 'YES' || cv.washing === 'WILLING'
+          case 'ironing': return cv.ironing === 'YES' || cv.ironing === 'WILLING'
+          case 'tutoring': return cv.tutoring === 'YES' || cv.tutoring === 'WILLING'
+          case 'disabledCare': return cv.disabledCare === 'YES' || cv.disabledCare === 'WILLING'
+          case 'sewing': return cv.sewing === 'YES' || cv.sewing === 'WILLING'
+          default: return false
+        }
+      })
+
+      // فلتر الخبرة
+      const matchesExperience = (() => {
+        if (experienceFilter === 'ALL') return true
+        
+        const expVal = cv.experience
+        let experience = ''
+        if (typeof expVal === 'string') {
+          experience = expVal.trim().toLowerCase()
+        } else if (typeof expVal === 'number') {
+          experience = String(expVal)
+        }
+        
+        const numbers = experience.match(/\d+/g)
+        const years = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 0
+        
+        switch (experienceFilter) {
+          case 'NO_EXPERIENCE':
+            return experience === 'لا يوجد' || experience === '' || 
+                   experience === 'no' || experience === 'none' || years === 0
+          case '1-2': return years >= 1 && years <= 2
+          case '3-5': return years >= 3 && years <= 5
+          case '6-10': return years >= 6 && years <= 10
+          case 'MORE_10': return years > 10
+          default: return false
+        }
+      })()
+
+      // فلتر اللغة العربية
+      const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
+        const arabicLevel = cv.arabicLevel ?? cv.languageLevel
+        if (arabicLevelFilter === 'WEAK') return arabicLevel === null || arabicLevel === undefined
+        if (arabicLevelFilter === 'NO') return arabicLevel === 'NO'
+        return arabicLevel === arabicLevelFilter
+      })()
+
+      // فلتر اللغة الإنجليزية  
+      const matchesEnglishLevel = englishLevelFilter === 'ALL' || (() => {
+        const englishLevel = cv.englishLevel
+        if (englishLevelFilter === 'WEAK') return englishLevel === null || englishLevel === undefined
+        if (englishLevelFilter === 'NO') return englishLevel === 'NO'
+        return englishLevel === englishLevelFilter
+      })()
+
+      // فلتر التعليم - متعلم/غير متعلم
+      const matchesEducation = (() => {
+        if (educationFilter === 'ALL') return true
+        
+        const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
+        
+        if (educationFilter === 'متعلم') {
+          return educationLevel === 'نعم' || educationLevel === 'yes' || 
+                 educationLevel === 'متعلم' || educationLevel === 'educated'
+        } else if (educationFilter === 'غير متعلم') {
+          return educationLevel === 'لا' || educationLevel === 'no' || 
+                 educationLevel === '' || educationLevel === 'غير متعلم' || 
+                 educationLevel === 'أمي' || educationLevel === 'none'
+        }
+        return false
+      })()
+
+      // فلتر الطول
+      const matchesHeight = heightFilter === 'ALL' || (() => {
+        if (!cv.height) return false
+        const height = typeof cv.height === 'number' ? cv.height : parseInt(String(cv.height))
+        switch (heightFilter) {
+          case '<155': return height < 155
+          case '155-160': return height >= 155 && height < 160
+          case '160-165': return height >= 160 && height < 165
+          case '165-170': return height >= 165 && height < 170
+          case '170-175': return height >= 170 && height < 175
+          case '>175': return height >= 175
+          default: return true
+        }
+      })()
+
+      // فلتر الوزن
+      const matchesWeight = weightFilter === 'ALL' || (() => {
+        if (!cv.weight) return false
+        const weight = typeof cv.weight === 'number' ? cv.weight : parseInt(String(cv.weight))
+        switch (weightFilter) {
+          case '<50': return weight < 50
+          case '50-55': return weight >= 50 && weight < 55
+          case '55-60': return weight >= 55 && weight < 60
+          case '60-65': return weight >= 60 && weight < 65
+          case '65-70': return weight >= 65 && weight < 70
+          case '70-75': return weight >= 70 && weight < 75
+          case '>75': return weight >= 75
+          default: return true
+        }
+      })()
+
+      // فلتر الموقع
+      const matchesLocation = locationFilter === 'ALL' || 
+        cv.livingTown?.toLowerCase().includes(locationFilter.toLowerCase()) ||
+        cv.placeOfBirth?.toLowerCase().includes(locationFilter.toLowerCase())
+
+      return matchesSearch && matchesReligion && matchesNationality && 
+             matchesAge && matchesSkill && matchesArabicLevel && 
+             matchesEnglishLevel && matchesEducation && matchesExperience &&
+             matchesMaritalStatus && matchesHeight &&
+             matchesWeight && matchesLocation
+    })
+  }, [cvs, searchTerm, religionFilter, nationalityFilter, ageFilter, 
+      skillFilters, arabicLevelFilter, englishLevelFilter, educationFilter,
+      experienceFilter, maritalStatusFilter, heightFilter, weightFilter, locationFilter])
+
   useEffect(() => {
-    filterCVs()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cvs, searchTerm, religionFilter, nationalityFilter, skillFilter, maritalStatusFilter, ageFilter, experienceFilter, arabicLevelFilter, englishLevelFilter, educationFilter, salaryFilter, contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter, childrenFilter, locationFilter])
+    setFilteredCvs(allFilteredCvs)
+  }, [allFilteredCvs])
 
   // Pagination effect
   useEffect(() => {
@@ -260,6 +597,17 @@ export default function CVsPage() {
     }
   }, [selectedCVForView, selectedVideo])
 
+  // دالة للتعامل مع تبديل المهارات
+  const toggleSkillFilter = (skill: string) => {
+    setSkillFilters(prev => {
+      if (prev.includes(skill)) {
+        return prev.filter(s => s !== skill)
+      } else {
+        return [...prev, skill]
+      }
+    })
+  }
+
   const fetchCVs = async () => {
     setIsLoading(true)
     try {
@@ -276,265 +624,31 @@ export default function CVsPage() {
     }
   }
 
-  const filterCVs = () => {
-    // إخفاء السير المتعاقدة والمؤرشفة، وإظهار السير المعادة
-    let filtered = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED)
-    
-    // عرض جميع الديانات الموجودة في البيانات (للتشخيص)
-    if (religionFilter !== 'ALL') {
-      const religions = [...new Set(cvs.map(cv => cv.religion || 'غير محدد'))]
-      console.log('🔍 الديانات الموجودة في البيانات:', religions)
-    }
-
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase()
-      filtered = filtered.filter(
-        (cv) =>
-          cv.fullName.toLowerCase().includes(q) ||
-          (cv.fullNameArabic && cv.fullNameArabic.toLowerCase().includes(q)) ||
-          (cv.email && cv.email.toLowerCase().includes(q)) ||
-          (cv.phone && cv.phone.includes(searchTerm)) ||
-          (cv.position && cv.position.toLowerCase().includes(q)) ||
-          (cv.referenceCode && cv.referenceCode.toLowerCase().includes(q)) ||
-          (cv.nationality && cv.nationality.toLowerCase().includes(q)),
-      )
-    }
-    // تمت إزالة فلتر الحالة واستبداله بفلتر الديانة في الفلاتر السريعة
-    if (religionFilter !== 'ALL') {
-      console.log('🔍 تطبيق فلتر الديانة:', religionFilter)
-      const beforeCount = filtered.length
-      filtered = filtered.filter((cv) => {
-        // التعامل مع القيم الفارغة أو غير المحددة
-        const cvReligion = cv.religion || ''
-        const match = cvReligion === religionFilter
-        if (match) {
-          console.log('✅ تطابق:', cv.fullName, 'الديانة:', cvReligion)
-        }
-        return match
-      })
-      console.log(`📊 نتائج فلتر الديانة: ${filtered.length} من أصل ${beforeCount}`)
-    }
-    if (nationalityFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        // خريطة تحويل من العربية إلى الإنجليزية للمطابقة
-        const arabicToEnglishMap: { [key: string]: string } = {
-          'الفلبين': 'FILIPINO',
-          'الهند': 'INDIAN',
-          'بنغلاديش': 'BANGLADESHI',
-          'إثيوبيا': 'إثيوبيا',
-          'كينيا': 'KENYAN',
-          'أوغندا': 'اوغندا',
-          'بوروندي': 'بوروندي',
-          'رواندا': 'RWANDAN',
-          'تنزانيا': 'TANZANIAN',
-          'مالاوي': 'MALAWIAN',
-          'زامبيا': 'ZAMBIAN',
-          'زيمبابوي': 'ZIMBABWEAN',
-          'غانا': 'GHANAIAN',
-          'نيجيريا': 'NIGERIAN',
-          'الكاميرون': 'CAMEROONIAN',
-          'الكونغو': 'CONGOLESE',
-          'السودان': 'SUDANESE',
-          'الصومال': 'SOMALI',
-          'إريتريا': 'ERITREAN',
-          'جيبوتي': 'DJIBOUTIAN',
-          'مدغشقر': 'MALAGASY',
-          'موريشيوس': 'MAURITIAN',
-          'سيشل': 'SEYCHELLOIS',
-          'جزر القمر': 'COMORAN',
-          'الرأس الأخضر': 'CAPE_VERDEAN',
-          'ساو تومي': 'SAO_TOMEAN',
-          'غينيا': 'GUINEAN',
-          'سيراليون': 'SIERRA_LEONEAN',
-          'ليبيريا': 'LIBERIAN',
-          'ساحل العاج': 'IVORIAN',
-          'بوركينا فاسو': 'BURKINABE',
-          'مالي': 'MALIAN',
-          'السنغال': 'SENEGALESE',
-          'غامبيا': 'GAMBIAN',
-          'غينيا بيساو': 'GUINEA_BISSAUAN',
-          'المغرب': 'MOROCCAN',
-          'الجزائر': 'ALGERIAN',
-          'تونس': 'TUNISIAN',
-          'ليبيا': 'LIBYAN',
-          'مصر': 'EGYPTIAN',
-          'باكستان': 'PAKISTANI',
-          'سريلانكا': 'سريلانكا',
-          'نيبال': 'NEPALESE',
-          'ميانمار': 'BURMESE',
-          'تايلاند': 'THAI',
-          'فيتنام': 'VIETNAMESE',
-          'كمبوديا': 'CAMBODIAN',
-          'لاوس': 'LAOTIAN',
-          'إندونيسيا': 'INDONESIAN',
-          'ماليزيا': 'MALAYSIAN'
-        }
-        
-        // إذا كان الفلتر بالعربية، حوله للإنجليزية
-        const englishFilter = arabicToEnglishMap[nationalityFilter] || nationalityFilter
-        
-        // مطابقة مباشرة مع البيانات من ملف الإكسل
-        return cv.nationality === englishFilter || 
-               cv.nationality?.includes(englishFilter) || 
-               cv.nationality === nationalityFilter || 
-               cv.nationality?.includes(nationalityFilter)
-      })
-    }
-    if (skillFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        // Get skill value using bracket notation
-        let val: SkillLevel | undefined
-        if (skillFilter === 'babySitting') val = cv.babySitting
-        else if (skillFilter === 'childrenCare') val = cv.childrenCare
-        else if (skillFilter === 'tutoring') val = cv.tutoring
-        else if (skillFilter === 'disabledCare') val = cv.disabledCare
-        else if (skillFilter === 'cleaning') val = cv.cleaning
-        else if (skillFilter === 'washing') val = cv.washing
-        else if (skillFilter === 'ironing') val = cv.ironing
-        else if (skillFilter === 'arabicCooking') val = cv.arabicCooking
-        else if (skillFilter === 'sewing') val = cv.sewing
-        else if (skillFilter === 'driving') val = cv.driving
-        else val = undefined
-        return val === SkillLevel.YES || val === SkillLevel.WILLING
-      })
-    }
-    if (maritalStatusFilter !== 'ALL') filtered = filtered.filter((cv) => cv.maritalStatus === maritalStatusFilter)
-    if (ageFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        if (!cv.age) return false
-        if (ageFilter === '20-25') return cv.age >= 20 && cv.age <= 25
-        if (ageFilter === '25-30') return cv.age >= 25 && cv.age <= 30
-        if (ageFilter === '30-35') return cv.age >= 30 && cv.age <= 35
-        if (ageFilter === '35-40') return cv.age >= 35 && cv.age <= 40
-        if (ageFilter === '40-45') return cv.age >= 40 && cv.age <= 45
-        if (ageFilter === '45+') return cv.age >= 45
-        return true
-      })
-    }
-    if (experienceFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        const expValue = cv.experience || ''
-        const exp = typeof expValue === 'string' ? expValue.trim().toLowerCase() : String(expValue).trim().toLowerCase()
-        
-        // معالجة القيم الفارغة وغير المحددة
-        if (experienceFilter === 'NO_EXPERIENCE') {
-          // معالجة جميع الحالات الممكنة لـ "بدون خبرة"
-          if (!exp || exp === '') return true
-          if (exp === 'لا يوجد' || exp === 'لايوجد') return true
-          if (exp === 'غير محدد' || exp === 'غيرمحدد') return true
-          if (exp === 'no' || exp === 'none' || exp === 'null' || exp === 'undefined') return true
-          if (exp === '0' || exp === '0 سنة' || exp === '0 سنوات') return true
-          // التحقق إذا كانت تحتوي على "لا" أو "غير"
-          if (exp.includes('لا') || exp.includes('غير')) return true
-          return false
-        }
-        
-        // استخراج الأرقام من النص
-        const nums = exp.match(/\d+/g)
-        const yrs = nums && nums.length > 0 ? parseInt(nums[0]) : 0
-        
-        // في حالة وجود رقم صفر، اعتبره بدون خبرة
-        if (yrs === 0 && experienceFilter !== 'NO_EXPERIENCE') return false
-        
-        if (experienceFilter === '1-2') return yrs >= 1 && yrs <= 2
-        if (experienceFilter === '3-5') return yrs >= 3 && yrs <= 5
-        if (experienceFilter === '6-10') return yrs >= 6 && yrs <= 10
-        if (experienceFilter === 'MORE_10') return yrs > 10
-        
-        return false
-      })
-    }
-    if (arabicLevelFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        const arabicLevel = cv.arabicLevel ?? cv.languageLevel
-        if (arabicLevelFilter === 'WEAK') return arabicLevel === null || arabicLevel === undefined
-        if (arabicLevelFilter === 'NO') return arabicLevel === 'NO'
-        return arabicLevel === arabicLevelFilter
-      })
-    }
-    if (englishLevelFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        const englishLevel = cv.englishLevel
-        if (englishLevelFilter === 'WEAK') return englishLevel === null || englishLevel === undefined
-        if (englishLevelFilter === 'NO') return englishLevel === 'NO'
-        return englishLevel === englishLevelFilter
-      })
-    }
-
-    // فلاتر إضافية شاملة
-    if (educationFilter !== 'ALL') filtered = filtered.filter((cv) => cv.education === educationFilter)
-    
-    if (salaryFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        const salary = parseInt(cv.monthlySalary || '0')
-        if (salaryFilter === 'LOW') return salary < 1000
-        if (salaryFilter === 'MEDIUM') return salary >= 1000 && salary < 2000
-        if (salaryFilter === 'HIGH') return salary >= 2000
-        return true
-      })
-    }
-    
-    if (contractPeriodFilter !== 'ALL') filtered = filtered.filter((cv) => cv.contractPeriod === contractPeriodFilter)
-    
-    if (passportStatusFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        if (passportStatusFilter === 'VALID') return cv.passportNumber && cv.passportExpiryDate
-        if (passportStatusFilter === 'EXPIRED') return cv.passportExpiryDate && new Date(cv.passportExpiryDate) < new Date()
-        if (passportStatusFilter === 'MISSING') return !cv.passportNumber
-        return true
-      })
-    }
-    
-    if (heightFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        const height = typeof cv.height === 'number' ? cv.height : parseInt(String(cv.height || '0'))
-        if (heightFilter === '<150') return height < 150
-        if (heightFilter === '150-160') return height >= 150 && height <= 160
-        if (heightFilter === '160-170') return height >= 160 && height <= 170
-        if (heightFilter === '170+') return height >= 170
-        return true
-      })
-    }
-    
-    if (weightFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        const weight = typeof cv.weight === 'number' ? cv.weight : parseInt(String(cv.weight || '0'))
-        if (weightFilter === 'LIGHT') return weight < 60
-        if (weightFilter === 'MEDIUM') return weight >= 60 && weight < 80
-        if (weightFilter === 'HEAVY') return weight >= 80
-        return true
-      })
-    }
-    
-    if (childrenFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => {
-        const children = cv.numberOfChildren || 0
-        if (childrenFilter === 'NONE') return children === 0
-        if (childrenFilter === 'FEW') return children > 0 && children <= 2
-        if (childrenFilter === 'MANY') return children > 2
-        return true
-      })
-    }
-    
-    if (locationFilter !== 'ALL') {
-      filtered = filtered.filter((cv) => 
-        cv.livingTown?.toLowerCase().includes(locationFilter.toLowerCase()) ||
-        cv.placeOfBirth?.toLowerCase().includes(locationFilter.toLowerCase())
-      )
-    }
-
-    setFilteredCvs(filtered)
-  }
-
+  // دالة حساب عدد البيانات لكل فلتر - منسوخة من صفحة السلز
   const getCountForFilter = useCallback((filterType: string, filterValue: string): number => {
     if (!cvs || cvs.length === 0) return 0
     
-    // معالجة خاصة لقيمة ALL
+    // استثناء السير المتعاقدة والمؤرشفة من الحساب
+    const visibleCvs = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED)
+    
+    // معالجة خاصة لقيمة ALL - استثناء السائقين من فلاتر اللغة
     if (filterValue === 'ALL') {
-      return cvs.length
+      switch (filterType) {
+        case 'arabicLevel':
+        case 'englishLevel':
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          return visibleCvs.filter(cv => {
+            const position = (cv.position || '').trim()
+            const isDriver = position.includes('سائق') || position.toLowerCase().includes('driver')
+            const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
+            return !isDriver && !isService
+          }).length
+        default:
+          return visibleCvs.length
+      }
     }
     
-    return cvs.filter(cv => {
+    return visibleCvs.filter(cv => {
       switch (filterType) {
         case 'religion':
           if (filterValue === 'مسلمة') return cv.religion?.includes('مسلم') || cv.religion?.includes('MUSLIM')
@@ -543,77 +657,13 @@ export default function CVsPage() {
           return false
           
         case 'nationality':
-          // خريطة تحويل من العربية إلى الإنجليزية للمطابقة
-          const arabicToEnglishMap: { [key: string]: string } = {
-            'الفلبين': 'FILIPINO',
-            'الهند': 'INDIAN',
-            'بنغلاديش': 'BANGLADESHI',
-            'إثيوبيا': 'إثيوبيا',
-            'كينيا': 'KENYAN',
-            'أوغندا': 'اوغندا',
-            'بوروندي': 'بوروندي',
-            'رواندا': 'RWANDAN',
-            'تنزانيا': 'TANZANIAN',
-            'مالاوي': 'MALAWIAN',
-            'زامبيا': 'ZAMBIAN',
-            'زيمبابوي': 'ZIMBABWEAN',
-            'غانا': 'GHANAIAN',
-            'نيجيريا': 'NIGERIAN',
-            'الكاميرون': 'CAMEROONIAN',
-            'الكونغو': 'CONGOLESE',
-            'السودان': 'SUDANESE',
-            'الصومال': 'SOMALI',
-            'إريتريا': 'ERITREAN',
-            'جيبوتي': 'DJIBOUTIAN',
-            'مدغشقر': 'MALAGASY',
-            'موريشيوس': 'MAURITIAN',
-            'سيشل': 'SEYCHELLOIS',
-            'جزر القمر': 'COMORAN',
-            'الرأس الأخضر': 'CAPE_VERDEAN',
-            'ساو تومي': 'SAO_TOMEAN',
-            'غينيا': 'GUINEAN',
-            'سيراليون': 'SIERRA_LEONEAN',
-            'ليبيريا': 'LIBERIAN',
-            'ساحل العاج': 'IVORIAN',
-            'بوركينا فاسو': 'BURKINABE',
-            'مالي': 'MALIAN',
-            'السنغال': 'SENEGALESE',
-            'غامبيا': 'GAMBIAN',
-            'غينيا بيساو': 'GUINEA_BISSAUAN',
-            'المغرب': 'MOROCCAN',
-            'الجزائر': 'ALGERIAN',
-            'تونس': 'TUNISIAN',
-            'ليبيا': 'LIBYAN',
-            'مصر': 'EGYPTIAN',
-            'باكستان': 'PAKISTANI',
-            'سريلانكا': 'سريلانكا',
-            'نيبال': 'NEPALESE',
-            'ميانمار': 'BURMESE',
-            'تايلاند': 'THAI',
-            'فيتنام': 'VIETNAMESE',
-            'كمبوديا': 'CAMBODIAN',
-            'لاوس': 'LAOTIAN',
-            'إندونيسيا': 'INDONESIAN',
-            'ماليزيا': 'MALAYSIAN'
-          }
-          
-          // إذا كان الفلتر بالعربية، حوله للإنجليزية
-          const englishFilter = arabicToEnglishMap[filterValue] || filterValue
-          
-          // مطابقة مباشرة مع البيانات من ملف الإكسل
-          return cv.nationality === englishFilter || 
-                 cv.nationality?.includes(englishFilter) || 
-                 cv.nationality === filterValue || 
-                 cv.nationality?.includes(filterValue)
+          return matchesNationalityFilter(cv.nationality, filterValue)
           
         case 'age':
           if (!cv.age) return false
-          if (filterValue === '20-25') return cv.age >= 20 && cv.age <= 25
-          if (filterValue === '25-30') return cv.age >= 25 && cv.age <= 30
-          if (filterValue === '30-35') return cv.age >= 30 && cv.age <= 35
-          if (filterValue === '35-40') return cv.age >= 35 && cv.age <= 40
-          if (filterValue === '40-45') return cv.age >= 40 && cv.age <= 45
-          if (filterValue === '45+') return cv.age >= 45
+          if (filterValue === '21-30') return cv.age >= 21 && cv.age <= 30
+          if (filterValue === '30-40') return cv.age >= 30 && cv.age <= 40
+          if (filterValue === '40-50') return cv.age >= 40 && cv.age <= 50
           return false
           
         case 'maritalStatus':
@@ -627,58 +677,71 @@ export default function CVsPage() {
             'arabicCooking': 'arabicCooking',
             'driving': 'driving',
             'washing': 'washing',
-            'ironing': 'ironing'
+            'ironing': 'ironing',
+            'tutoring': 'tutoring',
+            'disabledCare': 'disabledCare',
+            'sewing': 'sewing'
           }
           const skillKey = skillMap[filterValue]
           return skillKey ? (cv[skillKey] === 'YES' || cv[skillKey] === 'WILLING') : false
           
         case 'arabicLevel':
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          const posArabic = cv.position
+          const positionArabic = (typeof posArabic === 'string' ? posArabic : (typeof posArabic === 'number' ? String(posArabic) : '')).trim()
+          const isDriverArabic = positionArabic.includes('سائق') || positionArabic.toLowerCase().includes('driver')
+          const isServiceArabic = positionArabic.includes('نقل خدمات') || positionArabic.includes('نقل الخدمات')
+          if (isDriverArabic || isServiceArabic) return false
+          
           const arabicLevel = cv.arabicLevel ?? cv.languageLevel
           if (filterValue === 'WEAK') return arabicLevel === null || arabicLevel === undefined
           if (filterValue === 'NO') return arabicLevel === 'NO'
           return arabicLevel === filterValue
           
         case 'englishLevel':
+          // استثناء السائقين ونقل الخدمات من فلاتر اللغة
+          const posEnglish = cv.position
+          const positionEnglish = (typeof posEnglish === 'string' ? posEnglish : (typeof posEnglish === 'number' ? String(posEnglish) : '')).trim()
+          const isDriverEnglish = positionEnglish.includes('سائق') || positionEnglish.toLowerCase().includes('driver')
+          const isServiceEnglish = positionEnglish.includes('نقل خدمات') || positionEnglish.includes('نقل الخدمات')
+          if (isDriverEnglish || isServiceEnglish) return false
+          
           const englishLevel = cv.englishLevel
           if (filterValue === 'WEAK') return englishLevel === null || englishLevel === undefined
           if (filterValue === 'NO') return englishLevel === 'NO'
           return englishLevel === filterValue
           
         case 'experience':
-          const expValue = cv.experience || ''
-          const exp = typeof expValue === 'string' ? expValue.trim().toLowerCase() : String(expValue).trim().toLowerCase()
-          
-          // معالجة القيم الفارغة وغير المحددة
-          if (filterValue === 'NO_EXPERIENCE') {
-            // معالجة جميع الحالات الممكنة لـ "بدون خبرة"
-            if (!exp || exp === '') return true
-            if (exp === 'لا يوجد' || exp === 'لايوجد') return true
-            if (exp === 'غير محدد' || exp === 'غيرمحدد') return true
-            if (exp === 'no' || exp === 'none' || exp === 'null' || exp === 'undefined') return true
-            if (exp === '0' || exp === '0 سنة' || exp === '0 سنوات') return true
-            // التحقق إذا كانت تحتوي على "لا" أو "غير"
-            if (exp.includes('لا') || exp.includes('غير')) return true
-            return false
+          const expVal = cv.experience
+          let exp = ''
+          if (typeof expVal === 'string') {
+            exp = expVal.trim().toLowerCase()
+          } else if (typeof expVal === 'number') {
+            exp = String(expVal)
           }
-          
-          // استخراج الأرقام من النص
           const nums = exp.match(/\d+/g)
           const yrs = nums && nums.length > 0 ? parseInt(nums[0]) : 0
           
-          // في حالة وجود رقم صفر، اعتبره بدون خبرة
-          if (yrs === 0 && filterValue !== 'NO_EXPERIENCE') return false
-          
+          if (filterValue === 'NO_EXPERIENCE') {
+            return exp === 'لا يوجد' || exp === '' || exp === 'no' || exp === 'none' || yrs === 0
+          }
           if (filterValue === '1-2') return yrs >= 1 && yrs <= 2
           if (filterValue === '3-5') return yrs >= 3 && yrs <= 5
           if (filterValue === '6-10') return yrs >= 6 && yrs <= 10
           if (filterValue === 'MORE_10') return yrs > 10
-          
           return false
           
         case 'education':
-          const education = (cv.educationLevel || cv.education || '').toLowerCase()
-          if (filterValue === 'متعلم') return education.includes('نعم') || education.includes('yes') || education.includes('متعلم')
-          if (filterValue === 'غير متعلم') return education.includes('لا') || education.includes('no') || education.includes('غير') || education === ''
+          const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
+          if (filterValue === 'متعلم') {
+            return educationLevel === 'نعم' || educationLevel === 'yes' || 
+                   educationLevel === 'متعلم' || educationLevel === 'educated'
+          }
+          if (filterValue === 'غير متعلم') {
+            return educationLevel === 'لا' || educationLevel === 'no' || 
+                   educationLevel === '' || educationLevel === 'غير متعلم' || 
+                   educationLevel === 'أمي' || educationLevel === 'none'
+          }
           return false
           
         case 'salary':
@@ -705,20 +768,31 @@ export default function CVsPage() {
           return false
           
         case 'height':
-          const height = typeof cv.height === 'number' ? cv.height : parseInt(String(cv.height || '0'))
-          if (filterValue === '140-150' && height >= 140 && height <= 150) return true
-          if (filterValue === '150-160' && height >= 150 && height <= 160) return true
-          if (filterValue === '160-170' && height >= 160 && height <= 170) return true
-          if (filterValue === '170+' && height >= 170) return true
+          if (!cv.height) return false
+          const height = typeof cv.height === 'number' ? cv.height : parseInt(String(cv.height))
+          if (filterValue === '<155') return height < 155
+          if (filterValue === '155-160') return height >= 155 && height < 160
+          if (filterValue === '160-165') return height >= 160 && height < 165
+          if (filterValue === '165-170') return height >= 165 && height < 170
+          if (filterValue === '170-175') return height >= 170 && height < 175
+          if (filterValue === '>175') return height >= 175
           return false
           
         case 'weight':
-          const weight = typeof cv.weight === 'number' ? cv.weight : parseInt(String(cv.weight || '0'))
-          if (filterValue === '40-50' && weight >= 40 && weight <= 50) return true
-          if (filterValue === '50-60' && weight >= 50 && weight <= 60) return true
-          if (filterValue === '60-70' && weight >= 60 && weight <= 70) return true
-          if (filterValue === '70+' && weight >= 70) return true
+          if (!cv.weight) return false
+          const weight = typeof cv.weight === 'number' ? cv.weight : parseInt(String(cv.weight))
+          if (filterValue === '<50') return weight < 50
+          if (filterValue === '50-55') return weight >= 50 && weight < 55
+          if (filterValue === '55-60') return weight >= 55 && weight < 60
+          if (filterValue === '60-65') return weight >= 60 && weight < 65
+          if (filterValue === '65-70') return weight >= 65 && weight < 70
+          if (filterValue === '70-75') return weight >= 70 && weight < 75
+          if (filterValue === '>75') return weight >= 75
           return false
+          
+        case 'location':
+          const location = (cv.livingTown || '').toLowerCase()
+          return location.includes(filterValue.toLowerCase())
           
         case 'children':
           const childrenValue = cv.children || cv.numberOfChildren || 0
@@ -760,7 +834,9 @@ export default function CVsPage() {
       return
     }
     
-    const fileName = `${cv.fullName}_${cv.referenceCode || cvId}`
+    // إضافة timestamp فريد لتجنب تكرار أسماء الملفات
+    const timestamp = new Date().getTime()
+    const fileName = `${cv.fullName}_${cv.referenceCode || cvId}_${timestamp}`
       .replace(/[\\/:*?"<>|]+/g, '-')
       .replace(/\s+/g, '_')
     
@@ -828,21 +904,22 @@ export default function CVsPage() {
         // If no file ID, try with original URL
         console.warn('⚠️ لم نتمكن من استخراج File ID، استخدام الرابط الأصلي')
         
-        const downloadSuccess = await downloadFromUrl(cv.cvImageUrl, {
-          fileName: fileName + '.jpg',
-          fallbackToNewWindow: true
-        })
+        // استخدام تنزيل مباشر
+        const link = document.createElement('a')
+        link.href = cv.cvImageUrl
+        link.download = fileName + '.jpg'
+        link.target = '_blank'
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
         
-        if (downloadSuccess) {
-          toast.success('تم بدء تحميل الصورة', { id: toastId })
-          
-          if (isMobileApp()) {
-            setTimeout(() => {
-              showMobileDownloadInstructions(fileName + '.jpg')
-            }, 1500)
-          }
-        } else {
-          throw new Error('رابط الصورة غير صالح')
+        toast.success('تم بدء تحميل الصورة', { id: toastId })
+        
+        if (isMobileApp()) {
+          setTimeout(() => {
+            showMobileDownloadInstructions(fileName + '.jpg')
+          }, 1500)
         }
         
         CVActivityLogger.viewed(cvId, cv.fullName)
@@ -853,22 +930,22 @@ export default function CVsPage() {
       const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
       console.log('🔗 رابط التحميل:', downloadUrl)
       
-      // استخدام الطريقة المحسنة للتحميل
-      const downloadSuccess = await downloadFromUrl(downloadUrl, {
-        fileName: fileName + '.jpg',
-        fallbackToNewWindow: true
-      })
+      // استخدام تنزيل مباشر بدون fetch (لتجنب CORS)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = fileName + '.jpg'
+      link.target = '_blank'
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
       
-      if (downloadSuccess) {
-        toast.success('تم بدء تحميل الصورة من Google Drive', { id: toastId })
-        
-        if (isMobileApp()) {
-          setTimeout(() => {
-            showMobileDownloadInstructions(fileName + '.jpg')
-          }, 1500)
-        }
-      } else {
-        throw new Error('فشل في تحميل الصورة من Google Drive')
+      toast.success('تم بدء تحميل الصورة من Google Drive', { id: toastId })
+      
+      if (isMobileApp()) {
+        setTimeout(() => {
+          showMobileDownloadInstructions(fileName + '.jpg')
+        }, 1500)
       }
       
       CVActivityLogger.viewed(cvId, cv.fullName)
@@ -936,16 +1013,30 @@ export default function CVsPage() {
           // استخدام Google Drive direct download link
           const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
           
-          // إنشاء iframe مخفي للتحميل
-          const iframe = document.createElement('iframe');
-          iframe.style.display = 'none';
-          iframe.src = downloadUrl;
-          document.body.appendChild(iframe);
+          // إنشاء اسم ملف فريد مع timestamp
+          const timestamp = new Date().getTime() + i; // إضافة i لضمان التفرد حتى في نفس الميلي ثانية
+          const fileName = `${cv.fullName}_${cv.referenceCode || cvId}_${timestamp}.jpg`
+            .replace(/[\\/:*?"<>|]+/g, '-')
+            .replace(/\s+/g, '_');
           
-          // إزالة iframe بعد 5 ثواني
+          // استخدام fetch + blob للتحميل بدلاً من iframe
+          const response = await fetch(downloadUrl);
+          const blob = await response.blob();
+          
+          // إنشاء رابط تحميل
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = fileName;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // تنظيف الذاكرة
           setTimeout(() => {
-            document.body.removeChild(iframe);
-          }, 5000);
+            URL.revokeObjectURL(blobUrl);
+          }, 100);
 
           successCount++;
           setDownloadProgress(Math.round(((i + 1) / selectedCvs.length) * 100));
@@ -1576,349 +1667,378 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             </div>
           )}
 
-          {/* كرت البحث والتصفية */}
-          <div className="card p-6 mb-6">
-            <div className="flex items-center mb-6">
-              <div className="bg-primary/10 p-3 rounded-lg ml-4">
-                <Search className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-foreground">
-                  البحث والتصفية المتقدمة
-                </h3>
-                <p className="text-muted-foreground text-sm mt-1">ابحث وصفي السير الذاتية بسهولة</p>
-              </div>
+          {/* الفلاتر السريعة */}
+          <div className="card p-3 sm:p-4 mb-6 shadow-card">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-2 sm:gap-3">
+              <select
+                className="w-full lg:flex-1 lg:min-w-[160px] px-3 sm:px-4 py-2 sm:py-2.5 bg-background border border-border rounded-lg text-xs sm:text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                value={religionFilter}
+                onChange={(e) => setReligionFilter(e.target.value)}
+              >
+                <option value="ALL">جميع الديانات ({getCountForFilter('religion', 'ALL')})</option>
+                <option value="مسلمة">مسلمة ({getCountForFilter('religion', 'مسلمة')})</option>
+                <option value="مسيحية">مسيحية ({getCountForFilter('religion', 'مسيحية')})</option>
+                <option value="أخرى">أخرى ({getCountForFilter('religion', 'أخرى')})</option>
+              </select>
+
+              <select
+                className="w-full lg:flex-1 lg:min-w-[160px] px-3 sm:px-4 py-2 sm:py-2.5 bg-background border border-border rounded-lg text-xs sm:text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                value={nationalityFilter}
+                onChange={(e) => setNationalityFilter(e.target.value)}
+              >
+                <option value="ALL">جميع الجنسيات ({getCountForFilter('nationality', 'ALL')})</option>
+                {uniqueNationalities.map(nationality => (
+                  <option key={nationality} value={nationality}>
+                    {getNationalityArabic(nationality)} ({getCountForFilter('nationality', nationality)})
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="w-full lg:flex-1 lg:min-w-[160px] px-3 sm:px-4 py-2 sm:py-2.5 bg-background border border-border rounded-lg text-xs sm:text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                value={ageFilter}
+                onChange={(e) => setAgeFilter(e.target.value)}
+              >
+                <option value="ALL">جميع الأعمار ({getCountForFilter('age', 'ALL')})</option>
+                <option value="21-30">21-30 سنة ({getCountForFilter('age', '21-30')})</option>
+                <option value="30-40">30-40 سنة ({getCountForFilter('age', '30-40')})</option>
+                <option value="40-50">40-50 سنة ({getCountForFilter('age', '40-50')})</option>
+              </select>
+
+              <select
+                className="w-full lg:flex-1 lg:min-w-[160px] px-3 sm:px-4 py-2 sm:py-2.5 bg-background border border-border rounded-lg text-xs sm:text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                value={maritalStatusFilter}
+                onChange={(e) => setMaritalStatusFilter(e.target.value)}
+              >
+                <option value="ALL">جميع الحالات ({getCountForFilter('maritalStatus', 'ALL')})</option>
+                <option value="SINGLE">أعزب/عزباء ({getCountForFilter('maritalStatus', 'SINGLE')})</option>
+                <option value="MARRIED">متزوج/متزوجة ({getCountForFilter('maritalStatus', 'MARRIED')})</option>
+                <option value="DIVORCED">مطلق/مطلقة ({getCountForFilter('maritalStatus', 'DIVORCED')})</option>
+                <option value="WIDOWED">أرمل/أرملة ({getCountForFilter('maritalStatus', 'WIDOWED')})</option>
+              </select>
+
+              {/* زر المزيد من الفلاتر */}
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`w-full sm:w-auto sm:col-span-2 lg:col-span-1 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 border-2 ${
+                  showAdvancedFilters
+                    ? 'bg-primary text-primary-foreground border-primary shadow-lg'
+                    : 'bg-card text-foreground border-border hover:bg-muted hover:border-primary/50'
+                }`}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <SlidersHorizontal className={`h-4 w-4 transition-transform duration-300 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+                  {showAdvancedFilters ? 'إخفاء الفلاتر' : 'المزيد من الفلاتر'}
+                </span>
+              </button>
             </div>
+          </div>
 
-            <div className="mb-8">
-              <div className="relative group">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground h-6 w-6 group-focus-within:text-primary transition-colors" />
-                <input
-                  type="text"
-                  placeholder=" ابحث بالاسم، الجنسية، الوظيفة، أو أي معلومة أخرى..."
-                  className="form-input w-full pr-14 pl-6 py-5 text-lg"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  dir="rtl"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* الفلاتر السريعة */}
-            <div className="bg-card border border-border rounded-xl p-4 mb-6">
-              <div className="flex flex-wrap gap-3">
-                <select
-                  className="flex-1 min-w-[160px] px-4 py-2.5 bg-muted border border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 cursor-pointer transition-all hover:border-primary/50"
-                  value={religionFilter}
-                  onChange={(e) => setReligionFilter(e.target.value)}
-                >
-                  <option value="ALL">جميع الديانات ({getCountForFilter('religion', 'ALL')})</option>
-                  <option value="مسلمة">مسلمة ({getCountForFilter('religion', 'مسلمة')})</option>
-                  <option value="مسيحية">مسيحية ({getCountForFilter('religion', 'مسيحية')})</option>
-                  <option value="أخرى">أخرى ({getCountForFilter('religion', 'أخرى')})</option>
-                </select>
-
-                <select
-                  className="flex-1 min-w-[160px] px-4 py-2.5 bg-success/10 border border-success/30 rounded-lg text-sm font-medium text-success hover:bg-success/20 focus:outline-none focus:ring-2 focus:ring-success transition-all"
-                  value={nationalityFilter}
-                  onChange={(e) => setNationalityFilter(e.target.value)}
-                >
-                  <option value="ALL">جميع الجنسيات ({getCountForFilter('nationality', 'ALL')})</option>
-                  <option value="الفلبين">الفلبين ({getCountForFilter('nationality', 'الفلبين')})</option>
-                  <option value="الهند">الهند ({getCountForFilter('nationality', 'الهند')})</option>
-                  <option value="بنغلاديش">بنغلاديش ({getCountForFilter('nationality', 'بنغلاديش')})</option>
-                  <option value="إثيوبيا">إثيوبيا ({getCountForFilter('nationality', 'إثيوبيا')})</option>
-                  <option value="كينيا">كينيا ({getCountForFilter('nationality', 'كينيا')})</option>
-                  <option value="أوغندا">أوغندا ({getCountForFilter('nationality', 'أوغندا')})</option>
-                  <option value="نيبال">نيبال ({getCountForFilter('nationality', 'نيبال')})</option>
-                  <option value="سريلانكا">سريلانكا ({getCountForFilter('nationality', 'سريلانكا')})</option>
-                  <option value="إندونيسيا">إندونيسيا ({getCountForFilter('nationality', 'إندونيسيا')})</option>
-                </select>
-
-                <select
-                  className="flex-1 min-w-[160px] px-4 py-2.5 bg-primary/10 border border-primary/30 rounded-lg text-sm font-medium text-primary hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                  value={ageFilter}
-                  onChange={(e) => setAgeFilter(e.target.value)}
-                >
-                  <option value="ALL">جميع الأعمار ({getCountForFilter('age', 'ALL')})</option>
-                  <option value="20-25">20-25 سنة ({getCountForFilter('age', '20-25')})</option>
-                  <option value="25-30">25-30 سنة ({getCountForFilter('age', '25-30')})</option>
-                  <option value="30-35">30-35 سنة ({getCountForFilter('age', '30-35')})</option>
-                  <option value="35-40">35-40 سنة ({getCountForFilter('age', '35-40')})</option>
-                  <option value="40-45">40-45 سنة ({getCountForFilter('age', '40-45')})</option>
-                  <option value="45+">أكبر من 45 ({getCountForFilter('age', '45+')})</option>
-                </select>
-
-                {/* زر المزيد من الفلاتر */}
+          {/* البحث الشامل */}
+          <div className="card p-4 sm:p-6 shadow-card mb-6">
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary h-5 w-5 pointer-events-none z-10" />
+              <input
+                type="text"
+                placeholder="بحث شامل: الاسم، الجنسية، المهنة، الكود المرجعي، الجواز، الديانة، المهارات، التعليم..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pr-12 pl-4 py-3 sm:py-4 bg-gradient-to-r from-primary/5 to-transparent border-2 border-primary/30 rounded-lg text-foreground placeholder:text-muted-foreground/70 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+              />
+              {searchTerm && (
                 <button
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 border-2 ${
-                    showAdvancedFilters
-                      ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/30'
-                      : 'bg-background text-foreground border-border hover:bg-muted hover:border-primary/50'
-                  }`}
+                  onClick={() => setSearchTerm('')}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-destructive transition-colors"
+                  title="مسح البحث"
                 >
-                  <span className="inline-flex items-center gap-2">
-                    <SlidersHorizontal className={`h-4 w-4 transition-transform duration-300 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
-                    {showAdvancedFilters ? 'إخفاء الفلاتر' : 'المزيد من الفلاتر'}
-                  </span>
+                  <X className="h-4 w-4" />
                 </button>
-              </div>
+              )}
             </div>
+            
+            {/* رسالة توضيحية للبحث */}
+            {searchTerm && (
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground bg-primary/5 px-3 py-2 rounded-lg border border-primary/20 mt-3">
+                <span className="font-semibold text-primary">نتائج البحث:</span>
+                <span>{allFilteredCvs.length} سيرة من أصل {cvs.length}</span>
+              </div>
+            )}
+          </div>
 
-            {/* الفلاتر المتقدمة */}
-            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${showAdvancedFilters ? 'max-h-[1000px] opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
-              <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-primary mb-2">
-                      <Star className="h-4 w-4 ml-2" /> المهارات
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary"
-                      value={skillFilter}
-                      onChange={(e) => setSkillFilter(e.target.value)}
+          {/* الفلاتر المتقدمة */}
+          <div className={`overflow-hidden transition-all duration-500 ease-in-out ${showAdvancedFilters ? 'max-h-[2000px] opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
+            <div className="card p-3 sm:p-4 md:p-6 shadow-card">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <label className="flex items-center text-xs sm:text-sm font-semibold text-primary mb-1 sm:mb-2">
+                    <Star className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" /> المهارات (اختيار متعدد)
+                  </label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowSkillsDropdown(!showSkillsDropdown)}
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-background border border-border rounded-xl text-xs sm:text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-primary flex items-center justify-between hover:border-muted-foreground transition-all"
                     >
-                      <option value="ALL">جميع المهارات ({getCountForFilter('skill', 'ALL')})</option>
-                      <option value="babySitting">رعاية أطفال ({getCountForFilter('skill', 'babySitting')})</option>
-                      <option value="childrenCare">عناية بالأطفال ({getCountForFilter('skill', 'childrenCare')})</option>
-                      <option value="cleaning">التنظيف ({getCountForFilter('skill', 'cleaning')})</option>
-                      <option value="washing">الغسيل ({getCountForFilter('skill', 'washing')})</option>
-                      <option value="ironing">الكي ({getCountForFilter('skill', 'ironing')})</option>
-                      <option value="arabicCooking">الطبخ العربي ({getCountForFilter('skill', 'arabicCooking')})</option>
-                      <option value="sewing">الخياطة ({getCountForFilter('skill', 'sewing')})</option>
-                      <option value="driving">القيادة ({getCountForFilter('skill', 'driving')})</option>
-                    </select>
+                      <span className="truncate">
+                        {skillFilters.length === 0 
+                          ? 'اختر المهارات' 
+                          : `تم اختيار ${skillFilters.length} مهارة`}
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${showSkillsDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {showSkillsDropdown && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-10" 
+                          onClick={() => setShowSkillsDropdown(false)}
+                        />
+                        <div className="absolute z-20 w-full mt-1 bg-card border border-border rounded-lg shadow-card max-h-64 overflow-y-auto">
+                          <div className="p-2">
+                            {skillFilters.length > 0 && (
+                              <button
+                                onClick={() => {
+                                  setSkillFilters([])
+                                }}
+                                className="w-full px-3 py-2 mb-2 text-xs text-red-600 hover:bg-red-50 rounded font-medium transition-colors"
+                              >
+                                ✕ مسح الكل
+                              </button>
+                            )}
+                            {[
+                              { id: 'babySitting', label: 'رعاية أطفال', icon: '👶' },
+                              { id: 'childrenCare', label: 'العناية بالأطفال', icon: '👧' },
+                              { id: 'cleaning', label: 'تنظيف', icon: '🧹' },
+                              { id: 'arabicCooking', label: 'طبخ عربي', icon: '🍲' },
+                              { id: 'driving', label: 'قيادة', icon: '🚗' },
+                              { id: 'washing', label: 'غسيل', icon: '🧺' },
+                              { id: 'ironing', label: 'كي', icon: '👔' },
+                              { id: 'tutoring', label: 'تدريس', icon: '📚' },
+                              { id: 'disabledCare', label: 'رعاية كبار السن', icon: '👴' },
+                              { id: 'sewing', label: 'خياطة', icon: '🧵' }
+                            ].map(skill => {
+                              const count = getCountForFilter('skill', skill.id)
+                              return (
+                              <label
+                                key={skill.id}
+                                className={`flex items-center gap-2 px-3 py-2 rounded cursor-pointer transition-all ${
+                                  skillFilters.includes(skill.id)
+                                    ? 'bg-blue-50 text-blue-700 font-medium'
+                                    : 'hover:bg-gray-50 text-gray-700'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={skillFilters.includes(skill.id)}
+                                  onChange={() => toggleSkillFilter(skill.id)}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span className="text-lg">{skill.icon}</span>
+                                <span className="text-sm flex-1">{skill.label} ({count})</span>
+                                {skillFilters.includes(skill.id) && (
+                                  <span className="text-blue-600 text-xs">✓</span>
+                                )}
+                              </label>
+                            )
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-info mb-2">
-                      <Heart className="h-4 w-4 ml-2" /> الحالة الاجتماعية
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-info"
-                      value={maritalStatusFilter}
-                      onChange={(e) => setMaritalStatusFilter(e.target.value)}
-                    >
-                      <option value="ALL">الكل ({getCountForFilter('maritalStatus', 'ALL')})</option>
-                      <option value="SINGLE">أعزب/عزباء ({getCountForFilter('maritalStatus', 'SINGLE')})</option>
-                      <option value="MARRIED">متزوج/متزوجة ({getCountForFilter('maritalStatus', 'MARRIED')})</option>
-                      <option value="DIVORCED">مطلق/مطلقة ({getCountForFilter('maritalStatus', 'DIVORCED')})</option>
-                      <option value="WIDOWED">أرمل/أرملة ({getCountForFilter('maritalStatus', 'WIDOWED')})</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-success mb-2">
-                      <Globe className="h-4 w-4 ml-2" /> اللغة العربية
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-success"
-                      value={arabicLevelFilter}
-                      onChange={(e) => setArabicLevelFilter(e.target.value)}
-                    >
-                      <option value="ALL">جميع المستويات ({getCountForFilter('arabicLevel', 'ALL')})</option>
-                      <option value="YES">ممتاز ({getCountForFilter('arabicLevel', 'YES')})</option>
-                      <option value="WILLING">جيد ({getCountForFilter('arabicLevel', 'WILLING')})</option>
-                      <option value="WEAK">ضعيف ({getCountForFilter('arabicLevel', 'WEAK')})</option>
-                      <option value="NO">لا ({getCountForFilter('arabicLevel', 'NO')})</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-info mb-2">
-                      <Globe className="h-4 w-4 ml-2" /> اللغة الإنجليزية
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-info"
-                      value={englishLevelFilter}
-                      onChange={(e) => setEnglishLevelFilter(e.target.value)}
-                    >
-                      <option value="ALL">جميع المستويات ({getCountForFilter('englishLevel', 'ALL')})</option>
-                      <option value="YES">ممتاز ({getCountForFilter('englishLevel', 'YES')})</option>
-                      <option value="WILLING">جيد ({getCountForFilter('englishLevel', 'WILLING')})</option>
-                      <option value="WEAK">ضعيف ({getCountForFilter('englishLevel', 'WEAK')})</option>
-                      <option value="NO">لا ({getCountForFilter('englishLevel', 'NO')})</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-warning mb-2">
-                      <Calendar className="h-4 w-4 ml-2" /> سنوات الخبرة
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-warning"
-                      value={experienceFilter}
-                      onChange={(e) => setExperienceFilter(e.target.value)}
-                    >
-                      <option value="ALL">جميع الخبرات ({getCountForFilter('experience', 'ALL')})</option>
-                      <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
-                      <option value="1-2">1-2 سنة ({getCountForFilter('experience', '1-2')})</option>
-                      <option value="3-5">3-5 سنوات ({getCountForFilter('experience', '3-5')})</option>
-                      <option value="6-10">6-10 سنوات ({getCountForFilter('experience', '6-10')})</option>
-                      <option value="MORE_10">أكثر من 10 سنوات ({getCountForFilter('experience', 'MORE_10')})</option>
-                    </select>
-                  </div>
+                  
+                  {/* عرض المهارات المحددة كـ tags */}
+                  {skillFilters.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {skillFilters.map(skillId => {
+                        const skillLabels: Record<string, string> = {
+                          babySitting: 'رعاية أطفال',
+                          childrenCare: 'العناية بالأطفال',
+                          cleaning: 'تنظيف',
+                          arabicCooking: 'طبخ عربي',
+                          driving: 'قيادة',
+                          washing: 'غسيل',
+                          ironing: 'كي',
+                          tutoring: 'تدريس',
+                          disabledCare: 'رعاية كبار السن',
+                          sewing: 'خياطة'
+                        }
+                        return (
+                          <span
+                            key={skillId}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
+                          >
+                            {skillLabels[skillId]}
+                            <button
+                              onClick={() => toggleSkillFilter(skillId)}
+                              className="hover:text-blue-900"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-
-                {/* صف إضافي للفلاتر الجديدة */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-primary mb-2">
-                      <BookOpen className="h-4 w-4 ml-2" /> المستوى التعليمي
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary"
-                      value={educationFilter}
-                      onChange={(e) => setEducationFilter(e.target.value)}
-                    >
-                      <option value="ALL">جميع المستويات ({getCountForFilter('education', 'ALL')})</option>
-                      <option value="متعلم">متعلم ({getCountForFilter('education', 'متعلم')})</option>
-                      <option value="غير متعلم">غير متعلم ({getCountForFilter('education', 'غير متعلم')})</option>
-                      <option value="ثانوي">ثانوي</option>
-                      <option value="جامعي">جامعي</option>
-                      <option value="دراسات عليا">دراسات عليا</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-warning mb-2">
-                      <DollarSign className="h-4 w-4 ml-2" /> الراتب المطلوب
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-warning"
-                      value={salaryFilter}
-                      onChange={(e) => setSalaryFilter(e.target.value)}
-                    >
-                      <option value="ALL">جميع الرواتب ({getCountForFilter('salary', 'ALL')})</option>
-                      <option value="0-1000">أقل من 1000 ({getCountForFilter('salary', '0-1000')})</option>
-                      <option value="1000-1500">1000-1500 ({getCountForFilter('salary', '1000-1500')})</option>
-                      <option value="1500-2000">1500-2000 ({getCountForFilter('salary', '1500-2000')})</option>
-                      <option value="2000+">أكثر من 2000 ({getCountForFilter('salary', '2000+')})</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-info mb-2">
-                      <Calendar className="h-4 w-4 ml-2" /> مدة العقد
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-info"
-                      value={contractPeriodFilter}
-                      onChange={(e) => setContractPeriodFilter(e.target.value)}
-                    >
-                      <option value="ALL">جميع المدد ({getCountForFilter('contractPeriod', 'ALL')})</option>
-                      <option value="1">سنة واحدة ({getCountForFilter('contractPeriod', '1')})</option>
-                      <option value="2">سنتان ({getCountForFilter('contractPeriod', '2')})</option>
-                      <option value="3">3 سنوات ({getCountForFilter('contractPeriod', '3')})</option>
-                      <option value="أكثر">أكثر من 3 ({getCountForFilter('contractPeriod', 'أكثر')})</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* صف ثالث للفلاتر */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-destructive mb-2">
-                      <FileText className="h-4 w-4 ml-2" /> حالة الجواز
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-destructive"
-                      value={passportStatusFilter}
-                      onChange={(e) => setPassportStatusFilter(e.target.value)}
-                    >
-                      <option value="ALL">جميع الحالات ({getCountForFilter('passportStatus', 'ALL')})</option>
-                      <option value="متوفر">متوفر ({getCountForFilter('passportStatus', 'متوفر')})</option>
-                      <option value="غير متوفر">غير متوفر ({getCountForFilter('passportStatus', 'غير متوفر')})</option>
-                      <option value="قيد الإنجاز">قيد الإنجاز ({getCountForFilter('passportStatus', 'قيد الإنجاز')})</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-primary mb-2">
-                      <Ruler className="h-4 w-4 ml-2" /> الطول
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary"
-                      value={heightFilter}
-                      onChange={(e) => setHeightFilter(e.target.value)}
-                    >
-                      <option value="ALL">جميع الأطوال ({getCountForFilter('height', 'ALL')})</option>
-                      <option value="140-150">140-150 سم ({getCountForFilter('height', '140-150')})</option>
-                      <option value="150-160">150-160 سم ({getCountForFilter('height', '150-160')})</option>
-                      <option value="160-170">160-170 سم ({getCountForFilter('height', '160-170')})</option>
-                      <option value="170+">أكثر من 170 ({getCountForFilter('height', '170+')})</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-success mb-2">
-                      <Scale className="h-4 w-4 ml-2" /> الوزن
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-success"
-                      value={weightFilter}
-                      onChange={(e) => setWeightFilter(e.target.value)}
-                    >
-                      <option value="ALL">جميع الأوزان ({getCountForFilter('weight', 'ALL')})</option>
-                      <option value="40-50">40-50 كجم ({getCountForFilter('weight', '40-50')})</option>
-                      <option value="50-60">50-60 كجم ({getCountForFilter('weight', '50-60')})</option>
-                      <option value="60-70">60-70 كجم ({getCountForFilter('weight', '60-70')})</option>
-                      <option value="70+">أكثر من 70 ({getCountForFilter('weight', '70+')})</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center text-sm font-semibold text-info mb-2">
-                      <Baby className="h-4 w-4 ml-2" /> عدد الأطفال
-                    </label>
-                    <select
-                      className="form-input w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-info"
-                      value={childrenFilter}
-                      onChange={(e) => setChildrenFilter(e.target.value)}
-                    >
-                      <option value="ALL">الكل ({getCountForFilter('children', 'ALL')})</option>
-                      <option value="NONE">بدون أطفال ({getCountForFilter('children', 'NONE')})</option>
-                      <option value="FEW">1-2 أطفال ({getCountForFilter('children', 'FEW')})</option>
-                      <option value="MANY">أكثر من 2 ({getCountForFilter('children', 'MANY')})</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex justify-center">
-                  <button
-                    onClick={() => {
-                      setSearchTerm('')
-                      setReligionFilter('ALL')
-                      setNationalityFilter('ALL')
-                      setSkillFilter('ALL')
-                      setMaritalStatusFilter('ALL')
-                      setAgeFilter('ALL')
-                      setExperienceFilter('ALL')
-                      setArabicLevelFilter('ALL')
-                      setEnglishLevelFilter('ALL')
-                      setEducationFilter('ALL')
-                      setSalaryFilter('ALL')
-                      setContractPeriodFilter('ALL')
-                      setPassportStatusFilter('ALL')
-                      setHeightFilter('ALL')
-                      setWeightFilter('ALL')
-                      setChildrenFilter('ALL')
-                      setLocationFilter('ALL')
-                    }}
-                    className="px-6 py-2 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium hover:from-red-500 hover:to-pink-500"
+                
+                <div className="space-y-2">
+                  <label className="flex items-center text-xs sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">
+                    <Globe className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" /> مستوى العربية
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-primary border border-border bg-background text-foreground"
+                    value={arabicLevelFilter}
+                    onChange={(e) => setArabicLevelFilter(e.target.value)}
                   >
-                    مسح جميع الفلاتر
-                  </button>
+                    <option value="ALL">جميع المستويات ({getCountForFilter('arabicLevel', 'ALL')})</option>
+                    <option value="YES">ممتاز ({getCountForFilter('arabicLevel', 'YES')})</option>
+                    <option value="WILLING">جيد ({getCountForFilter('arabicLevel', 'WILLING')})</option>
+                    <option value="WEAK">ضعيف ({getCountForFilter('arabicLevel', 'WEAK')})</option>
+                    <option value="NO">لا ({getCountForFilter('arabicLevel', 'NO')})</option>
+                  </select>
                 </div>
+
+                <div className="space-y-2">
+                  <label className="flex items-center text-xs sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">
+                    <Globe className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" /> مستوى الإنجليزية
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-primary border border-border bg-background text-foreground"
+                    value={englishLevelFilter}
+                    onChange={(e) => setEnglishLevelFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع المستويات ({getCountForFilter('englishLevel', 'ALL')})</option>
+                    <option value="YES">ممتاز ({getCountForFilter('englishLevel', 'YES')})</option>
+                    <option value="WILLING">جيد ({getCountForFilter('englishLevel', 'WILLING')})</option>
+                    <option value="WEAK">ضعيف ({getCountForFilter('englishLevel', 'WEAK')})</option>
+                    <option value="NO">لا ({getCountForFilter('englishLevel', 'NO')})</option>
+                  </select>
+                </div>
+
+
+              </div>
+
+              {/* صف إضافي للفلاتر الجديدة */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                <div className="space-y-2">
+                  <label className="flex items-center text-xs sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">
+                    <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" /> المستوى التعليمي
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-primary border border-border bg-background text-foreground"
+                    value={educationFilter}
+                    onChange={(e) => setEducationFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع المستويات ({getCountForFilter('education', 'ALL')})</option>
+                    <option value="متعلم">متعلم ({getCountForFilter('education', 'متعلم')})</option>
+                    <option value="غير متعلم">غير متعلم ({getCountForFilter('education', 'غير متعلم')})</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="flex items-center text-xs sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" /> سنوات الخبرة
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-primary border border-border bg-background text-foreground"
+                    value={experienceFilter}
+                    onChange={(e) => setExperienceFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع مستويات الخبرة ({cvs.length})</option>
+                    <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
+                    <option value="1-2">1-2 سنة ({getCountForFilter('experience', '1-2')})</option>
+                    <option value="3-5">3-5 سنوات ({getCountForFilter('experience', '3-5')})</option>
+                    <option value="6-10">6-10 سنوات ({getCountForFilter('experience', '6-10')})</option>
+                    <option value="MORE_10">أكثر من 10 سنوات ({getCountForFilter('experience', 'MORE_10')})</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="flex items-center text-xs sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">
+                    <MapPin className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" /> الطول
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-primary border border-border bg-background text-foreground"
+                    value={heightFilter}
+                    onChange={(e) => setHeightFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع الأطوال ({cvs.length})</option>
+                    <option value="<155">أقل من 155 سم ({getCountForFilter('height', '<155')})</option>
+                    <option value="155-160">155-160 سم ({getCountForFilter('height', '155-160')})</option>
+                    <option value="160-165">160-165 سم ({getCountForFilter('height', '160-165')})</option>
+                    <option value="165-170">165-170 سم ({getCountForFilter('height', '165-170')})</option>
+                    <option value="170-175">170-175 سم ({getCountForFilter('height', '170-175')})</option>
+                    <option value=">175">أكثر من 175 سم ({getCountForFilter('height', '>175')})</option>
+                  </select>
+                </div>
+
+              </div>
+
+              {/* صف إضافي للوزن والمنطقة */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                <div className="space-y-2">
+                  <label className="flex items-center text-xs sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">
+                    <MapPin className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" /> الوزن
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-primary border border-border bg-background text-foreground"
+                    value={weightFilter}
+                    onChange={(e) => setWeightFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع الأوزان ({cvs.length})</option>
+                    <option value="<50">أقل من 50 كجم ({getCountForFilter('weight', '<50')})</option>
+                    <option value="50-55">50-55 كجم ({getCountForFilter('weight', '50-55')})</option>
+                    <option value="55-60">55-60 كجم ({getCountForFilter('weight', '55-60')})</option>
+                    <option value="60-65">60-65 كجم ({getCountForFilter('weight', '60-65')})</option>
+                    <option value="65-70">65-70 كجم ({getCountForFilter('weight', '65-70')})</option>
+                    <option value="70-75">70-75 كجم ({getCountForFilter('weight', '70-75')})</option>
+                    <option value=">75">أكثر من 75 كجم ({getCountForFilter('weight', '>75')})</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="flex items-center text-xs sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">
+                    <MapPin className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" /> المنطقة
+                  </label>
+                  <select
+                    className="w-full rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-primary border border-border bg-background text-foreground"
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع المناطق ({cvs.length})</option>
+                    {Array.from(new Set(cvs.map(cv => cv.livingTown).filter(Boolean))).sort().map(location => (
+                      <option key={location} value={location!}>
+                        {location} ({getCountForFilter('location', location!)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+              </div>
+
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => {
+                    setReligionFilter('ALL')
+                    setNationalityFilter('ALL')
+                    setSkillFilters([])
+                    setAgeFilter('ALL')
+                    setMaritalStatusFilter('ALL')
+                    setArabicLevelFilter('ALL')
+                    setEnglishLevelFilter('ALL')
+                    setEducationFilter('ALL')
+                    setExperienceFilter('ALL')
+                    setHeightFilter('ALL')
+                    setWeightFilter('ALL')
+                    setLocationFilter('ALL')
+                    setSearchTerm('')
+                  }}
+                  className="btn-secondary px-6 py-2.5 rounded-lg text-sm font-medium inline-flex items-center gap-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  مسح جميع الفلاتر
+                </button>
               </div>
             </div>
           </div>
@@ -2164,10 +2284,11 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                         />
                       </label>
                     </th>
-                    <th className="px-4 py-4 font-semibold text-muted-foreground min-w-48 text-right">الاسم الكامل</th>
+                    <th className="px-4 py-4 font-semibold text-muted-foreground w-48 max-w-48 text-right">الاسم الكامل</th>
                     <th className="px-3 py-4 font-semibold text-muted-foreground min-w-24 text-center">الكود المرجعي</th>
+                    <th className="px-3 py-4 font-semibold text-muted-foreground min-w-32 text-center">رقم الجواز</th>
                     <th className="px-3 py-4 font-semibold text-muted-foreground min-w-32 text-center">الجنسية</th>
-                    <th className="px-3 py-4 font-semibold text-muted-foreground min-w-28 text-center">الوظيفة</th>
+                    <th className="px-3 py-4 font-semibold text-muted-foreground w-32 max-w-32 text-center">الوظيفة</th>
                     <th className="px-3 py-4 font-semibold text-muted-foreground min-w-16 text-center">العمر</th>
                     <th className="px-3 py-4 font-semibold text-muted-foreground min-w-24 text-center">الحالة</th>
                     <th className="px-3 py-4 font-semibold text-muted-foreground min-w-40 text-center">الإجراءات</th>
@@ -2186,8 +2307,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                           />
                         </label>
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center space-x-3">
+                      <td className="px-4 py-4 w-48 max-w-48">
+                        <div className="flex items-center space-x-3 max-w-full">
                           <img 
                             className="h-10 w-10 rounded-full object-cover flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600" 
                             src={processImageUrl(cv.profileImage)} 
@@ -2199,10 +2320,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                               }
                             }}
                           />
-                          <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-foreground truncate">{cv.fullName}</div>
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <div className="font-semibold text-foreground truncate" title={cv.fullName}>{cv.fullName}</div>
                             {cv.fullNameArabic && (
-                              <div className="text-sm text-muted-foreground truncate">{cv.fullNameArabic}</div>
+                              <div className="text-sm text-muted-foreground truncate" title={cv.fullNameArabic}>{cv.fullNameArabic}</div>
                             )}
                           </div>
                         </div>
@@ -2212,11 +2333,16 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                           {cv.referenceCode}
                         </span>
                       </td>
+                      <td className="px-3 py-4 text-center">
+                        <span className="text-sm font-medium text-foreground">
+                          {cv.passportNumber || '-'}
+                        </span>
+                      </td>
                       <td className="px-3 py-4">
                         <CountryFlag nationality={cv.nationality || ''} size="md" />
                       </td>
-                      <td className="px-3 py-4">
-                        <span className="text-sm text-foreground truncate block">{cv.position}</span>
+                      <td className="px-3 py-4 w-32 max-w-32">
+                        <span className="text-sm text-foreground truncate block" title={cv.position || ''}>{cv.position}</span>
                       </td>
                       <td className="px-3 py-4 text-center">
                         <span className="text-sm font-semibold text-foreground">{cv.age}</span>

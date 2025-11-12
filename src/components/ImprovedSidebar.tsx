@@ -7,7 +7,7 @@ import {
   FileText, Plus, Download, Users, Activity, UserCheck, UserX, 
   LogOut, Menu, X, Shield, Home, Store, ExternalLink, Network,
   BellRing, Crown, Settings, Grid3X3, FileSpreadsheet, Sparkles,
-  ChevronDown, User, Eye
+  ChevronDown, User, Eye, Briefcase
 } from 'lucide-react'
 
 interface NavItem {
@@ -52,6 +52,16 @@ export default function ImprovedSidebar({ user, onLogout }: SidebarProps) {
         { id: 'booked', label: 'محجوز', icon: UserCheck, href: '/dashboard/booked' },
         { id: 'hired', label: 'متعاقد', icon: UserCheck, href: '/dashboard/contracts' },
         { id: 'returned', label: 'معاد', icon: UserX, href: '/dashboard/returned' },
+      ],
+    },
+    {
+      id: 'contracts',
+      label: 'إدارة العقود',
+      icon: Briefcase,
+      children: [
+        { id: 'add-contract', label: 'إضافة عقد جديد', icon: Plus, href: '/dashboard/add-contract' },
+        { id: 'all-contracts', label: 'جميع العقود', icon: Briefcase, href: '/dashboard/add-contracts' },
+        { id: 'old-contracts', label: 'العقود القديمة', icon: Briefcase, href: '/dashboard/contracts' },
       ],
     },
     {

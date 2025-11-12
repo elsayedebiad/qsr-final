@@ -29,7 +29,8 @@ import {
   ExternalLink,
   RotateCcw,
   AlertTriangle,
-  Network
+  Network,
+  Briefcase
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -203,6 +204,31 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
           label: 'معاد',
           icon: UserX,
           href: '/dashboard/returned'
+        }
+      ]
+    },
+    {
+      id: 'contracts',
+      label: 'إدارة العقود',
+      icon: Briefcase,
+      children: [
+        {
+          id: 'add-contract',
+          label: 'إضافة عقد جديد',
+          icon: Plus,
+          href: '/dashboard/add-contract'
+        },
+        {
+          id: 'all-contracts',
+          label: 'جميع العقود',
+          icon: Briefcase,
+          href: '/dashboard/add-contracts'
+        },
+        {
+          id: 'old-contracts',
+          label: 'العقود القديمة',
+          icon: Briefcase,
+          href: '/dashboard/contracts'
         }
       ]
     },

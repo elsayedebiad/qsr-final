@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from './app-sidebar'
 import { Menu } from 'lucide-react'
 import UserHeartbeat from './UserHeartbeat'
+import ContractAlertsNotification from './ContractAlertsNotification'
 
 interface User {
   id: string
@@ -154,6 +155,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
       <UserHeartbeat />
+      <ContractAlertsNotification />
       <AppSidebar user={user} onLogout={handleLogout} />
       <main className="flex flex-1 flex-col min-h-screen">
         <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center gap-3 sm:gap-4 border-b border-border bg-background px-3 sm:px-6">
