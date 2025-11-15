@@ -56,6 +56,9 @@ import { extractGoogleDriveFileId } from '../../lib/google-drive-utils';
 import LottieIcon from '../../components/LottieIcon'
 import { processImageUrl } from '../../lib/url-utils'
 import DownloadProgressModal from '@/components/DownloadProgressModal'
+import ModernLoadingSpinner from '@/components/ModernLoadingSpinner'
+import EnhancedProgressModal from '@/components/EnhancedProgressModal'
+import DashboardSkeleton from '@/components/DashboardSkeleton'
 
 interface User {
   id: string
@@ -963,7 +966,20 @@ export default function CVsPage() {
       return;
     }
 
-    const toastId = toast.loading(`جاري فتح روابط التحميل لـ ${selectedCvs.length} صورة...`);
+    // رسالة تنبيه للمستخدم
+    toast(
+      `📥 جاري تحميل ${selectedCvs.length} صورة من Google Drive\n⏳ يرجى الانتظار حتى اكتمال التحميل...`,
+      { 
+        duration: 4000,
+        icon: '💡',
+        style: {
+          background: '#3B82F6',
+          color: '#FFFFFF',
+        }
+      }
+    );
+
+    const toastId = toast.loading(`جاري تحميل ${selectedCvs.length} صورة...`);
     setShowDownloadBar(true);
     setDownloadProgress(0);
 
@@ -1013,42 +1029,54 @@ export default function CVsPage() {
           // استخدام Google Drive direct download link
           const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
           
-          // إنشاء اسم ملف فريد مع timestamp
-          const timestamp = new Date().getTime() + i; // إضافة i لضمان التفرد حتى في نفس الميلي ثانية
-          const fileName = `${cv.fullName}_${cv.referenceCode || cvId}_${timestamp}.jpg`
-            .replace(/[\\/:*?"<>|]+/g, '-')
-            .replace(/\s+/g, '_');
+          // إنشاء اسم ملف فريد مع ID
+          const timestamp = Date.now();
+          const randomNum = Math.floor(Math.random() * 1000);
+          const cleanName = cv.fullName.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '_');
+          const cleanRef = (cv.referenceCode || '').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '_');
           
-          // استخدام fetch + blob للتحميل بدلاً من iframe
-          const response = await fetch(downloadUrl);
-          const blob = await response.blob();
+          // اسم الملف النهائي: ID_الاسم_الرمز_الوقت_عشوائي.jpg
+          const fileName = cleanRef 
+            ? `${cvId}_${cleanName}_${cleanRef}_${timestamp}_${randomNum}.jpg`
+            : `${cvId}_${cleanName}_${timestamp}_${randomNum}.jpg`;
           
-          // إنشاء رابط تحميل
-          const blobUrl = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = blobUrl;
-          link.download = fileName;
-          link.style.display = 'none';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          // تنظيف الذاكرة
-          setTimeout(() => {
-            URL.revokeObjectURL(blobUrl);
-          }, 100);
+          // استخدام Server Proxy للتحميل بالاسم المخصص
+          try {
+            const proxyUrl = `/api/download-proxy?url=${encodeURIComponent(downloadUrl)}&filename=${encodeURIComponent(fileName)}`;
+            
+            // إنشاء link للتحميل
+            const link = document.createElement('a');
+            link.href = proxyUrl;
+            link.download = fileName;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            
+            // تنظيف
+            setTimeout(() => {
+              try {
+                document.body.removeChild(link);
+              } catch (e) {
+                console.log('Link already removed');
+              }
+            }, 1000);
+            
+            successCount++;
+            setDownloadProgress(Math.round(((i + 1) / selectedCvs.length) * 100));
 
-          successCount++;
-          setDownloadProgress(Math.round(((i + 1) / selectedCvs.length) * 100));
+            // رسالة تحديث مع اسم السيرة
+            toast.loading(
+              `✅ جاري تحميل: ${cv.fullName} (${i + 1}/${selectedCvs.length})`,
+              { id: toastId }
+            );
 
-          // رسالة تحديث مع اسم السيرة
-          toast.loading(
-            `✅ جاري تحميل: ${cv.fullName} (${i + 1}/${selectedCvs.length})`,
-            { id: toastId }
-          );
-
-          // مهلة بين التحميلات (مهم لتجنب حظر المتصفح)
-          await new Promise(r => setTimeout(r, 2000));
+            // مهلة بين التحميلات (مهم لتجنب حظر المتصفح وPopup Blocker)
+            await new Promise(r => setTimeout(r, 1500));
+            
+          } catch (downloadError) {
+            console.error('Download method failed:', downloadError);
+            throw downloadError; // سيتم التعامل معه في catch الخارجي
+          }
         } catch (error) {
           console.error(`Error downloading CV ${cvId}:`, error);
           failedCount++;
@@ -1063,16 +1091,16 @@ export default function CVsPage() {
       // رسالة النتيجة النهائية
       if (successCount === selectedCvs.length) {
         toast.success(
-          `🎉 تم فتح روابط التحميل بنجاح!\n✅ ${successCount} صورة`,
+          `🎉 تم بدء التحميل بنجاح!\n✅ ${successCount} صورة`,
           { id: toastId, duration: 4000 }
         );
       } else if (successCount > 0) {
         toast.success(
-          `تم فتح ${successCount} من ${selectedCvs.length} رابط\n${skippedCount > 0 ? `⏭️ تخطي: ${skippedCount} | ` : ''}${failedCount > 0 ? `❌ فشل: ${failedCount}` : ''}`,
+          `تم بدء تحميل ${successCount} من ${selectedCvs.length} صورة\n${skippedCount > 0 ? `⏭️ تخطي: ${skippedCount} | ` : ''}${failedCount > 0 ? `❌ فشل: ${failedCount}` : ''}`,
           { id: toastId, duration: 4000 }
         );
       } else {
-        toast.error(`فشل فتح روابط التحميل`, { id: toastId });
+        toast.error(`فشل بدء التحميل`, { id: toastId });
       }
 
       // إخفاء شريط التحميل
@@ -1544,11 +1572,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
 
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen grid place-items-center">
-        <div className="text-muted-foreground">جاري التحميل...</div>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
 
@@ -1558,61 +1582,23 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
       {/* Modal animation component */}
       {(user: User | null) => (
         <div className="space-y-6">
-          {/* نافذة منبثقة جميلة لشريط التحميل */}
-          {showDownloadBar && (
-            <div className="fixed inset-0 z-50 grid place-items-center">
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-              <div className="relative card p-8 w-full max-w-md text-center animate-fade-in">
-                <div className="mx-auto mb-4 rounded-xl w-16 h-16 flex items-center justify-center bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 animate-pulse">
-                  <Download className="h-8 w-8 text-white animate-bounce" />
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">جاري تحميل الصور المحددة</h3>
-                <p className="text-sm text-muted-foreground mb-2">شكراً لانتظارك، سننتهي خلال لحظات</p>
-                <div className="text-xs text-primary font-semibold mb-4">
-                  تم تحميل {Math.round((downloadProgress / 100) * selectedCvs.length)} من {selectedCvs.length} سيرة ذاتية
-                </div>
-                
-                {/* شريط التقدم الاحترافي */}
-                <div className="relative mb-4 h-4 w-full bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full transition-all duration-300 relative overflow-hidden"
-                    style={{ width: `${downloadProgress}%` }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
-                  </div>
-                  
-                  {/* علامات التقدم */}
-                  <div className="absolute inset-0 flex justify-between items-center px-1">
-                    <div className={`w-0.5 h-2 ${downloadProgress >= 0 ? 'bg-primary' : 'bg-border'}`} />
-                    <div className={`w-0.5 h-2 ${downloadProgress >= 25 ? 'bg-primary' : 'bg-border'}`} />
-                    <div className={`w-0.5 h-2 ${downloadProgress >= 50 ? 'bg-primary' : 'bg-border'}`} />
-                    <div className={`w-0.5 h-2 ${downloadProgress >= 75 ? 'bg-primary' : 'bg-border'}`} />
-                    <div className={`w-0.5 h-2 ${downloadProgress >= 100 ? 'bg-primary' : 'bg-border'}`} />
-                  </div>
-                </div>
-                
-                <div className="text-lg font-bold text-primary">{downloadProgress}%</div>
-                
-                {/* معلومات إضافية */}
-                <div className="mt-4 pt-4 border-t border-border">
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="text-muted-foreground">
-                      <div className="font-semibold">⚡ السرعة</div>
-                      <div>متوسطة</div>
-                    </div>
-                    <div className="text-muted-foreground">
-                      <div className="font-semibold">📁 التنسيق</div>
-                      <div>PNG</div>
-                    </div>
-                    <div className="text-muted-foreground">
-                      <div className="font-semibold">🔄 التحميل</div>
-                      <div>متتالي</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Enhanced Progress Modal for Downloads */}
+          <EnhancedProgressModal
+            isOpen={showDownloadBar}
+            progress={downloadProgress}
+            totalItems={selectedCvs.length}
+            completedItems={Math.round((downloadProgress / 100) * selectedCvs.length)}
+            title="جاري تحميل الصور المحددة"
+            description="شكراً لانتظارك، سننتهي خلال لحظات"
+            status={downloadProgress === 100 ? 'success' : 'downloading'}
+            onClose={() => {
+              if (downloadProgress === 100) {
+                setShowDownloadBar(false)
+                setDownloadProgress(0)
+              }
+            }}
+            showStats={true}
+          />
           {/* إشعار للسير المعادة */}
           {filteredCvs.some(cv => cv.status === 'RETURNED') && (
             <div className="card p-6 mb-6 bg-warning/10 border-warning/20">
@@ -2838,35 +2824,100 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   ) : (
                     <div className="text-center">
                       <div className="mb-8">
-                        <div className="bg-primary/10 border border-primary/20 rounded-xl p-8">
-                          <Loader2 className="h-16 w-16 text-primary mx-auto mb-4 animate-spin" />
-                          <h4 className="text-xl font-bold text-foreground mb-2">جاري التنفيذ...</h4>
-                          <p className="text-muted-foreground">يرجى الانتظار حتى اكتمال العملية</p>
+                        <div className="bg-gradient-to-br from-primary/10 via-purple-500/10 to-pink-500/10 border border-primary/20 rounded-xl p-8 relative overflow-hidden">
+                          {/* Background animation */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
+                          
+                          {/* Icon with pulse effect */}
+                          <div className="relative inline-block mb-4">
+                            <Loader2 className="h-16 w-16 text-primary mx-auto animate-spin" />
+                            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+                          </div>
+                          
+                          <h4 className="text-xl font-bold text-foreground mb-2">
+                            {bulkProgress === 100 ? 'اكتمل التنفيذ!' : 'جاري التنفيذ...'}
+                          </h4>
+                          <p className="text-muted-foreground">
+                            {bulkProgress === 100 
+                              ? 'تمت العملية بنجاح' 
+                              : 'يرجى الانتظار حتى اكتمال العملية'}
+                          </p>
                         </div>
                       </div>
 
-                      {/* شريط التقدم */}
+                      {/* Enhanced Progress Bar */}
                       <div className="mb-6">
                         <div className="flex justify-between items-center mb-3">
                           <span className="text-sm font-medium text-foreground">التقدم</span>
                           <span className="text-sm font-bold text-primary">{bulkProgress}%</span>
                         </div>
-                        <div className="w-full bg-muted rounded-full h-3 overflow-hidden border border-border">
+                        
+                        {/* Multi-layered progress bar */}
+                        <div className="relative w-full bg-muted rounded-full h-4 overflow-hidden border border-border shadow-inner">
+                          {/* Background pattern */}
+                          <div className="absolute inset-0 opacity-10">
+                            <div className="h-full w-full" style={{
+                              backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px)'
+                            }} />
+                          </div>
+                          
+                          {/* Progress fill with gradient */}
                           <div
-                            className="h-full bg-primary rounded-full transition-all duration-300 ease-out relative"
+                            className="h-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-full transition-all duration-500 ease-out relative overflow-hidden"
                             style={{ width: `${bulkProgress}%` }}
                           >
-                            <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                            {/* Multiple shimmer effects */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer-slow" />
+                            
+                            {/* Leading edge glow */}
+                            <div className="absolute right-0 top-0 bottom-0 w-8 bg-white/30 blur-sm animate-pulse" />
                           </div>
+                          
+                          {/* Progress markers */}
+                          <div className="absolute inset-0 flex justify-between items-center px-1">
+                            {[0, 25, 50, 75, 100].map((marker) => (
+                              <div
+                                key={marker}
+                                className={`w-0.5 h-3 rounded-full transition-all duration-300 ${
+                                  bulkProgress >= marker ? 'bg-white/50 scale-110' : 'bg-border'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Progress info */}
+                        <div className="flex items-center justify-center gap-2 mt-3 text-xs text-muted-foreground">
+                          <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                          <span>تم معالجة {Math.round((bulkProgress / 100) * selectedCvs.length)} من {selectedCvs.length}</span>
                         </div>
                       </div>
 
                       {bulkProgress === 100 && (
-                        <div className="bg-success/10 border border-success/30 rounded-xl p-6">
-                          <CheckCircle className="h-12 w-12 text-success mx-auto mb-3" />
-                          <p className="text-success font-semibold">تم إنجاز العملية بنجاح!</p>
+                        <div className="bg-gradient-to-r from-success/10 to-emerald-500/10 border border-success/30 rounded-xl p-6 animate-scale-in">
+                          <div className="flex items-center justify-center gap-3 mb-3">
+                            <CheckCircle className="h-12 w-12 text-success animate-bounce" />
+                            <Sparkles className="h-6 w-6 text-yellow-500 animate-pulse" />
+                          </div>
+                          <p className="text-success font-semibold text-lg">تم إنجاز العملية بنجاح!</p>
+                          <p className="text-sm text-muted-foreground mt-2">يمكنك الآن إغلاق هذه النافذة</p>
                         </div>
                       )}
+                      
+                      {/* Animated decorative dots */}
+                      <div className="flex items-center justify-center gap-2 mt-6">
+                        {[0, 1, 2, 3, 4].map((i) => (
+                          <div
+                            key={i}
+                            className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"
+                            style={{
+                              animationDelay: `${i * 0.15}s`,
+                              animationDuration: '1.5s'
+                            }}
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

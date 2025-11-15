@@ -9,8 +9,9 @@ interface CountryFlagProps {
   className?: string
 }
 
-// خريطة الجنسيات إلى أكواد الدول
+// خريطة الجنسيات إلى أكواد الدول (بالعربي والإنجليزي)
 const nationalityToCountryCode: Record<string, string> = {
+  // عربي
   'مصر': 'EG',
   'السعودية': 'SA',
   'الإمارات': 'AE',
@@ -45,7 +46,52 @@ const nationalityToCountryCode: Record<string, string> = {
   'تايلاند': 'TH',
   'فيتنام': 'VN',
   'ميانمار': 'MM',
-  'كمبوديا': 'KH'
+  'كمبوديا': 'KH',
+  // إنجليزي
+  'EGYPTIAN': 'EG',
+  'FILIPINO': 'PH',
+  'INDIAN': 'IN',
+  'BANGLADESHI': 'BD',
+  'ETHIOPIAN': 'ET',
+  'KENYAN': 'KE',
+  'UGANDAN': 'UG',
+  'PAKISTANI': 'PK',
+  'SRI_LANKAN': 'LK',
+  'NEPALESE': 'NP',
+  'INDONESIAN': 'ID',
+  'THAI': 'TH',
+  'VIETNAMESE': 'VN',
+  'BURMESE': 'MM',
+  'CAMBODIAN': 'KH',
+  'NIGERIAN': 'NG',
+  'GHANAIAN': 'GH',
+  'CAMEROONIAN': 'CM'
+}
+
+// خريطة تحويل الجنسيات من الإنجليزية إلى العربية
+const nationalityToArabic: Record<string, string> = {
+  'FILIPINO': 'فلبينية',
+  'INDIAN': 'هندية',
+  'BANGLADESHI': 'بنغلاديشية',
+  'ETHIOPIAN': 'إثيوبية',
+  'KENYAN': 'كينية',
+  'UGANDAN': 'أوغندية',
+  'PAKISTANI': 'باكستانية',
+  'SRI_LANKAN': 'سريلانكية',
+  'NEPALESE': 'نيبالية',
+  'INDONESIAN': 'إندونيسية',
+  'THAI': 'تايلاندية',
+  'VIETNAMESE': 'فيتنامية',
+  'BURMESE': 'ميانمارية',
+  'CAMBODIAN': 'كمبودية',
+  'NIGERIAN': 'نيجيرية',
+  'GHANAIAN': 'غانية',
+  'CAMEROONIAN': 'كاميرونية',
+  'EGYPTIAN': 'مصرية',
+  'SUDANESE': 'سودانية',
+  'MOROCCAN': 'مغربية',
+  'ALGERIAN': 'جزائرية',
+  'TUNISIAN': 'تونسية'
 }
 
 const CountryFlag: React.FC<CountryFlagProps> = ({ 
@@ -54,8 +100,11 @@ const CountryFlag: React.FC<CountryFlagProps> = ({
   size = 'md',
   className = '' 
 }) => {
-  const countryInfo = getCountryInfo(nationality)
-  const countryCode = nationalityToCountryCode[nationality] || 'UN' // UN للدول غير المعروفة
+  // تحويل الجنسية للعربية إذا كانت بالإنجليزية
+  const displayNationality = nationalityToArabic[nationality] || nationality
+  
+  const countryInfo = getCountryInfo(displayNationality)
+  const countryCode = nationalityToCountryCode[nationality] || nationalityToCountryCode[displayNationality] || 'UN' // UN للدول غير المعروفة
   
   const sizeClasses = {
     sm: 16,
@@ -78,11 +127,8 @@ const CountryFlag: React.FC<CountryFlagProps> = ({
         title={nationality}
       />
       {showName && (
-        <span 
-          className="font-medium text-sm"
-          style={{ color: countryInfo.colors.primary }}
-        >
-          {nationality}
+        <span className="font-medium text-sm text-foreground">
+          {displayNationality}
         </span>
       )}
     </div>

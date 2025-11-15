@@ -188,6 +188,36 @@
   animation: shimmer 2s infinite;
 }
 
+/* Slower shimmer animation for layered effects */
+@keyframes shimmer-slow {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-shimmer-slow {
+  animation: shimmer-slow 3s infinite;
+}
+
+/* Scale-in animation for success messages */
+@keyframes scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out;
+}
+
 /* Shimmer Effect للـ Skeleton Loading */
 @keyframes shimmerEffect {
   0% {
