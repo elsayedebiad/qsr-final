@@ -1498,10 +1498,10 @@ export default function Sales10Page() {
                   }}
                   className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
                     isActive
-                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
-                  : 'shadow-lg hover:shadow-xl hover:scale-102'
-              }`}
-            >
+                      ? 'shadow-2xl scale-105 ring-4 ring-amber-400 shadow-amber-400/60'
+                      : 'shadow-lg hover:shadow-xl hover:scale-102'
+                  }`}
+                >
                   {/* خلفية متدرجة */}
                   <div className={`absolute inset-0 transition-all duration-300 ${
                     isActive
@@ -1536,7 +1536,7 @@ export default function Sales10Page() {
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
                 positionFilter === 'سائق'
-                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  ? 'shadow-2xl scale-105 ring-4 ring-amber-400 shadow-amber-400/60'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
@@ -1573,7 +1573,7 @@ export default function Sales10Page() {
               }}
               className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
                 positionFilter === 'نقل خدمات'
-                  ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
+                  ? 'shadow-2xl scale-105 ring-4 ring-amber-400 shadow-amber-400/60'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
               }`}
             >
