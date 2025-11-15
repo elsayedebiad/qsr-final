@@ -49,6 +49,7 @@ const CONTRACT_STATUSES = {
   VISA_ISSUED: 'تم إصدار التأشيرة',
   EMBASSY_SENT: 'تم الإرسال للسفارة السعودية',
   EMBASSY_APPROVAL: 'وصل للمملكة العربية السعودية',
+  TICKET_DATE_NOTIFIED: 'تم التبليغ بموعد التذكرة',
   REJECTED: 'مرفوض',
   CANCELLED: 'ملغي',
   OUTSIDE_KINGDOM: 'خارج المملكة'

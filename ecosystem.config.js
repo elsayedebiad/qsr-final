@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: 'cv-management',
+    name: 'qsr-system',
     script: 'npm',
     args: 'start',
     cwd: __dirname,
@@ -12,25 +12,48 @@ module.exports = {
       NODE_ENV: 'production',
       PORT: 3000
     },
-    instances: 1,
+    // استخدام cluster mode - يستخدم كل الـCPUs المتاحة
+    instances: 'max', // أو رقم محدد مثل 2, 4
+    exec_mode: 'cluster', // تفعيل cluster mode
+    
     autorestart: true,
     watch: false,
-    max_memory_restart: '1G',
+    max_memory_restart: '1500M', // زيادة الحد للأداء الأفضل
+    
     error_file: './logs/err.log',
     out_file: './logs/out.log',
     log_file: './logs/combined.log',
     time: true,
-    node_args: '--max-old-space-size=2048',
+    
+    // تحسينات Node.js
+    node_args: '--max-old-space-size=3072 --optimize-for-size --max-old-space-size=3072',
     
     // إعدادات إضافية للإنتاج
     kill_timeout: 5000,
-    listen_timeout: 8000,
+    listen_timeout: 10000, // زيادة الوقت للتطبيقات الثقيلة
     restart_delay: 4000,
+    
+    // تفعيل graceful shutdown
+    wait_ready: true,
+    
+    // Load balancing
+    instance_var: 'INSTANCE_ID',
     
     // متغيرات البيئة الإضافية
     env_vars: {
-      NODE_OPTIONS: '--max-old-space-size=2048'
-    }
+      NODE_OPTIONS: '--max-old-space-size=3072'
+    },
+    
+    // Monitoring
+    merge_logs: true,
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    
+    // Performance
+    min_uptime: '10s',
+    max_restarts: 10,
+    
+    // Auto restart في حالة الخطأ
+    exp_backoff_restart_delay: 100
   }],
 
   deploy: {

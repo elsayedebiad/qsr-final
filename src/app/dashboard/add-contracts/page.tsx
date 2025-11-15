@@ -59,6 +59,7 @@ const CONTRACT_STATUSES = {
   VISA_ISSUED: 'تم إصدار التأشيرة',
   EMBASSY_SENT: 'تم الإرسال للسفارة السعودية',
   EMBASSY_APPROVAL: 'وصل للمملكة العربية السعودية',
+  TICKET_DATE_NOTIFIED: 'تم التبليغ بموعد التذكرة',
   REJECTED: 'مرفوض',
   CANCELLED: 'ملغي',
   OUTSIDE_KINGDOM: 'خارج المملكة'
@@ -973,136 +974,164 @@ function AddContractsPageContent({ userData }: { userData: any }) {
               </div>
             </div>
             {/* جدول العقود */}
-            <div className="bg-card border border-border overflow-hidden rounded-xl shadow-sm">
+            <div className="bg-card border-2 border-border overflow-hidden rounded-2xl shadow-xl">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gradient-to-r from-muted/80 to-muted/50 border-b-2 border-border">
+                  <thead className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-b-2 border-primary/20">
                     <tr>
-                      <th className="px-3 py-3 text-right text-[10px] font-bold text-foreground uppercase">رقم العقد</th>
-                      <th className="px-2 py-3 text-center text-[10px] font-bold text-foreground uppercase">الجواز</th>
-                      <th className="px-3 py-3 text-right text-[10px] font-bold text-foreground uppercase">العميل</th>
-                      <th className="px-2 py-3 text-center text-[10px] font-bold text-foreground uppercase">الدولة</th>
-                      <th className="px-2 py-3 text-center text-[10px] font-bold text-foreground uppercase">ممثل المبيعات</th>
-                      <th className="px-2 py-3 text-center text-[10px] font-bold text-foreground uppercase">المكتب</th>
-                      <th className="px-2 py-3 text-center text-[10px] font-bold text-foreground uppercase">الحالة</th>
-                      <th className="px-2 py-3 text-center text-[10px] font-bold text-foreground uppercase">التاريخ</th>
-                      <th className="px-2 py-3 text-center text-[10px] font-bold text-foreground uppercase">الأيام</th>
-                      <th className="px-2 py-3 text-center text-[10px] font-bold text-foreground uppercase">المنشئ</th>
-                      <th className="px-2 py-3 text-center text-[10px] font-bold text-foreground uppercase">تنبيه</th>
-                      <th className="px-2 py-3 text-center text-[10px] font-bold text-foreground uppercase">إجراءات</th>
+                      <th className="px-4 py-4 text-right text-xs font-extrabold text-foreground tracking-wide">رقم العقد</th>
+                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">الجواز</th>
+                      <th className="px-4 py-4 text-right text-xs font-extrabold text-foreground tracking-wide">العميل</th>
+                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">الدولة</th>
+                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">ممثل المبيعات</th>
+                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">المكتب</th>
+                      <th className="px-4 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">الحالة</th>
+                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">التاريخ</th>
+                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">الأيام</th>
+                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">المنشئ</th>
+                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">تنبيه</th>
+                      <th className="px-4 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">إجراءات</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border">
+                  <tbody className="divide-y divide-border/50">
                     {filteredContracts.map((contract) => {
                       const daysSinceCreation = calculateDays(contract.createdAt)
                       const daysSinceLastUpdate = calculateDays(contract.lastStatusUpdate)
                       
+                      // تحديد لون الحالة
+                      const getStatusColor = (status: string) => {
+                        switch (status) {
+                          case 'CV_REQUEST': return 'bg-yellow-500/10 text-yellow-700 border-yellow-500/30'
+                          case 'EXTERNAL_OFFICE_APPROVAL': return 'bg-blue-500/10 text-blue-700 border-blue-500/30'
+                          case 'FOREIGN_MINISTRY_APPROVAL': return 'bg-indigo-500/10 text-indigo-700 border-indigo-500/30'
+                          case 'VISA_ISSUED': return 'bg-purple-500/10 text-purple-700 border-purple-500/30'
+                          case 'EMBASSY_SENT': return 'bg-green-500/10 text-green-700 border-green-500/30'
+                          case 'EMBASSY_APPROVAL': return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30'
+                          case 'TICKET_DATE_NOTIFIED': return 'bg-cyan-500/10 text-cyan-700 border-cyan-500/30'
+                          case 'REJECTED': return 'bg-red-500/10 text-red-700 border-red-500/30'
+                          case 'CANCELLED': return 'bg-gray-500/10 text-gray-700 border-gray-500/30'
+                          case 'OUTSIDE_KINGDOM': return 'bg-orange-500/10 text-orange-700 border-orange-500/30'
+                          default: return 'bg-muted text-muted-foreground border-border'
+                        }
+                      }
+                      
                       return (
-                        <tr key={contract.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-3 py-3">
-                            <div className="text-xs font-bold text-primary">{contract.contractNumber}</div>
-                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                        <tr key={contract.id} className="hover:bg-primary/5 transition-all duration-200 group">
+                          <td className="px-4 py-4">
+                            <div className="text-sm font-bold text-primary">{contract.contractNumber}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50"></span>
                               {contract.contractType === 'SPECIFIC' ? 'معين' : 'مواصفات'}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center">
-                            <div className="text-xs font-mono font-semibold text-foreground">
+                          <td className="px-3 py-4 text-center">
+                            <div className="text-xs font-mono font-bold text-foreground bg-muted/50 px-2 py-1 rounded inline-block">
                               {contract.passportNumber || contract.workerPassportNumber || '-'}
                             </div>
                           </td>
-                          <td className="px-3 py-3">
+                          <td className="px-4 py-4">
                             <div className="text-sm font-bold text-foreground">{contract.clientName}</div>
-                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                            <div className="text-xs text-muted-foreground mt-0.5">
                               {contract.profession}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center">
-                            <div className="text-xs font-semibold text-foreground">
+                          <td className="px-3 py-4 text-center">
+                            <div className="text-xs font-semibold text-foreground bg-primary/5 px-2 py-1 rounded-md inline-block">
                               {contract.countryName}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center">
+                          <td className="px-3 py-4 text-center">
                             <div className="text-xs font-semibold text-foreground">
                               {contract.salesRepName}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center">
-                            <div className="text-[10px] text-muted-foreground">
+                          <td className="px-3 py-4 text-center">
+                            <div className="text-xs text-muted-foreground">
                               {contract.office}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center">
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="text-xs font-semibold text-foreground">
+                          <td className="px-4 py-4 text-center">
+                            <div className="flex flex-col items-center gap-1.5">
+                              <div className={`text-xs font-bold px-3 py-1.5 rounded-full border ${getStatusColor(contract.status)} shadow-sm`}>
                                 {CONTRACT_STATUSES[contract.status]}
                               </div>
                               <button
                                 onClick={() => openStatusHistoryModal(contract)}
-                                className="text-[10px] text-blue-600 hover:text-blue-700 font-medium underline"
+                                className="text-[10px] text-blue-600 hover:text-blue-700 font-semibold underline hover:no-underline transition-all"
                                 title="عرض تفاصيل المراحل"
                               >
-                                التفاصيل
+                                📋 التفاصيل
                               </button>
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center">
-                            <div className="text-[10px] font-semibold text-foreground">
+                          <td className="px-3 py-4 text-center">
+                            <div className="text-xs font-semibold text-foreground">
                               {format(new Date(contract.createdAt), 'dd/MM/yy', { locale: ar })}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center">
-                            <div className="text-xs font-bold text-foreground">{daysSinceCreation}</div>
-                            <div className="text-[10px] text-muted-foreground">يوم</div>
+                          <td className="px-3 py-4 text-center">
+                            <div className={`text-sm font-extrabold px-2 py-1 rounded-lg inline-block ${
+                              daysSinceCreation >= 40 ? 'bg-red-500/20 text-red-700' :
+                              daysSinceCreation >= 20 ? 'bg-orange-500/20 text-orange-700' :
+                              'bg-green-500/20 text-green-700'
+                            }`}>
+                              {daysSinceCreation}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">يوم</div>
                           </td>
-                          <td className="px-2 py-3 text-center">
+                          <td className="px-3 py-4 text-center">
                             <div className="text-xs font-semibold text-foreground">
                               {contract.createdBy?.name || '-'}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center">
+                          <td className="px-3 py-4 text-center">
                             {contract.hasCVIssue ? (
-                              <div className="text-[10px] text-destructive font-semibold">
-                                ⚠️ {contract.cvIssueType}
+                              <div className="inline-flex items-center gap-1 text-xs text-destructive font-bold bg-destructive/10 px-2 py-1 rounded-full border border-destructive/30">
+                                <AlertTriangle className="h-3 w-3" />
+                                {contract.cvIssueType}
                               </div>
                             ) : (
-                              <div className="text-[10px] text-success">✓ سليم</div>
+                              <div className="inline-flex items-center gap-1 text-xs text-success font-bold bg-success/10 px-2 py-1 rounded-full border border-success/30">
+                                <CheckCircle className="h-3 w-3" />
+                                سليم
+                              </div>
                             )}
                           </td>
-                          <td className="px-2 py-3 text-center">
-                            <div className="flex gap-1 justify-center">
+                          <td className="px-4 py-4 text-center">
+                            <div className="flex gap-1.5 justify-center">
                               <button
                                 onClick={() => {
                                   setSelectedContractForView(contract)
                                   setShowViewDetailsModal(true)
                                 }}
-                                className="p-1.5 bg-green-500/10 text-green-600 hover:bg-green-500/20 rounded transition-all"
+                                className="p-2 bg-green-500/10 text-green-600 hover:bg-green-500/20 rounded-lg transition-all hover:scale-110 shadow-sm"
                                 title="عرض"
                               >
-                                <Eye className="h-3.5 w-3.5" />
+                                <Eye className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => openStatusEditModal(contract)}
-                                className="p-1.5 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 rounded transition-all"
-                                title="تغيير"
+                                className="p-2 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 rounded-lg transition-all hover:scale-110 shadow-sm"
+                                title="تغيير الحالة"
                               >
-                                <RefreshCw className="h-3.5 w-3.5" />
+                                <RefreshCw className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => openEditModal(contract)}
-                                className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded transition-all"
+                                className="p-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-all hover:scale-110 shadow-sm"
                                 title="تعديل"
                               >
-                                <Edit className="h-3.5 w-3.5" />
+                                <Edit className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => {
                                   setSelectedContract(contract)
                                   setShowDeleteModal(true)
                                 }}
-                                className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded transition-all"
+                                className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-all hover:scale-110 shadow-sm"
                                 title="حذف"
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
                           </td>
@@ -2461,21 +2490,48 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                       </div>
                     </div>
 
-                    {/* اختيار الحالة الجديدة */}
+                    {/* اختيار الحالة الجديدة - أزرار احترافية */}
                     <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-foreground mb-3">
+                      <label className="flex items-center gap-2 text-sm font-bold text-foreground mb-4">
                         <RefreshCw className="h-4 w-4 text-primary" />
                         اختر الحالة الجديدة
                       </label>
-                      <select
-                        value={newStatus}
-                        onChange={(e) => setNewStatus(e.target.value)}
-                        className="w-full px-4 py-3.5 bg-input border-2 border-border rounded-xl text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                      >
-                        {Object.entries(CONTRACT_STATUSES).map(([key, value]) => (
-                          <option key={key} value={key}>{value}</option>
-                        ))}
-                      </select>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {Object.entries(CONTRACT_STATUSES).map(([key, value]) => {
+                          const isSelected = newStatus === key
+                          const getButtonColor = (statusKey: string) => {
+                            switch (statusKey) {
+                              case 'CV_REQUEST': return isSelected ? 'bg-yellow-500 text-white border-yellow-600' : 'bg-yellow-500/10 text-yellow-700 border-yellow-500/30 hover:bg-yellow-500/20'
+                              case 'EXTERNAL_OFFICE_APPROVAL': return isSelected ? 'bg-blue-500 text-white border-blue-600' : 'bg-blue-500/10 text-blue-700 border-blue-500/30 hover:bg-blue-500/20'
+                              case 'FOREIGN_MINISTRY_APPROVAL': return isSelected ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-indigo-500/10 text-indigo-700 border-indigo-500/30 hover:bg-indigo-500/20'
+                              case 'VISA_ISSUED': return isSelected ? 'bg-purple-500 text-white border-purple-600' : 'bg-purple-500/10 text-purple-700 border-purple-500/30 hover:bg-purple-500/20'
+                              case 'EMBASSY_SENT': return isSelected ? 'bg-green-500 text-white border-green-600' : 'bg-green-500/10 text-green-700 border-green-500/30 hover:bg-green-500/20'
+                              case 'EMBASSY_APPROVAL': return isSelected ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/20'
+                              case 'TICKET_DATE_NOTIFIED': return isSelected ? 'bg-cyan-500 text-white border-cyan-600' : 'bg-cyan-500/10 text-cyan-700 border-cyan-500/30 hover:bg-cyan-500/20'
+                              case 'REJECTED': return isSelected ? 'bg-red-500 text-white border-red-600' : 'bg-red-500/10 text-red-700 border-red-500/30 hover:bg-red-500/20'
+                              case 'CANCELLED': return isSelected ? 'bg-gray-500 text-white border-gray-600' : 'bg-gray-500/10 text-gray-700 border-gray-500/30 hover:bg-gray-500/20'
+                              case 'OUTSIDE_KINGDOM': return isSelected ? 'bg-orange-500 text-white border-orange-600' : 'bg-orange-500/10 text-orange-700 border-orange-500/30 hover:bg-orange-500/20'
+                              default: return isSelected ? 'bg-primary text-white border-primary' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                            }
+                          }
+                          
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => setNewStatus(key)}
+                              className={`px-4 py-3 rounded-xl border-2 font-bold text-sm transition-all duration-200 ${
+                                getButtonColor(key)
+                              } ${isSelected ? 'scale-105 shadow-lg ring-2 ring-offset-2 ring-primary/50' : 'hover:scale-102 shadow-sm'}`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span>{value}</span>
+                                {isSelected && <CheckCircle className="h-4 w-4" />}
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
 
                     {/* ملاحظة */}

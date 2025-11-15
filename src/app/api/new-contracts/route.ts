@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient, NewContractStatus, ContractType } from '@prisma/client'
+import { cache, CACHE_KEYS, CACHE_TTL, invalidateContractCache } from '@/lib/cache'
 
 const prisma = new PrismaClient()
 
@@ -12,6 +13,14 @@ export async function GET(request: NextRequest) {
     const salesRep = searchParams.get('salesRep')
 
     if (id) {
+      // محاولة الحصول على العقد من الـ cache أولاً
+      const cacheKey = CACHE_KEYS.NEW_CONTRACT_BY_ID(parseInt(id))
+      const cachedContract = cache.get(cacheKey)
+      
+      if (cachedContract) {
+        return NextResponse.json(cachedContract)
+      }
+
       // جلب عقد واحد
       const contract = await prisma.newContract.findUnique({
         where: { id: parseInt(id) },
@@ -61,10 +70,21 @@ export async function GET(request: NextRequest) {
         )
       }
 
+      // حفظ في الـ cache
+      cache.set(cacheKey, contract, CACHE_TTL.MEDIUM)
+
       return NextResponse.json(contract)
     }
 
     // جلب جميع العقود مع الفلترة
+    // إذا لم يكن هناك فلاتر، استخدم الـ cache
+    if (!status && !salesRep) {
+      const cachedContracts = cache.get(CACHE_KEYS.ALL_NEW_CONTRACTS)
+      if (cachedContracts) {
+        return NextResponse.json(cachedContracts)
+      }
+    }
+
     const where: any = {}
     if (status) {
       where.status = status as NewContractStatus
@@ -116,6 +136,11 @@ export async function GET(request: NextRequest) {
         createdAt: 'desc'
       }
     })
+
+    // حفظ في الـ cache إذا لم يكن هناك فلاتر
+    if (!status && !salesRep) {
+      cache.set(CACHE_KEYS.ALL_NEW_CONTRACTS, contracts, CACHE_TTL.SHORT)
+    }
 
     return NextResponse.json(contracts)
   } catch (error) {
@@ -211,6 +236,9 @@ export async function POST(request: NextRequest) {
         notes: 'إنشاء العقد'
       }
     })
+
+    // حذف الـ cache لتحديثه
+    invalidateContractCache()
 
     return NextResponse.json(contract, { status: 201 })
   } catch (error) {
@@ -313,6 +341,9 @@ export async function PUT(request: NextRequest) {
       }
     })
 
+    // حذف الـ cache لتحديثه
+    invalidateContractCache()
+
     return NextResponse.json(updatedContract)
   } catch (error) {
     console.error('❌ خطأ في تحديث العقد:', error)
@@ -352,6 +383,9 @@ export async function DELETE(request: NextRequest) {
     await prisma.newContract.delete({
       where: { id: parseInt(id) }
     })
+
+    // حذف الـ cache لتحديثه
+    invalidateContractCache()
 
     return NextResponse.json({ message: 'تم حذف العقد بنجاح' })
   } catch (error) {

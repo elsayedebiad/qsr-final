@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import ThemeForcer from '@/components/ThemeForcer';
 import Script from 'next/script';
 import "./globals.css";
+import "@/styles/animations.css";
 
 const cairo = Cairo({
   variable: "--font-cairo",

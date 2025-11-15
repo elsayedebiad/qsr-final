@@ -278,7 +278,14 @@ const nextConfig: NextConfig = {
       },
     ],
     unoptimized: true,
+    formats: ['image/webp'],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 يوم
   },
+  // تحسينات الأداء
+  compress: true, // تفعيل ضغط gzip
+  poweredByHeader: false, // إخفاء header
+  reactStrictMode: true,
+  swcMinify: true, // استخدام SWC للضغط (أسرع)
   env: {
     DATABASE_URL: process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET || "your-super-secret-jwt-key-change-this-in-production-2024",

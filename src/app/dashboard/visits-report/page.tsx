@@ -11,6 +11,7 @@ import DashboardLayout from '@/components/DashboardLayout'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { formatSalesPageName } from '@/lib/sales-pages-config'
+import { AnimatedStatCard } from '@/components/AnimatedNumber'
 
 interface Visit {
   id: number
@@ -703,52 +704,47 @@ export default function VisitsReportPage() {
             </div>
           </div>
 
-          {/* Summary Cards */}
+          {/* Summary Cards - مع Animation احترافي */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {/* إجمالي الزيارات */}
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md p-6 text-white">
-              <div className="flex items-center justify-between mb-2">
-                <Users className="h-8 w-8" />
-                <span className="text-4xl font-bold" dir="ltr">{formatNumber(stats.summary.totalVisits)}</span>
-              </div>
-              <h3 className="text-sm opacity-90">إجمالي الزيارات</h3>
-            </div>
-
-            {/* زيارات اليوم */}
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-md p-6 text-white">
-              <div className="flex items-center justify-between mb-2">
-                <Calendar className="h-8 w-8" />
-                <span className="text-4xl font-bold" dir="ltr">{formatNumber(stats.summary.todayVisits)}</span>
-              </div>
-              <h3 className="text-sm opacity-90">زيارات اليوم</h3>
-            </div>
-
-            {/* هذا الأسبوع */}
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md p-6 text-white">
-              <div className="flex items-center justify-between mb-2">
-                <TrendingUp className="h-8 w-8" />
-                <span className="text-4xl font-bold" dir="ltr">{formatNumber(stats.summary.weekVisits)}</span>
-              </div>
-              <h3 className="text-sm opacity-90">هذا الأسبوع</h3>
-            </div>
-
-            {/* من Google */}
-            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-md p-6 text-white">
-              <div className="flex items-center justify-between mb-2">
-                <Globe className="h-8 w-8" />
-                <span className="text-4xl font-bold" dir="ltr">{formatNumber(stats.summary.googleVisits)}</span>
-              </div>
-              <h3 className="text-sm opacity-90">من Google</h3>
-            </div>
-
-            {/* مصادر أخرى */}
-            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-md p-6 text-white">
-              <div className="flex items-center justify-between mb-2">
-                <BarChart3 className="h-8 w-8" />
-                <span className="text-4xl font-bold" dir="ltr">{formatNumber(stats.summary.otherVisits)}</span>
-              </div>
-              <h3 className="text-sm opacity-90">مصادر أخرى</h3>
-            </div>
+            <AnimatedStatCard
+              title="إجمالي الزيارات"
+              value={stats.summary.totalVisits}
+              icon={<Users className="h-8 w-8" />}
+              gradient="bg-gradient-to-br from-blue-500 to-blue-600"
+              delay={0}
+            />
+            
+            <AnimatedStatCard
+              title="زيارات اليوم"
+              value={stats.summary.todayVisits}
+              icon={<Calendar className="h-8 w-8" />}
+              gradient="bg-gradient-to-br from-green-500 to-green-600"
+              delay={50}
+            />
+            
+            <AnimatedStatCard
+              title="هذا الأسبوع"
+              value={stats.summary.weekVisits}
+              icon={<TrendingUp className="h-8 w-8" />}
+              gradient="bg-gradient-to-br from-purple-500 to-purple-600"
+              delay={100}
+            />
+            
+            <AnimatedStatCard
+              title="من Google"
+              value={stats.summary.googleVisits}
+              icon={<Globe className="h-8 w-8" />}
+              gradient="bg-gradient-to-br from-red-500 to-red-600"
+              delay={150}
+            />
+            
+            <AnimatedStatCard
+              title="مصادر أخرى"
+              value={stats.summary.otherVisits}
+              icon={<BarChart3 className="h-8 w-8" />}
+              gradient="bg-gradient-to-br from-orange-500 to-orange-600"
+              delay={200}
+            />
           </div>
 
           {/* Recent Visits */}
