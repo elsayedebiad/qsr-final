@@ -188,6 +188,28 @@
   animation: shimmer 2s infinite;
 }
 
+/* Shimmer Effect للـ Skeleton Loading */
+@keyframes shimmerEffect {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.shimmer {
+  animation: shimmerEffect 2s infinite linear;
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    rgba(255, 255, 255, 0.1) 20%,
+    var(--muted) 40%,
+    var(--muted) 100%
+  );
+  background-size: 1000px 100%;
+}
+
 /* تأثير توهج AI */
 @keyframes ai-glow {
   0%, 100% {
@@ -1254,6 +1276,55 @@ input[type="checkbox"]:indeterminate {
   }
   75% {
     transform: translateY(20px) translateX(10px) scale(1.05);
+  }
+}
+
+/* Responsive Design Utilities */
+@media (max-width: 640px) {
+  /* Mobile optimizations */
+  .modal-content {
+    max-width: 95vw !important;
+    max-height: 95vh !important;
+    margin: 0.5rem;
+  }
+  
+  /* Smaller text on mobile */
+  h1 {
+    font-size: 1.25rem !important;
+  }
+  
+  h2 {
+    font-size: 1.125rem !important;
+  }
+  
+  /* Better touch targets */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Compact tables */
+  table {
+    font-size: 0.75rem;
+  }
+  
+  /* Stack filters vertically */
+  .filters-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  /* Tablet optimizations */
+  .modal-content {
+    max-width: 90vw;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Small desktop optimizations */
+  .modal-content {
+    max-width: 80vw;
   }
 }
 

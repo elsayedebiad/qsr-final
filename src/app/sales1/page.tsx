@@ -23,7 +23,10 @@ import {
   Image as ImageIcon,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  RefreshCw,
+  AlertTriangle,
+  Camera
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
@@ -1399,6 +1402,33 @@ export default function Sales1Page() {
         </header>
 
         <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 w-full">
+          {/* إشعار للسير المعادة */}
+          {filteredCvs.some(cv => cv.status === 'RETURNED') && (
+            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-2xl p-4 sm:p-6 mb-6 shadow-lg mt-6 animate-slideUp">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="bg-gradient-to-br from-orange-400 to-yellow-500 rounded-xl p-2 sm:p-3 flex-shrink-0 shadow-md">
+                  <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-base sm:text-lg font-bold text-orange-900">سير ذاتية معادة من العقود</h3>
+                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
+                      {filteredCvs.filter(cv => cv.status === 'RETURNED').length}
+                    </span>
+                  </div>
+                  <p className="text-gray-700 text-xs sm:text-sm leading-relaxed">
+                    يوجد <strong className="text-orange-700">{filteredCvs.filter(cv => cv.status === 'RETURNED').length}</strong> سيرة ذاتية تم إعادتها من العقود. 
+                    هذه السير متاحة للتعاقد مرة أخرى ويمكنك التواصل بشأنها.
+                  </p>
+                  <div className="mt-3 flex items-center gap-2 text-xs text-orange-800">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>السير المعادة مميزة بخلفية برتقالية في القائمة</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Header القديم للمستخدمين المسجلين - مخفي الآن */}
           {false && isLoggedIn && (
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6 mb-6">
@@ -2039,6 +2069,55 @@ export default function Sales1Page() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ملاحظات هامة */}
+        <div className="mb-8">
+          <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            {/* رأس البطاقة */}
+            <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 p-3">
+              <div className="flex items-center justify-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-white animate-pulse" />
+                <h3 className="text-white font-bold text-lg">ملاحظات هامة</h3>
+                <AlertTriangle className="h-5 w-5 text-white animate-pulse" />
+              </div>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              {/* الملاحظة الأولى */}
+              <div className="flex items-start gap-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-full p-2 shadow-md">
+                    <Camera className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-amber-900 font-bold text-sm mb-1">بخصوص الصور</h4>
+                  <p className="text-amber-800 text-sm leading-relaxed">
+                    صور العاملات الموجودة على هذا الموقع معدّلة باستخدام الذكاء الاصطناعي، وهي للعرض التوضيحي فقط
+                  </p>
+                </div>
+              </div>
+              
+              {/* الملاحظة الثانية */}
+              <div className="flex items-start gap-3 bg-gradient-to-r from-red-50 to-rose-50 rounded-xl p-4 border border-red-200 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-full p-2 shadow-md animate-pulse">
+                    <X className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-red-900 font-bold text-sm mb-1">خدماتنا</h4>
+                  <p className="text-red-800 text-sm leading-relaxed">
+                    لا يوجد لدينا إيجار عاملات - نحن نقدم خدمات الاستقدام فقط
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* شريط ديكوري في الأسفل */}
+            <div className="h-1 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600"></div>
           </div>
         </div>
 

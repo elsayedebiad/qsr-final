@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
+import { useDebounce } from 'use-debounce'
 import DashboardLayout from '@/components/DashboardLayout'
 import { 
   FileText, 
@@ -155,11 +156,14 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300) // تأخير 300ms للبحث
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [salesRepFilter, setSalesRepFilter] = useState<string>('')
   const [officeFilter, setOfficeFilter] = useState<string>('')
   const [creatorFilter, setCreatorFilter] = useState<string>('')
   const [issueFilter, setIssueFilter] = useState<string>('')
+  const [dateFromFilter, setDateFromFilter] = useState<string>('')
+  const [dateToFilter, setDateToFilter] = useState<string>('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -180,10 +184,19 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   const [newFollowUpNote, setNewFollowUpNote] = useState('')
   const [isAddingNote, setIsAddingNote] = useState(false)
   
-  // قوائم فريدة للفلاتر
-  const uniqueSalesReps = Array.from(new Set(contracts.map(c => c.salesRepName).filter(Boolean))).sort()
-  const uniqueOffices = Array.from(new Set(contracts.map(c => c.office).filter(Boolean))).sort()
-  const uniqueCreators = Array.from(new Set(contracts.map(c => c.createdBy?.name).filter(Boolean))).sort()
+  // قوائم فريدة للفلاتر - محسّنة بـ useMemo
+  const uniqueSalesReps = useMemo(() => 
+    Array.from(new Set(contracts.map(c => c.salesRepName).filter(Boolean))).sort(),
+    [contracts]
+  )
+  const uniqueOffices = useMemo(() => 
+    Array.from(new Set(contracts.map(c => c.office).filter(Boolean))).sort(),
+    [contracts]
+  )
+  const uniqueCreators = useMemo(() => 
+    Array.from(new Set(contracts.map(c => c.createdBy?.name).filter(Boolean))).sort(),
+    [contracts]
+  )
 
   // بيانات النموذج
   const [formData, setFormData] = useState({
@@ -208,8 +221,8 @@ function AddContractsPageContent({ userData }: { userData: any }) {
     cvIssueType: ''
   })
 
-  // جلب البيانات
-  const fetchData = async (showLoading = true) => {
+  // جلب البيانات - محسّنة بـ useCallback
+  const fetchData = useCallback(async (showLoading = true) => {
     if (showLoading) {
       setIsLoading(true)
     }
@@ -245,19 +258,19 @@ function AddContractsPageContent({ userData }: { userData: any }) {
         setIsLoading(false)
       }
     }
-  }
+  }, [selectedContractForView])
 
   useEffect(() => {
     fetchData()
   }, [])
 
-  // فلترة العقود
+  // فلترة العقود - محسّنة بـ debouncing
   useEffect(() => {
     let filtered = contracts
 
-    // فلتر البحث - بحث شامل في جميع البيانات
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
+    // فلتر البحث - بحث شامل في جميع البيانات (مع debouncing)
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase()
       filtered = filtered.filter(contract =>
         contract.contractNumber.toLowerCase().includes(term) ||
         contract.clientName.toLowerCase().includes(term) ||
@@ -313,11 +326,36 @@ function AddContractsPageContent({ userData }: { userData: any }) {
       })
     }
 
-    setFilteredContracts(filtered)
-  }, [searchTerm, statusFilter, salesRepFilter, officeFilter, creatorFilter, issueFilter, contracts])
+    // فلتر التاريخ (من - إلى)
+    if (dateFromFilter || dateToFilter) {
+      filtered = filtered.filter(contract => {
+        const contractDate = new Date(contract.createdAt)
+        contractDate.setHours(0, 0, 0, 0) // إزالة الوقت للمقارنة بالتاريخ فقط
+        
+        if (dateFromFilter && dateToFilter) {
+          const fromDate = new Date(dateFromFilter)
+          fromDate.setHours(0, 0, 0, 0)
+          const toDate = new Date(dateToFilter)
+          toDate.setHours(23, 59, 59, 999)
+          return contractDate >= fromDate && contractDate <= toDate
+        } else if (dateFromFilter) {
+          const fromDate = new Date(dateFromFilter)
+          fromDate.setHours(0, 0, 0, 0)
+          return contractDate >= fromDate
+        } else if (dateToFilter) {
+          const toDate = new Date(dateToFilter)
+          toDate.setHours(23, 59, 59, 999)
+          return contractDate <= toDate
+        }
+        return true
+      })
+    }
 
-  // البحث عن السيرة الذاتية برقم الجواز
-  const searchCVByPassport = async (passportNumber: string) => {
+    setFilteredContracts(filtered)
+  }, [debouncedSearchTerm, statusFilter, salesRepFilter, officeFilter, creatorFilter, issueFilter, dateFromFilter, dateToFilter, contracts])
+
+  // البحث عن السيرة الذاتية برقم الجواز - محسّنة بـ useCallback
+  const searchCVByPassport = useCallback(async (passportNumber: string) => {
     if (!passportNumber || passportNumber.trim() === '') {
       setSelectedCV(null)
       setCvSearchMessage('')
@@ -357,24 +395,24 @@ function AddContractsPageContent({ userData }: { userData: any }) {
     } finally {
       setIsSearchingCV(false)
     }
-  }
+  }, [user])
 
-  // حساب عدد الأيام
-  const calculateDays = (date: string) => {
+  // حساب عدد الأيام - محسّنة بـ useCallback
+  const calculateDays = useCallback((date: string) => {
     return differenceInDays(new Date(), new Date(date))
-  }
+  }, [])
 
-  // تنسيق التاريخ
-  const formatDate = (dateString: string) => {
+  // تنسيق التاريخ - محسّنة بـ useCallback
+  const formatDate = useCallback((dateString: string) => {
     try {
       return format(new Date(dateString), 'dd/MM/yyyy', { locale: ar })
     } catch {
       return 'غير محدد'
     }
-  }
+  }, [])
 
-  // إضافة ملاحظة متابعة جديدة
-  const handleAddFollowUpNote = async (contractId: number) => {
+  // إضافة ملاحظة متابعة جديدة - محسّنة بـ useCallback
+  const handleAddFollowUpNote = useCallback(async (contractId: number) => {
     if (!newFollowUpNote.trim()) {
       toast.error('الرجاء كتابة الملاحظة')
       return
@@ -394,10 +432,19 @@ function AddContractsPageContent({ userData }: { userData: any }) {
       if (response.ok) {
         const noteData = await response.json()
         toast.success('✅ تم إضافة الملاحظة بنجاح')
+        
+        // تحديث المودال مباشرة بالملاحظة الجديدة
+        if (selectedContractForView) {
+          setSelectedContractForView({
+            ...selectedContractForView,
+            followUpNotesHistory: [noteData.note, ...(selectedContractForView.followUpNotesHistory || [])]
+          })
+        }
+        
         setNewFollowUpNote('')
         
-        // تحديث البيانات بدون loading (سيحدث المودال تلقائياً من fetchData)
-        await fetchData(false)
+        // تحديث البيانات في الخلفية
+        fetchData(false)
         
         // التمرير للملاحظة الجديدة بعد تحديث الواجهة
         setTimeout(() => {
@@ -420,7 +467,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
     } finally {
       setIsAddingNote(false)
     }
-  }
+  }, [newFollowUpNote, selectedContractForView, user, fetchData, formatDate])
 
   // إضافة عقد جديد
   const handleSubmit = async (e: React.FormEvent) => {
@@ -773,42 +820,97 @@ function AddContractsPageContent({ userData }: { userData: any }) {
     }
   }
 
+  // مكون Shimmer Skeleton
+  const ShimmerSkeleton = () => (
+    <div className="space-y-6 animate-pulse">
+      {/* Header Skeleton */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-r from-muted via-muted/50 to-muted rounded-lg shimmer"></div>
+          <div className="space-y-2">
+            <div className="h-7 w-40 bg-gradient-to-r from-muted via-muted/50 to-muted rounded shimmer"></div>
+            <div className="h-4 w-56 bg-gradient-to-r from-muted via-muted/50 to-muted rounded shimmer"></div>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-36 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-lg shimmer"></div>
+          <div className="h-10 w-20 bg-gradient-to-r from-muted via-muted/50 to-muted rounded-lg shimmer"></div>
+        </div>
+      </div>
+
+      {/* Filters Skeleton */}
+      <div className="bg-card p-6 rounded-lg border border-border space-y-4">
+        <div className="h-5 w-32 bg-gradient-to-r from-muted via-muted/50 to-muted rounded shimmer"></div>
+        <div className="h-12 w-full bg-gradient-to-r from-muted via-muted/50 to-muted rounded-lg shimmer"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-11 bg-gradient-to-r from-muted via-muted/50 to-muted rounded-lg shimmer"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-11 bg-gradient-to-r from-muted via-muted/50 to-muted rounded-lg shimmer"></div>
+          ))}
+        </div>
+      </div>
+
+      {/* Table Skeleton */}
+      <div className="bg-card border-2 border-border rounded-2xl overflow-hidden">
+        {/* Table Header */}
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-b-2 border-primary/20 p-4">
+          <div className="grid grid-cols-12 gap-3">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+              <div key={i} className="h-4 bg-gradient-to-r from-muted via-muted/50 to-muted rounded shimmer"></div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Table Rows */}
+        <div className="divide-y divide-border/50">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((row) => (
+            <div key={row} className="p-4">
+              <div className="grid grid-cols-12 gap-3 items-center">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((col) => (
+                  <div key={col} className="h-6 bg-gradient-to-r from-muted via-muted/50 to-muted rounded shimmer"></div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
   if (isLoading) {
     return (
       <DashboardLayout>
-        {() => (
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <div className="spinner w-32 h-32 mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">جاري تحميل البيانات...</p>
-            </div>
-          </div>
-        )}
+        {() => <ShimmerSkeleton />}
       </DashboardLayout>
     )
   }
 
   return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center">
-                <FileText className="h-8 w-8 text-primary ml-3" />
+                <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-primary ml-2 sm:ml-3" />
                 <div>
-                  <h1 className="text-2xl font-bold text-foreground">إضافة العقود</h1>
-                  <p className="text-muted-foreground">إدارة ومتابعة العقود الجديدة</p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">إضافة العقود</h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground">إدارة ومتابعة العقود الجديدة</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
                 <button
                   onClick={() => router.push('/dashboard/add-contract')}
-                  className="bg-primary hover:opacity-90 text-white px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all shadow-lg"
+                  className="bg-primary hover:opacity-90 text-white px-3 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center gap-1 sm:gap-2 transition-all shadow-lg text-sm sm:text-base flex-1 sm:flex-initial justify-center"
                 >
-                  <Plus className="h-5 w-5" />
-                  إضافة عقد جديد
+                  <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="hidden sm:inline">إضافة عقد جديد</span>
+                  <span className="sm:hidden">إضافة</span>
                 </button>
-                <div className="bg-primary/10 px-4 py-2 rounded-lg">
-                  <span className="text-primary font-semibold">
+                <div className="bg-primary/10 px-3 sm:px-4 py-2 rounded-lg">
+                  <span className="text-primary font-semibold text-sm sm:text-base">
                     {filteredContracts.length} عقد
                   </span>
                 </div>
@@ -816,10 +918,10 @@ function AddContractsPageContent({ userData }: { userData: any }) {
             </div>
 
             {/* Filters */}
-            <div className="bg-card p-6 rounded-lg border border-border space-y-4 shadow-sm">
+            <div className="bg-card p-3 sm:p-6 rounded-lg border border-border space-y-3 sm:space-y-4 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-foreground">الفلاتر والبحث</h3>
-                {(searchTerm || statusFilter || salesRepFilter || officeFilter || creatorFilter || issueFilter) && (
+                {(searchTerm || statusFilter || salesRepFilter || officeFilter || creatorFilter || issueFilter || dateFromFilter || dateToFilter) && (
                   <button
                     onClick={() => {
                       setSearchTerm('')
@@ -828,6 +930,8 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                       setOfficeFilter('')
                       setCreatorFilter('')
                       setIssueFilter('')
+                      setDateFromFilter('')
+                      setDateToFilter('')
                     }}
                     className="text-xs text-destructive hover:text-destructive/80 flex items-center gap-1"
                   >
@@ -845,8 +949,14 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                   placeholder="بحث شامل: رقم العقد، العميل، الجواز، الهوية، المهنة، الدولة، المكتب، الحالة، الملاحظات..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pr-12 pl-4 py-3 bg-gradient-to-r from-primary/5 to-transparent border-2 border-primary/30 rounded-lg text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  className="w-full pr-12 pl-12 py-3 bg-gradient-to-r from-primary/5 to-transparent border-2 border-primary/30 rounded-lg text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                 />
+                {/* مؤشر البحث */}
+                {searchTerm && searchTerm !== debouncedSearchTerm && (
+                  <div className="absolute left-12 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                  </div>
+                )}
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
@@ -897,9 +1007,36 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                   </button>
                 </div>
               )}
+              {(dateFromFilter || dateToFilter) && (
+                <div className="flex items-center justify-between gap-2 text-xs bg-blue-500/10 px-3 py-2 rounded-lg border border-blue-500/30">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                    <span className="font-semibold text-blue-600">
+                      📅 فلتر التاريخ: 
+                      {dateFromFilter && dateToFilter ? (
+                        <span> من {formatDate(dateFromFilter)} إلى {formatDate(dateToFilter)}</span>
+                      ) : dateFromFilter ? (
+                        <span> من {formatDate(dateFromFilter)}</span>
+                      ) : (
+                        <span> حتى {formatDate(dateToFilter)}</span>
+                      )}
+                    </span>
+                    <span className="text-muted-foreground">({filteredContracts.length} عقد)</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setDateFromFilter('')
+                      setDateToFilter('')
+                    }}
+                    className="text-blue-600 hover:text-blue-700 font-semibold"
+                  >
+                    إلغاء الفلتر ✕
+                  </button>
+                </div>
+              )}
 
-              {/* الفلاتر */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* الفلاتر الأساسية */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
                 {/* فلتر الحالة */}
                 <select
                   value={statusFilter}
@@ -961,6 +1098,55 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                 </select>
               </div>
 
+              {/* فلتر التاريخ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 pt-2">
+                {/* من تاريخ */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-muted-foreground mr-1">📅 من تاريخ</label>
+                    {dateFromFilter && (
+                      <button
+                        onClick={() => setDateFromFilter('')}
+                        className="text-xs text-destructive hover:text-destructive/80 flex items-center gap-1 transition-colors"
+                        title="مسح التاريخ"
+                      >
+                        <X className="h-3 w-3" />
+                        مسح
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="date"
+                    value={dateFromFilter}
+                    onChange={(e) => setDateFromFilter(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  />
+                </div>
+
+                {/* إلى تاريخ */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-muted-foreground mr-1">📅 إلى تاريخ</label>
+                    {dateToFilter && (
+                      <button
+                        onClick={() => setDateToFilter('')}
+                        className="text-xs text-destructive hover:text-destructive/80 flex items-center gap-1 transition-colors"
+                        title="مسح التاريخ"
+                      >
+                        <X className="h-3 w-3" />
+                        مسح
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="date"
+                    value={dateToFilter}
+                    onChange={(e) => setDateToFilter(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  />
+                </div>
+              </div>
+
               {/* عداد النتائج */}
               <div className="flex items-center justify-between pt-3 border-t border-border">
                 <p className="text-sm text-muted-foreground">
@@ -974,23 +1160,23 @@ function AddContractsPageContent({ userData }: { userData: any }) {
               </div>
             </div>
             {/* جدول العقود */}
-            <div className="bg-card border-2 border-border overflow-hidden rounded-2xl shadow-xl">
-              <div className="overflow-x-auto">
-                <table className="w-full">
+            <div className="bg-card border border-border sm:border-2 overflow-hidden rounded-lg sm:rounded-2xl shadow-lg sm:shadow-xl">
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <table className="w-full min-w-[800px]">
                   <thead className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-b-2 border-primary/20">
                     <tr>
-                      <th className="px-4 py-4 text-right text-xs font-extrabold text-foreground tracking-wide">رقم العقد</th>
-                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">الجواز</th>
-                      <th className="px-4 py-4 text-right text-xs font-extrabold text-foreground tracking-wide">العميل</th>
-                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">الدولة</th>
-                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">ممثل المبيعات</th>
-                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">المكتب</th>
-                      <th className="px-4 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">الحالة</th>
-                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">التاريخ</th>
-                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">الأيام</th>
-                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">المنشئ</th>
-                      <th className="px-3 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">تنبيه</th>
-                      <th className="px-4 py-4 text-center text-xs font-extrabold text-foreground tracking-wide">إجراءات</th>
+                      <th className="px-2 sm:px-4 py-3 sm:py-4 text-right text-xs font-extrabold text-foreground tracking-wide">رقم العقد</th>
+                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden md:table-cell">الجواز</th>
+                      <th className="px-2 sm:px-4 py-3 sm:py-4 text-right text-xs font-extrabold text-foreground tracking-wide">العميل</th>
+                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden lg:table-cell">الدولة</th>
+                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden xl:table-cell">ممثل المبيعات</th>
+                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden lg:table-cell">المكتب</th>
+                      <th className="px-2 sm:px-4 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide">الحالة</th>
+                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden md:table-cell">التاريخ</th>
+                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden sm:table-cell">الأيام</th>
+                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden xl:table-cell">المنشئ</th>
+                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden md:table-cell">تنبيه</th>
+                      <th className="px-2 sm:px-4 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide">إجراءات</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
@@ -1017,40 +1203,40 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                       
                       return (
                         <tr key={contract.id} className="hover:bg-primary/5 transition-all duration-200 group">
-                          <td className="px-4 py-4">
-                            <div className="text-sm font-bold text-primary">{contract.contractNumber}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <td className="px-2 sm:px-4 py-3 sm:py-4">
+                            <div className="text-xs sm:text-sm font-bold text-primary">{contract.contractNumber}</div>
+                            <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
                               <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50"></span>
                               {contract.contractType === 'SPECIFIC' ? 'معين' : 'مواصفات'}
                             </div>
                           </td>
-                          <td className="px-3 py-4 text-center">
+                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden md:table-cell">
                             <div className="text-xs font-mono font-bold text-foreground bg-muted/50 px-2 py-1 rounded inline-block">
                               {contract.passportNumber || contract.workerPassportNumber || '-'}
                             </div>
                           </td>
-                          <td className="px-4 py-4">
-                            <div className="text-sm font-bold text-foreground">{contract.clientName}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
+                          <td className="px-2 sm:px-4 py-3 sm:py-4">
+                            <div className="text-xs sm:text-sm font-bold text-foreground">{contract.clientName}</div>
+                            <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                               {contract.profession}
                             </div>
                           </td>
-                          <td className="px-3 py-4 text-center">
+                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden lg:table-cell">
                             <div className="text-xs font-semibold text-foreground bg-primary/5 px-2 py-1 rounded-md inline-block">
                               {contract.countryName}
                             </div>
                           </td>
-                          <td className="px-3 py-4 text-center">
+                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden xl:table-cell">
                             <div className="text-xs font-semibold text-foreground">
                               {contract.salesRepName}
                             </div>
                           </td>
-                          <td className="px-3 py-4 text-center">
+                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden lg:table-cell">
                             <div className="text-xs text-muted-foreground">
                               {contract.office}
                             </div>
                           </td>
-                          <td className="px-4 py-4 text-center">
+                          <td className="px-2 sm:px-4 py-3 sm:py-4 text-center">
                             <div className="flex flex-col items-center gap-1.5">
                               <div className={`text-xs font-bold px-3 py-1.5 rounded-full border ${getStatusColor(contract.status)} shadow-sm`}>
                                 {CONTRACT_STATUSES[contract.status]}
@@ -1064,13 +1250,13 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                               </button>
                             </div>
                           </td>
-                          <td className="px-3 py-4 text-center">
+                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden md:table-cell">
                             <div className="text-xs font-semibold text-foreground">
                               {format(new Date(contract.createdAt), 'dd/MM/yy', { locale: ar })}
                             </div>
                           </td>
-                          <td className="px-3 py-4 text-center">
-                            <div className={`text-sm font-extrabold px-2 py-1 rounded-lg inline-block ${
+                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden sm:table-cell">
+                            <div className={`text-xs sm:text-sm font-extrabold px-2 py-1 rounded-lg inline-block ${
                               daysSinceCreation >= 40 ? 'bg-red-500/20 text-red-700' :
                               daysSinceCreation >= 20 ? 'bg-orange-500/20 text-orange-700' :
                               'bg-green-500/20 text-green-700'
@@ -1079,59 +1265,59 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                             </div>
                             <div className="text-[10px] text-muted-foreground mt-0.5">يوم</div>
                           </td>
-                          <td className="px-3 py-4 text-center">
+                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden xl:table-cell">
                             <div className="text-xs font-semibold text-foreground">
                               {contract.createdBy?.name || '-'}
                             </div>
                           </td>
-                          <td className="px-3 py-4 text-center">
+                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden md:table-cell">
                             {contract.hasCVIssue ? (
                               <div className="inline-flex items-center gap-1 text-xs text-destructive font-bold bg-destructive/10 px-2 py-1 rounded-full border border-destructive/30">
                                 <AlertTriangle className="h-3 w-3" />
-                                {contract.cvIssueType}
+                                <span className="hidden lg:inline">{contract.cvIssueType}</span>
                               </div>
                             ) : (
                               <div className="inline-flex items-center gap-1 text-xs text-success font-bold bg-success/10 px-2 py-1 rounded-full border border-success/30">
                                 <CheckCircle className="h-3 w-3" />
-                                سليم
+                                <span className="hidden lg:inline">سليم</span>
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-4 text-center">
-                            <div className="flex gap-1.5 justify-center">
+                          <td className="px-2 sm:px-4 py-3 sm:py-4 text-center">
+                            <div className="flex gap-1 sm:gap-1.5 justify-center">
                               <button
                                 onClick={() => {
                                   setSelectedContractForView(contract)
                                   setShowViewDetailsModal(true)
                                 }}
-                                className="p-2 bg-green-500/10 text-green-600 hover:bg-green-500/20 rounded-lg transition-all hover:scale-110 shadow-sm"
+                                className="p-1.5 sm:p-2 bg-green-500/10 text-green-600 hover:bg-green-500/20 rounded-lg transition-all hover:scale-110 shadow-sm"
                                 title="عرض"
                               >
-                                <Eye className="h-4 w-4" />
+                                <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                               </button>
                               <button
                                 onClick={() => openStatusEditModal(contract)}
-                                className="p-2 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 rounded-lg transition-all hover:scale-110 shadow-sm"
-                                title="تغيير الحالة"
+                                className="p-1.5 sm:p-2 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 rounded-lg transition-all hover:scale-110 shadow-sm"
+                                title="تعديل الحالة"
                               >
-                                <RefreshCw className="h-4 w-4" />
+                                <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                               </button>
                               <button
                                 onClick={() => openEditModal(contract)}
-                                className="p-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-all hover:scale-110 shadow-sm"
+                                className="p-1.5 sm:p-2 bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 rounded-lg transition-all hover:scale-110 shadow-sm"
                                 title="تعديل"
                               >
-                                <Edit className="h-4 w-4" />
+                                <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                               </button>
                               <button
                                 onClick={() => {
                                   setSelectedContract(contract)
                                   setShowDeleteModal(true)
                                 }}
-                                className="p-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-all hover:scale-110 shadow-sm"
+                                className="p-1.5 sm:p-2 bg-red-500/10 text-red-600 hover:bg-red-500/20 rounded-lg transition-all hover:scale-110 shadow-sm"
                                 title="حذف"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                               </button>
                             </div>
                           </td>

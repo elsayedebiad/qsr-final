@@ -543,16 +543,16 @@ export default function ContractsPage() {
                 </div>
 
                 {/* صورة السيرة - عرض مباشر بسيط */}
-                <div className="bg-muted p-4 sm:p-8">
+                <div className="bg-muted p-4 sm:p-8 overflow-auto max-h-[80vh]">
                   {(selectedCVForView.cv.cvImageUrl || selectedCVForView.cv.profileImage) ? (
-                    <div className="relative w-full flex justify-center">
+                    <div className="relative w-full flex justify-center items-start">
                       <img
                         src={(() => {
                           // أولوية: cvImageUrl (صورة قالب السيرة الكامل)
                           if (selectedCVForView.cv.cvImageUrl) {
                             const fileId = selectedCVForView.cv.cvImageUrl.match(/[-\w]{25,}/)?.[0]
                             if (fileId) {
-                              return `https://images.weserv.nl/?url=${encodeURIComponent(`https://drive.google.com/uc?export=view&id=${fileId}`)}&w=2000&output=webp`
+                              return `https://images.weserv.nl/?url=${encodeURIComponent(`https://drive.google.com/uc?export=view&id=${fileId}`)}&w=1200&output=webp`
                             }
                             return selectedCVForView.cv.cvImageUrl
                           }
@@ -560,11 +560,10 @@ export default function ContractsPage() {
                           return processImageUrl(selectedCVForView.cv.profileImage)
                         })()}
                         alt={`سيرة ذاتية - ${selectedCVForView.cv.fullName}`}
-                        className="max-w-full h-auto shadow-2xl rounded-lg border border-border"
+                        className="w-full max-w-[800px] h-auto shadow-2xl rounded-lg border border-border"
                         style={{ 
-                          maxHeight: '2000px',
-                          width: 'auto',
-                          objectFit: 'contain'
+                          objectFit: 'contain',
+                          aspectRatio: 'auto'
                         }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
