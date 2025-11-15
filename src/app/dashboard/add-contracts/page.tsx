@@ -183,6 +183,8 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   const [selectedContractForView, setSelectedContractForView] = useState<Contract | null>(null)
   const [newFollowUpNote, setNewFollowUpNote] = useState('')
   const [isAddingNote, setIsAddingNote] = useState(false)
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null)
+  const [editingNoteText, setEditingNoteText] = useState('')
   
   // قوائم فريدة للفلاتر - محسّنة بـ useMemo
   const uniqueSalesReps = useMemo(() => 
@@ -2946,7 +2948,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                           selectedContractForView.followUpNotesHistory.map((note, index) => (
                             <div key={note.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow" id={index === 0 ? 'latest-note' : undefined}>
                               <div className="flex items-start justify-between gap-3 mb-2">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-1">
                                   <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                                     <User className="h-4 w-4 text-primary" />
                                   </div>
@@ -2955,12 +2957,116 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                                     <p className="text-xs text-muted-foreground">{note.createdBy.role}</p>
                                   </div>
                                 </div>
-                                <div className="text-left">
-                                  <p className="text-xs text-muted-foreground">{formatDate(note.createdAt)}</p>
-                                  <p className="text-xs text-muted-foreground">{format(new Date(note.createdAt), 'hh:mm a', { locale: ar })}</p>
+                                <div className="flex items-center gap-2">
+                                  <div className="text-left">
+                                    <p className="text-xs text-muted-foreground">{formatDate(note.createdAt)}</p>
+                                    <p className="text-xs text-muted-foreground">{format(new Date(note.createdAt), 'hh:mm a', { locale: ar })}</p>
+                                  </div>
+                                  {/* أزرار التعديل والحذف - للأدمن العام فقط */}
+                                  {userData?.role === 'ADMIN' && (
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => {
+                                          setEditingNoteId(note.id)
+                                          setEditingNoteText(note.note)
+                                        }}
+                                        className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                        title="تعديل الملاحظة"
+                                      >
+                                        <Edit className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          if (!confirm('هل أنت متأكد من حذف هذه الملاحظة؟')) return
+                                          
+                                          try {
+                                            const response = await fetch(`/api/new-contracts/${selectedContractForView.id}/notes/${note.id}`, {
+                                              method: 'DELETE'
+                                            })
+                                            
+                                            if (!response.ok) throw new Error('فشل حذف الملاحظة')
+                                            
+                                            toast.success('تم حذف الملاحظة بنجاح')
+                                            
+                                            // تحديث القائمة
+                                            setSelectedContractForView({
+                                              ...selectedContractForView,
+                                              followUpNotesHistory: selectedContractForView.followUpNotesHistory?.filter(n => n.id !== note.id)
+                                            })
+                                            
+                                            // تحديث قائمة العقود
+                                            await fetchData()
+                                          } catch (error) {
+                                            console.error('Error deleting note:', error)
+                                            toast.error('فشل حذف الملاحظة')
+                                          }
+                                        }}
+                                        className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                        title="حذف الملاحظة"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                              <p className="text-sm text-foreground whitespace-pre-wrap bg-muted/30 p-3 rounded-lg">{note.note}</p>
+                              {editingNoteId === note.id ? (
+                                <div className="space-y-2">
+                                  <textarea
+                                    value={editingNoteText}
+                                    onChange={(e) => setEditingNoteText(e.target.value)}
+                                    rows={3}
+                                    className="w-full px-3 py-2 bg-input border-2 border-blue-500 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          const response = await fetch(`/api/new-contracts/${selectedContractForView.id}/notes/${note.id}`, {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ note: editingNoteText })
+                                          })
+                                          
+                                          if (!response.ok) throw new Error('فشل تعديل الملاحظة')
+                                          
+                                          const data = await response.json()
+                                          toast.success('تم تعديل الملاحظة بنجاح')
+                                          
+                                          // تحديث القائمة
+                                          setSelectedContractForView({
+                                            ...selectedContractForView,
+                                            followUpNotesHistory: selectedContractForView.followUpNotesHistory?.map(n => 
+                                              n.id === note.id ? { ...n, note: editingNoteText } : n
+                                            )
+                                          })
+                                          
+                                          setEditingNoteId(null)
+                                          setEditingNoteText('')
+                                          await fetchData()
+                                        } catch (error) {
+                                          console.error('Error updating note:', error)
+                                          toast.error('فشل تعديل الملاحظة')
+                                        }
+                                      }}
+                                      className="px-4 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                                    >
+                                      حفظ
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingNoteId(null)
+                                        setEditingNoteText('')
+                                      }}
+                                      className="px-4 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
+                                    >
+                                      إلغاء
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-foreground whitespace-pre-wrap bg-muted/30 p-3 rounded-lg">{note.note}</p>
+                              )}
                             </div>
                           ))
                         ) : (
