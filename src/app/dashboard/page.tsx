@@ -197,7 +197,11 @@ export default function CVsPage() {
   const [skillFilters, setSkillFilters] = useState<string[]>([])
   const [showSkillsDropdown, setShowSkillsDropdown] = useState(false)
   const [maritalStatusFilter, setMaritalStatusFilter] = useState<string>('ALL')
-  const [ageFilter, setAgeFilter] = useState<string>('ALL')
+  const [minAge, setMinAge] = useState<number>(18)
+  const [maxAge, setMaxAge] = useState<number>(65)
+  const [minAgeInput, setMinAgeInput] = useState<string>('18')
+  const [maxAgeInput, setMaxAgeInput] = useState<string>('65')
+  const [ageFilterEnabled, setAgeFilterEnabled] = useState(false)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [experienceFilter, setExperienceFilter] = useState<string>('ALL')
   const [arabicLevelFilter, setArabicLevelFilter] = useState<string>('ALL')
@@ -409,14 +413,9 @@ export default function CVsPage() {
       const matchesMaritalStatus = maritalStatusFilter === 'ALL' || cv.maritalStatus === maritalStatusFilter
       
       // فلتر العمر
-      const matchesAge = ageFilter === 'ALL' || (() => {
+      const matchesAge = !ageFilterEnabled || (() => {
         if (!cv.age) return false
-        switch (ageFilter) {
-          case '21-30': return cv.age >= 21 && cv.age <= 30
-          case '30-40': return cv.age >= 30 && cv.age <= 40
-          case '40-50': return cv.age >= 40 && cv.age <= 50
-          default: return true
-        }
+        return cv.age >= minAge && cv.age <= maxAge
       })()
 
       // فلتر المهارات - اختيار متعدد
@@ -538,7 +537,7 @@ export default function CVsPage() {
              matchesMaritalStatus && matchesHeight &&
              matchesWeight && matchesLocation
     })
-  }, [cvs, searchTerm, religionFilter, nationalityFilter, ageFilter, 
+  }, [cvs, searchTerm, religionFilter, nationalityFilter, minAge, maxAge, ageFilterEnabled,
       skillFilters, arabicLevelFilter, englishLevelFilter, educationFilter,
       experienceFilter, maritalStatusFilter, heightFilter, weightFilter, locationFilter])
 
@@ -562,7 +561,9 @@ export default function CVsPage() {
     nationalityFilter,
     skillFilter,
     maritalStatusFilter,
-    ageFilter,
+    minAge,
+    maxAge,
+    ageFilterEnabled,
     experienceFilter,
     arabicLevelFilter,
     englishLevelFilter,
@@ -1680,16 +1681,119 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 ))}
               </select>
 
-              <select
-                className="w-full lg:flex-1 lg:min-w-[160px] px-3 sm:px-4 py-2 sm:py-2.5 bg-background border border-border rounded-lg text-xs sm:text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                value={ageFilter}
-                onChange={(e) => setAgeFilter(e.target.value)}
-              >
-                <option value="ALL">جميع الأعمار ({getCountForFilter('age', 'ALL')})</option>
-                <option value="21-30">21-30 سنة ({getCountForFilter('age', '21-30')})</option>
-                <option value="30-40">30-40 سنة ({getCountForFilter('age', '30-40')})</option>
-                <option value="40-50">40-50 سنة ({getCountForFilter('age', '40-50')})</option>
-              </select>
+              {/* Age Filter with Custom Range */}
+              <div className="w-full lg:flex-1 lg:min-w-[200px] bg-background border border-border rounded-lg p-3 hover:bg-muted transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={ageFilterEnabled}
+                      onChange={(e) => setAgeFilterEnabled(e.target.checked)}
+                      className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
+                    />
+                    فلتر العمر
+                  </label>
+                  {ageFilterEnabled && (
+                    <span className="text-xs text-muted-foreground">
+                      ({allFilteredCvs.length})
+                    </span>
+                  )}
+                </div>
+                
+                {ageFilterEnabled && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-muted-foreground block mb-1">من</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={minAgeInput}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            // السماح بالأرقام فقط أو فارغ
+                            if (value === '' || /^\d+$/.test(value)) {
+                              setMinAgeInput(value)
+                              // تحديث القيمة الفعلية فقط إذا كانت رقم صحيح
+                              if (value !== '') {
+                                const num = parseInt(value)
+                                if (num >= 18 && num <= 65) {
+                                  setMinAge(Math.min(num, maxAge))
+                                }
+                              }
+                            }
+                          }}
+                          onBlur={() => {
+                            // عند الخروج، تصحيح القيمة
+                            let finalValue = minAge
+                            if (minAgeInput === '' || parseInt(minAgeInput) < 18) {
+                              finalValue = 18
+                            } else if (parseInt(minAgeInput) > maxAge) {
+                              finalValue = maxAge
+                            }
+                            setMinAge(finalValue)
+                            setMinAgeInput(String(finalValue))
+                          }}
+                          onFocus={() => setMinAgeInput(String(minAge))}
+                          className="w-full px-2 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary text-center"
+                          placeholder="18"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground block mb-1">إلى</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={maxAgeInput}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            // السماح بالأرقام فقط أو فارغ
+                            if (value === '' || /^\d+$/.test(value)) {
+                              setMaxAgeInput(value)
+                              // تحديث القيمة الفعلية فقط إذا كانت رقم صحيح
+                              if (value !== '') {
+                                const num = parseInt(value)
+                                if (num >= 18 && num <= 65) {
+                                  setMaxAge(Math.max(num, minAge))
+                                }
+                              }
+                            }
+                          }}
+                          onBlur={() => {
+                            // عند الخروج، تصحيح القيمة
+                            let finalValue = maxAge
+                            if (maxAgeInput === '' || parseInt(maxAgeInput) > 65) {
+                              finalValue = 65
+                            } else if (parseInt(maxAgeInput) < minAge) {
+                              finalValue = minAge
+                            }
+                            setMaxAge(finalValue)
+                            setMaxAgeInput(String(finalValue))
+                          }}
+                          onFocus={() => setMaxAgeInput(String(maxAge))}
+                          className="w-full px-2 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary text-center"
+                          placeholder="65"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Visual Range Display */}
+                    <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                      <span>{minAge}</span>
+                      <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-primary to-primary/70"
+                          style={{
+                            marginLeft: `${((minAge - 18) / (65 - 18)) * 100}%`,
+                            width: `${((maxAge - minAge) / (65 - 18)) * 100}%`
+                          }}
+                        />
+                      </div>
+                      <span>{maxAge}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <select
                 className="w-full lg:flex-1 lg:min-w-[160px] px-3 sm:px-4 py-2 sm:py-2.5 bg-background border border-border rounded-lg text-xs sm:text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all"
