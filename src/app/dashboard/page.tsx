@@ -198,9 +198,7 @@ export default function CVsPage() {
   const [showSkillsDropdown, setShowSkillsDropdown] = useState(false)
   const [maritalStatusFilter, setMaritalStatusFilter] = useState<string>('ALL')
   const [minAge, setMinAge] = useState<number>(18)
-  const [maxAge, setMaxAge] = useState<number>(65)
-  const [minAgeInput, setMinAgeInput] = useState<string>('18')
-  const [maxAgeInput, setMaxAgeInput] = useState<string>('65')
+  const [maxAge, setMaxAge] = useState<number>(60)
   const [ageFilterEnabled, setAgeFilterEnabled] = useState(false)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [experienceFilter, setExperienceFilter] = useState<string>('ALL')
@@ -1705,75 +1703,41 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-xs text-muted-foreground block mb-1">من</label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={minAgeInput}
+                        <select
+                          value={minAge}
                           onChange={(e) => {
-                            const value = e.target.value
-                            // السماح بالأرقام فقط أو فارغ
-                            if (value === '' || /^\d+$/.test(value)) {
-                              setMinAgeInput(value)
-                              // تحديث القيمة الفعلية فقط إذا كانت رقم صحيح
-                              if (value !== '') {
-                                const num = parseInt(value)
-                                if (num >= 18 && num <= 65) {
-                                  setMinAge(Math.min(num, maxAge))
-                                }
-                              }
+                            const val = parseInt(e.target.value)
+                            setMinAge(val)
+                            // تأكد أن maxAge ليس أقل من minAge
+                            if (maxAge < val) {
+                              setMaxAge(val)
                             }
                           }}
-                          onBlur={() => {
-                            // عند الخروج، تصحيح القيمة
-                            let finalValue = minAge
-                            if (minAgeInput === '' || parseInt(minAgeInput) < 18) {
-                              finalValue = 18
-                            } else if (parseInt(minAgeInput) > maxAge) {
-                              finalValue = maxAge
-                            }
-                            setMinAge(finalValue)
-                            setMinAgeInput(String(finalValue))
-                          }}
-                          onFocus={() => setMinAgeInput(String(minAge))}
-                          className="w-full px-2 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary text-center"
-                          placeholder="18"
-                        />
+                          className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary text-center font-medium"
+                        >
+                          {Array.from({ length: 43 }, (_, i) => i + 18).map(age => (
+                            <option key={age} value={age}>{age}</option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label className="text-xs text-muted-foreground block mb-1">إلى</label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={maxAgeInput}
+                        <select
+                          value={maxAge}
                           onChange={(e) => {
-                            const value = e.target.value
-                            // السماح بالأرقام فقط أو فارغ
-                            if (value === '' || /^\d+$/.test(value)) {
-                              setMaxAgeInput(value)
-                              // تحديث القيمة الفعلية فقط إذا كانت رقم صحيح
-                              if (value !== '') {
-                                const num = parseInt(value)
-                                if (num >= 18 && num <= 65) {
-                                  setMaxAge(Math.max(num, minAge))
-                                }
-                              }
+                            const val = parseInt(e.target.value)
+                            setMaxAge(val)
+                            // تأكد أن minAge ليس أكبر من maxAge
+                            if (minAge > val) {
+                              setMinAge(val)
                             }
                           }}
-                          onBlur={() => {
-                            // عند الخروج، تصحيح القيمة
-                            let finalValue = maxAge
-                            if (maxAgeInput === '' || parseInt(maxAgeInput) > 65) {
-                              finalValue = 65
-                            } else if (parseInt(maxAgeInput) < minAge) {
-                              finalValue = minAge
-                            }
-                            setMaxAge(finalValue)
-                            setMaxAgeInput(String(finalValue))
-                          }}
-                          onFocus={() => setMaxAgeInput(String(maxAge))}
-                          className="w-full px-2 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary text-center"
-                          placeholder="65"
-                        />
+                          className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary text-center font-medium"
+                        >
+                          {Array.from({ length: 43 }, (_, i) => i + 18).map(age => (
+                            <option key={age} value={age}>{age}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                     
@@ -1784,8 +1748,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                         <div 
                           className="h-full bg-gradient-to-r from-primary to-primary/70"
                           style={{
-                            marginLeft: `${((minAge - 18) / (65 - 18)) * 100}%`,
-                            width: `${((maxAge - minAge) / (65 - 18)) * 100}%`
+                            marginLeft: `${((minAge - 18) / (60 - 18)) * 100}%`,
+                            width: `${((maxAge - minAge) / (60 - 18)) * 100}%`
                           }}
                         />
                       </div>

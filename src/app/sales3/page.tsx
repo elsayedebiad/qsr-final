@@ -167,7 +167,9 @@ export default function Sales3Page() {
   const [skillFilters, setSkillFilters] = useState<string[]>([]) // تحديد متعدد للمهارات
   const [showSkillsDropdown, setShowSkillsDropdown] = useState(false)
   const [maritalStatusFilter, setMaritalStatusFilter] = useState<string>('ALL')
-  const [ageFilter, setAgeFilter] = useState<string>('ALL')
+  const [minAge, setMinAge] = useState<number>(18)
+  const [maxAge, setMaxAge] = useState<number>(60)
+  const [ageFilterEnabled, setAgeFilterEnabled] = useState(false)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [experienceFilter, setExperienceFilter] = useState<string>('ALL')
   const [arabicLevelFilter, setArabicLevelFilter] = useState<string>('ALL')
@@ -939,7 +941,7 @@ export default function Sales3Page() {
   // إعادة ضبط حد العرض عند تغيير الفلاتر
   useEffect(() => {
     setDisplayLimit(20) // إعادة تعيين إلى 20 عند تغيير الفلتر
-  }, [searchTerm, statusFilter, nationalityFilter, skillFilters, ageFilter, 
+  }, [searchTerm, statusFilter, nationalityFilter, skillFilters, minAge, maxAge, ageFilterEnabled, 
       arabicLevelFilter, englishLevelFilter, religionFilter, educationFilter, positionFilter])
 
   // Scroll تلقائي عند تغيير الفلتر
@@ -1596,16 +1598,69 @@ export default function Sales3Page() {
                 ))}
               </select>
 
-              <select
-                className="flex-1 min-w-[160px] px-4 py-2.5 bg-blue-50 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                value={ageFilter}
-                onChange={(e) => setAgeFilter(e.target.value)}
-              >
-                <option value="ALL">جميع الأعمار ({cvs.length})</option>
-                <option value="21-30">21-30 سنة ({getCountForFilter('age', '21-30')})</option>
-                <option value="30-40">30-40 سنة ({getCountForFilter('age', '30-40')})</option>
-                <option value="40-50">40-50 سنة ({getCountForFilter('age', '40-50')})</option>
-              </select>
+              {/* فلتر العمر - من وإلى */}
+              <div className="flex-1 min-w-[200px] bg-blue-50 border border-blue-300 rounded-lg p-3 hover:bg-blue-100 transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold text-blue-700 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={ageFilterEnabled}
+                      onChange={(e) => setAgeFilterEnabled(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-blue-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <Calendar className="h-3.5 w-3.5" />
+                    فلتر العمر
+                  </label>
+                </div>
+                
+                {ageFilterEnabled && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-blue-600 block mb-1">من</label>
+                        <select
+                          value={minAge}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value)
+                            setMinAge(val)
+                            if (maxAge < val) {
+                              setMaxAge(val)
+                            }
+                          }}
+                          className="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-medium"
+                        >
+                          {Array.from({ length: 43 }, (_, i) => i + 18).map(age => (
+                            <option key={age} value={age}>{age}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-blue-600 block mb-1">إلى</label>
+                        <select
+                          value={maxAge}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value)
+                            setMaxAge(val)
+                            if (minAge > val) {
+                              setMinAge(val)
+                            }
+                          }}
+                          className="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-medium"
+                        >
+                          {Array.from({ length: 43 }, (_, i) => i + 18).map(age => (
+                            <option key={age} value={age}>{age}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    
+                    {/* عرض النطاق المحدد */}
+                    <div className="text-xs text-blue-700 font-medium text-center mt-1">
+                      {minAge} - {maxAge} سنة
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <select
                 className="flex-1 min-w-[160px] px-4 py-2.5 bg-pink-50 border border-pink-300 rounded-lg text-sm font-medium text-pink-700 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
@@ -1911,7 +1966,9 @@ export default function Sales3Page() {
                     setNationalityFilter('ALL')
                     setSkillFilters([])
                     setPositionFilter('ALL')
-                    setAgeFilter('ALL')
+                    setMinAge(18)
+                    setMaxAge(60)
+                    setAgeFilterEnabled(false)
                     setMaritalStatusFilter('ALL')
                     setArabicLevelFilter('ALL')
                     setEnglishLevelFilter('ALL')
