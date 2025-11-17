@@ -1909,47 +1909,42 @@ export default function Sales6Page() {
                   الفلاتر المتقدمة
                 </h3>
               </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* عرض المهارات المحددة كـ tags */}
-                  {skillFilters.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {skillFilters.map(skillId => {
-                        const skillLabels: Record<string, string> = {
-                          babySitting: 'رعاية أطفال',
-                          childrenCare: 'العناية بالأطفال',
-                          cleaning: 'تنظيف',
-                          arabicCooking: 'طبخ عربي',
-                          driving: 'قيادة',
-                          washing: 'غسيل',
-                          ironing: 'كي',
-                          tutoring: 'تدريس',
-                          disabledCare: 'رعاية كبار السن',
-                          sewing: 'خياطة'
-                        }
-                        return (
-                          <span
-                            key={skillId}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
-                          >
-                            {skillLabels[skillId]}
-                            <button
-                              onClick={() => toggleSkillFilter(skillId)}
-                              className="hover:text-blue-900"
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        )
-                      })}
-                    </div>
-                  )}
+
+              {/* عرض المهارات المحددة كـ tags */}
+              {skillFilters.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2 mb-4">
+                  {skillFilters.map(skillId => {
+                    const skillLabels: Record<string, string> = {
+                      babySitting: 'رعاية أطفال',
+                      childrenCare: 'العناية بالأطفال',
+                      cleaning: 'تنظيف',
+                      arabicCooking: 'طبخ عربي',
+                      driving: 'قيادة',
+                      washing: 'غسيل',
+                      ironing: 'كي',
+                      tutoring: 'تدريس',
+                      disabledCare: 'رعاية كبار السن',
+                      sewing: 'خياطة'
+                    }
+                    return (
+                      <span
+                        key={skillId}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
+                      >
+                        {skillLabels[skillId]}
+                        <button
+                          onClick={() => toggleSkillFilter(skillId)}
+                          className="hover:text-blue-900"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    )
+                  })}
                 </div>
+              )}
 
-
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label className="flex items-center text-sm font-semibold text-green-600 mb-2">
                     <Globe className="h-4 w-4 ml-2" /> مستوى العربية
