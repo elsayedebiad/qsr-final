@@ -167,9 +167,9 @@ export default function Sales3Page() {
   const [skillFilters, setSkillFilters] = useState<string[]>([]) // تحديد متعدد للمهارات
   const [showSkillsDropdown, setShowSkillsDropdown] = useState(false)
   const [maritalStatusFilter, setMaritalStatusFilter] = useState<string>('ALL')
-  const [minAge, setMinAge] = useState<number>(18)
+  const [minAge, setMinAge] = useState<number>(20)
   const [maxAge, setMaxAge] = useState<number>(60)
-  const [ageFilterEnabled, setAgeFilterEnabled] = useState(false)
+  const [ageFilterEnabled, setAgeFilterEnabled] = useState(true)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [experienceFilter, setExperienceFilter] = useState<string>('ALL')
   const [arabicLevelFilter, setArabicLevelFilter] = useState<string>('ALL')
@@ -1560,134 +1560,156 @@ export default function Sales3Page() {
 
           {/* الفلاتر السريعة - من الداشبورد */}
           <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
-            <div className="flex flex-wrap gap-3">
-              <select
-                className="flex-1 min-w-[160px] px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] transition-all"
-                value={religionFilter}
-                onChange={(e) => setReligionFilter(e.target.value)}
-              >
-                <option value="ALL">جميع الديانات ({cvs.length})</option>
-                <option value="مسلمة">مسلمة ({getCountForFilter('religion', 'مسلمة')})</option>
-                <option value="مسيحية">مسيحية ({getCountForFilter('religion', 'مسيحية')})</option>
-                <option value="أخرى">أخرى ({getCountForFilter('religion', 'أخرى')})</option>
-              </select>
-
-              <select
-                className="flex-1 min-w-[160px] px-4 py-2.5 bg-purple-50 border border-purple-300 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                value={positionFilter}
-                onChange={(e) => setPositionFilter(e.target.value)}
-              >
-                <option value="ALL">جميع الوظائف ({cvs.length})</option>
-                {uniquePositions.map(position => (
-                  <option key={position} value={position}>
-                    {position} ({getCountForFilter('position', position)})
-                  </option>
-                ))}
-              </select>
-
-              <select
-                className="flex-1 min-w-[160px] px-4 py-2.5 bg-green-50 border border-green-300 rounded-lg text-sm font-medium text-green-700 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-                value={nationalityFilter}
-                onChange={(e) => setNationalityFilter(e.target.value)}
-              >
-                <option value="ALL">جميع الجنسيات ({cvs.length})</option>
-                {uniqueNationalities.map(nationality => (
-                  <option key={nationality} value={nationality}>
-                    {nationality} ({getCountForFilter('nationality', nationality)})
-                  </option>
-                ))}
-              </select>
-
-              {/* فلتر العمر - من وإلى */}
-              <div className="flex-1 min-w-[200px] bg-blue-50 border border-blue-300 rounded-lg p-3 hover:bg-blue-100 transition-all">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold text-blue-700 flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={ageFilterEnabled}
-                      onChange={(e) => setAgeFilterEnabled(e.target.checked)}
-                      className="w-3.5 h-3.5 rounded border-blue-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <Calendar className="h-3.5 w-3.5" />
-                    فلتر العمر
-                  </label>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-gray-700">الدولة</label>
+                  <select
+                    className="w-full px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-sm font-medium text-green-700 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                    value={nationalityFilter}
+                    onChange={(e) => setNationalityFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع الجنسيات ({getCountForFilter('nationality', 'ALL')})</option>
+                    {uniqueNationalities.map(nationality => (
+                      <option key={nationality} value={nationality}>
+                        {getNationalityArabic(nationality)} ({getCountForFilter('nationality', nationality)})
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                
-                {ageFilterEnabled && (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-xs text-blue-600 block mb-1">من</label>
-                        <select
-                          value={minAge}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value)
-                            setMinAge(val)
-                            if (maxAge < val) {
-                              setMaxAge(val)
-                            }
-                          }}
-                          className="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-medium"
-                        >
-                          {Array.from({ length: 43 }, (_, i) => i + 18).map(age => (
-                            <option key={age} value={age}>{age}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-blue-600 block mb-1">إلى</label>
-                        <select
-                          value={maxAge}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value)
-                            setMaxAge(val)
-                            if (minAge > val) {
-                              setMinAge(val)
-                            }
-                          }}
-                          className="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-medium"
-                        >
-                          {Array.from({ length: 43 }, (_, i) => i + 18).map(age => (
-                            <option key={age} value={age}>{age}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    
-                    {/* عرض النطاق المحدد */}
-                    <div className="text-xs text-blue-700 font-medium text-center mt-1">
-                      {minAge} - {maxAge} سنة
-                    </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-gray-700">الديانة</label>
+                  <select
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+                    value={religionFilter}
+                    onChange={(e) => setReligionFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع الديانات ({getCountForFilter('religion', 'ALL')})</option>
+                    <option value="مسلمة">مسلمة ({getCountForFilter('religion', 'مسلمة')})</option>
+                    <option value="مسيحية">مسيحية ({getCountForFilter('religion', 'مسيحية')})</option>
+                    <option value="أخرى">أخرى ({getCountForFilter('religion', 'أخرى')})</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-gray-700">الخبرة</label>
+                  <select
+                    className="w-full px-4 py-2.5 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
+                    value={experienceFilter}
+                    onChange={(e) => setExperienceFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع مستويات الخبرة ({cvs.length})</option>
+                    <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
+                    <option value="1-2">1-2 سنة ({getCountForFilter('experience', '1-2')})</option>
+                    <option value="3-5">3-5 سنوات ({getCountForFilter('experience', '3-5')})</option>
+                    <option value="6-10">6-10 سنوات ({getCountForFilter('experience', '6-10')})</option>
+                    <option value="MORE_10">أكثر من 10 سنوات ({getCountForFilter('experience', 'MORE_10')})</option>
+                  </select>
+                </div>
+                <div className={`rounded-2xl border-2 transition-all ${ageFilterEnabled ? 'border-blue-300 bg-blue-50 shadow-inner' : 'border-gray-200 bg-gray-50'}`}>
+                  <div className="flex items-center justify-between px-4 pt-4">
+                    <label className="text-xs font-semibold text-blue-700 flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      العمر
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setAgeFilterEnabled((prev) => !prev)}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all ${ageFilterEnabled ? 'bg-white text-blue-600 shadow' : 'bg-gray-200 text-gray-600'}`}
+                    >
+                      {ageFilterEnabled ? 'مفعل' : 'إيقاف'}
+                    </button>
                   </div>
-                )}
+                  {ageFilterEnabled && (
+                    <div className="px-4 pb-4 pt-2 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs text-blue-600 block mb-1">من</label>
+                          <select
+                            value={minAge}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value)
+                              setMinAge(val)
+                              if (maxAge < val) {
+                                setMaxAge(val)
+                              }
+                            }}
+                            className="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-medium"
+                          >
+                            {Array.from({ length: 41 }, (_, i) => i + 20).map(age => (
+                              <option key={age} value={age}>{age}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-blue-600 block mb-1">إلى</label>
+                          <select
+                            value={maxAge}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value)
+                              setMaxAge(val)
+                              if (minAge > val) {
+                                setMinAge(val)
+                              }
+                            }}
+                            className="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-medium"
+                          >
+                            {Array.from({ length: 41 }, (_, i) => i + 20).map(age => (
+                              <option key={age} value={age}>{age}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="text-xs text-blue-700 font-medium text-center">
+                        {minAge} - {maxAge} سنة
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-
-              <select
-                className="flex-1 min-w-[160px] px-4 py-2.5 bg-pink-50 border border-pink-300 rounded-lg text-sm font-medium text-pink-700 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
-                value={maritalStatusFilter}
-                onChange={(e) => setMaritalStatusFilter(e.target.value)}
-              >
-                <option value="ALL">جميع الحالات ({getCountForFilter('maritalStatus', 'ALL')})</option>
-                <option value="SINGLE">أعزب/عزباء ({getCountForFilter('maritalStatus', 'SINGLE')})</option>
-                <option value="MARRIED">متزوج/متزوجة ({getCountForFilter('maritalStatus', 'MARRIED')})</option>
-                <option value="DIVORCED">مطلق/مطلقة ({getCountForFilter('maritalStatus', 'DIVORCED')})</option>
-                <option value="WIDOWED">أرمل/أرملة ({getCountForFilter('maritalStatus', 'WIDOWED')})</option>
-              </select>
-
-              {/* زر المزيد من الفلاتر */}
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 border-2 ${
-                  showAdvancedFilters
-                    ? 'bg-[#1e3a8a] text-white border-[#1e3a8a] shadow-lg shadow-[#1e3a8a]/30'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-[#1e3a8a]/50'
-                }`}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <SlidersHorizontal className={`h-4 w-4 transition-transform duration-300 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
-                  {showAdvancedFilters ? 'إخفاء الفلاتر' : 'المزيد من الفلاتر'}
-                </span>
-              </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-gray-700">الوظيفة</label>
+                  <select
+                    className="w-full px-4 py-2.5 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                    value={positionFilter}
+                    onChange={(e) => setPositionFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع الوظائف ({getCountForFilter('position', 'ALL')})</option>
+                    {uniquePositions.map(position => (
+                      <option key={position} value={position}>
+                        {position} ({getCountForFilter('position', position)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-gray-700">الحالة الاجتماعية</label>
+                  <select
+                    className="w-full px-4 py-2.5 bg-pink-50 border border-pink-200 rounded-lg text-sm font-medium text-pink-700 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-pink-400 transition-all"
+                    value={maritalStatusFilter}
+                    onChange={(e) => setMaritalStatusFilter(e.target.value)}
+                  >
+                    <option value="ALL">جميع الحالات ({getCountForFilter('maritalStatus', 'ALL')})</option>
+                    <option value="SINGLE">أعزب/عزباء ({getCountForFilter('maritalStatus', 'SINGLE')})</option>
+                    <option value="MARRIED">متزوج/متزوجة ({getCountForFilter('maritalStatus', 'MARRIED')})</option>
+                    <option value="DIVORCED">مطلق/مطلقة ({getCountForFilter('maritalStatus', 'DIVORCED')})</option>
+                    <option value="WIDOWED">أرمل/أرملة ({getCountForFilter('maritalStatus', 'WIDOWED')})</option>
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    className={`w-full px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 border-2 flex items-center justify-center gap-2 ${
+                      showAdvancedFilters
+                        ? 'bg-[#1e3a8a] text-white border-[#1e3a8a] shadow-lg shadow-[#1e3a8a]/30'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-[#1e3a8a]/50'
+                    }`}
+                  >
+                    <SlidersHorizontal className={`h-4 w-4 transition-transform duration-300 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+                    {showAdvancedFilters ? 'إخفاء الفلاتر' : 'المزيد من الفلاتر'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1863,23 +1885,6 @@ export default function Sales3Page() {
                   </select>
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="flex items-center text-sm font-semibold text-purple-600 mb-2">
-                    <Calendar className="h-4 w-4 ml-2" /> سنوات الخبرة
-                  </label>
-                  <select
-                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-purple-500 border border-gray-300"
-                    value={experienceFilter}
-                    onChange={(e) => setExperienceFilter(e.target.value)}
-                  >
-                    <option value="ALL">جميع مستويات الخبرة ({cvs.length})</option>
-                    <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
-                    <option value="1-2">1-2 سنة ({getCountForFilter('experience', '1-2')})</option>
-                    <option value="3-5">3-5 سنوات ({getCountForFilter('experience', '3-5')})</option>
-                    <option value="6-10">6-10 سنوات ({getCountForFilter('experience', '6-10')})</option>
-                    <option value="MORE_10">أكثر من 10 سنوات ({getCountForFilter('experience', 'MORE_10')})</option>
-                  </select>
-                </div>
                 
                 <div className="space-y-2">
                   <label className="flex items-center text-sm font-semibold text-orange-600 mb-2">
@@ -1966,7 +1971,7 @@ export default function Sales3Page() {
                     setNationalityFilter('ALL')
                     setSkillFilters([])
                     setPositionFilter('ALL')
-                    setMinAge(18)
+                    setMinAge(20)
                     setMaxAge(60)
                     setAgeFilterEnabled(false)
                     setMaritalStatusFilter('ALL')
