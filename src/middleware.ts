@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const LOGIN_PATH = '/admin-qsr-mallah'
+const LEGACY_LOGIN_PATH = '/login'
+
 // Middleware مبسط لا يستخدم قاعدة البيانات
 // لأن Edge Runtime لا يدعم Prisma Client
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  if (pathname === LEGACY_LOGIN_PATH) {
+    return NextResponse.redirect(new URL(LOGIN_PATH, request.url))
+  }
 
   // السماح بالوصول لصفحات معينة دون فحص
   const publicPaths = [
@@ -23,7 +30,8 @@ export async function middleware(request: NextRequest) {
     '/sales9',
     '/sales10',
     '/sales11',
-    '/login',
+    LOGIN_PATH,
+    LEGACY_LOGIN_PATH,
     '/payment-required',
     '/setup-developer',
     '/developer-control',
@@ -44,9 +52,9 @@ export async function middleware(request: NextRequest) {
   // التحقق من وجود token (فحص بسيط)
   const token = request.cookies.get('token')?.value
   
-  // إذا لم يكن هناك token وليس في صفحة login، إعادة توجيه لصفحة login
-  if (!token && pathname !== '/login') {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // إذا لم يكن هناك token إعادة التوجيه لمسار تسجيل الدخول الجديد
+  if (!token) {
+    return NextResponse.redirect(new URL(LOGIN_PATH, request.url))
   }
 
   // التحقق من حالة النظام (عبر API)
