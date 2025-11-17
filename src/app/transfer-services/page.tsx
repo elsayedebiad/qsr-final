@@ -596,26 +596,34 @@ export default function TransferServicesPage() {
         
         const experience = (cv.experience || '').trim().toLowerCase()
         
-        // استخراج الرقم من النص
+        // التحقق من النصوص العربية التي تعني "بدون خبرة"
+        const noExperienceTexts = [
+          'لا يوجد', 'بدون خبرة', 'لا خبرة', 'غير محدد', 
+          'no', 'none', 'no experience', 'بدون', ''
+        ]
+        const hasNoExperience = noExperienceTexts.some(text => 
+          experience === text || experience.includes(text)
+        )
+        
+        // استخراج الأرقام من النص
         const numbers = experience.match(/\d+/g)
         const years = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 0
         
         switch (experienceFilter) {
           case 'NO_EXPERIENCE': // بدون خبرة
-            return experience === 'لا يوجد' || experience === '' || 
-                   experience === 'no' || experience === 'none' || years === 0
+            return hasNoExperience || years === 0
           
           case '1-2': // 1-2 سنة
-            return years >= 1 && years <= 2
+            return !hasNoExperience && years >= 1 && years <= 2
           
           case '3-5': // 3-5 سنوات
-            return years >= 3 && years <= 5
+            return !hasNoExperience && years >= 3 && years <= 5
           
           case '6-10': // 6-10 سنوات
-            return years >= 6 && years <= 10
+            return !hasNoExperience && years >= 6 && years <= 10
           
           case 'MORE_10': // أكثر من 10 سنوات
-            return years > 10
+            return !hasNoExperience && years > 10
           
           default:
             return false
@@ -896,16 +904,27 @@ export default function TransferServicesPage() {
           
         case 'experience':
           const exp = (cv.experience || '').trim().toLowerCase()
+          
+          // التحقق من النصوص العربية التي تعني "بدون خبرة"
+          const noExperienceTexts = [
+            'لا يوجد', 'بدون خبرة', 'لا خبرة', 'غير محدد', 
+            'no', 'none', 'no experience', 'بدون', ''
+          ]
+          const hasNoExperience = noExperienceTexts.some(text => 
+            exp === text || exp.includes(text)
+          )
+          
+          // استخراج الأرقام من النص
           const nums = exp.match(/\d+/g)
           const yrs = nums && nums.length > 0 ? parseInt(nums[0]) : 0
           
           if (filterValue === 'NO_EXPERIENCE') {
-            return exp === 'لا يوجد' || exp === '' || exp === 'no' || exp === 'none' || yrs === 0
+            return hasNoExperience || yrs === 0
           }
-          if (filterValue === '1-2') return yrs >= 1 && yrs <= 2
-          if (filterValue === '3-5') return yrs >= 3 && yrs <= 5
-          if (filterValue === '6-10') return yrs >= 6 && yrs <= 10
-          if (filterValue === 'MORE_10') return yrs > 10
+          if (filterValue === '1-2') return !hasNoExperience && yrs >= 1 && yrs <= 2
+          if (filterValue === '3-5') return !hasNoExperience && yrs >= 3 && yrs <= 5
+          if (filterValue === '6-10') return !hasNoExperience && yrs >= 6 && yrs <= 10
+          if (filterValue === 'MORE_10') return !hasNoExperience && yrs > 10
           return false
           
         case 'skill':

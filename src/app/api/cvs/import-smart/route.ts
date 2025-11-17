@@ -13,26 +13,50 @@ export const dynamic = 'force-dynamic'
 // Interface for Excel data
 interface ExcelRow {
   'الاسم الكامل'?: string
+  'الاسم'?: string
   'الاسم بالعربية'?: string
+  'الاسم العربي'?: string
   'البريد الإلكتروني'?: string
+  'البريد'?: string
+  'Email'?: string
+  'E-mail'?: string
   'رقم الهاتف'?: string
+  'الهاتف'?: string
+  'Phone'?: string
+  'Mobile'?: string
+  'Tel'?: string
   'الكود المرجعي'?: string
   'الرقم المرجعي'?: string
   'كود مرجعي'?: string
   'رقم مرجعي'?: string
   'رمز المرجع'?: string  // إضافة اسم العمود من القالب
+  'الكود'?: string
+  'الرقم'?: string
   'Reference Code'?: string
   'Ref Code'?: string
   'Code'?: string
   'ID'?: string
   'الراتب الشهري'?: string
+  'الراتب'?: string
+  'Salary'?: string
+  'Monthly Salary'?: string
   'مدة العقد'?: string
   'فترة العقد'?: string  // إضافة اسم العمود من القالب
+  'مدة'?: string
+  'فترة'?: string
+  'Contract Period'?: string
+  'Duration'?: string
   'الوظيفة المطلوبة'?: string
   'المنصب'?: string  // إضافة اسم العمود من القالب
   'الوظيفة'?: string  // إضافة عمود الوظيفة من ملف System.csv
+  'Position'?: string
+  'Job'?: string
+  'Job Title'?: string
   'رقم الجواز'?: string
   'رقم جواز السفر'?: string  // إضافة اسم العمود من القالب
+  'الجواز'?: string
+  'Passport Number'?: string
+  'Passport'?: string
   'تاريخ إصدار الجواز'?: string
   'تاريخ انتهاء الجواز'?: string
   'مكان إصدار الجواز'?: string
@@ -78,6 +102,16 @@ interface ExcelRow {
   'رعاية المسنين'?: string
   'التدبير المنزلي'?: string
   'الخبرة في الخارج'?: string
+  'الخبرة'?: string
+  'الخبرة السابقة'?: string
+  'سنوات الخبرة'?: string
+  'عدد سنوات الخبرة'?: string
+  'Experience'?: string
+  'Experience Years'?: string
+  'Work Experience'?: string
+  'Years of Experience'?: string
+  'المده'?: string
+  'المدة'?: string
   'الصورة الشخصية'?: string
   'رابط الصورة الشخصية'?: string
   // Additional image column variations
@@ -158,7 +192,7 @@ interface ProcessedCV {
   elderCare?: 'YES' | 'NO' | 'WILLING'
   housekeeping?: 'YES' | 'NO' | 'WILLING'
   cooking?: 'YES' | 'NO' | 'WILLING'
-  experience?: string
+  experience?: string | null
   education?: string
   skills?: string
   summary?: string
@@ -189,13 +223,46 @@ interface ImportResult {
   summary: string
 }
 
+// Helper function to normalize column names (remove extra spaces, trim, etc.)
+const normalizeColumnName = (name: string): string => {
+  return name.trim().replace(/\s+/g, ' ').replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
+}
+
+// Helper function to find column value with flexible matching
+const findColumnValue = (row: ExcelRow, possibleNames: string[]): string | undefined => {
+  // First try exact match
+  for (const name of possibleNames) {
+    if (row[name] !== undefined && row[name] !== null && row[name] !== '') {
+      return String(row[name]).trim()
+    }
+  }
+  
+  // Then try normalized matching (case-insensitive, space-normalized)
+  const normalizedRowKeys = Object.keys(row).map(key => ({
+    original: key,
+    normalized: normalizeColumnName(key)
+  }))
+  
+  for (const name of possibleNames) {
+    const normalizedName = normalizeColumnName(name)
+    const match = normalizedRowKeys.find(
+      k => k.normalized.toLowerCase() === normalizedName.toLowerCase()
+    )
+    if (match && row[match.original] !== undefined && row[match.original] !== null && row[match.original] !== '') {
+      return String(row[match.original]).trim()
+    }
+  }
+  
+  return undefined
+}
+
 // Helper function to normalize skill levels
 const normalizeSkillLevel = (value?: string): 'YES' | 'NO' | 'WILLING' | undefined => {
   if (!value) return undefined
   const normalized = value.toString().trim().toUpperCase()
-  if (normalized === 'YES' || normalized === 'نعم' || normalized === '1') return 'YES'
-  if (normalized === 'NO' || normalized === 'لا' || normalized === '0') return 'NO'
-  if (normalized === 'WILLING' || normalized === 'راغب' || normalized === 'مستعد') return 'WILLING'
+  if (normalized === 'YES' || normalized === 'نعم' || normalized === '1' || normalized === 'Y') return 'YES'
+  if (normalized === 'NO' || normalized === 'لا' || normalized === '0' || normalized === 'N') return 'NO'
+  if (normalized === 'WILLING' || normalized === 'راغب' || normalized === 'مستعد' || normalized === 'W') return 'WILLING'
   return undefined
 }
 
@@ -503,25 +570,51 @@ const processExcelRow = (row: ExcelRow, rowNumber: number): ProcessedCV => {
 
     return {
       rowNumber,
-      fullName: cleanStringValue(row['الاسم الكامل']) || '',
-      fullNameArabic: cleanStringValue(row['الاسم بالعربية']),
-      email: cleanStringValue(row['البريد الإلكتروني']),
-      phone: cleanPhoneNumber(row['رقم الهاتف']),
+      fullName: cleanStringValue(findColumnValue(row, ['الاسم الكامل', 'الاسم', 'Full Name', 'Name']) || row['الاسم الكامل']) || '',
+      fullNameArabic: cleanStringValue(findColumnValue(row, ['الاسم بالعربية', 'الاسم العربي', 'Arabic Name']) || row['الاسم بالعربية']),
+      email: cleanStringValue(findColumnValue(row, ['البريد الإلكتروني', 'البريد', 'Email', 'E-mail']) || row['البريد الإلكتروني']),
+      phone: cleanPhoneNumber(findColumnValue(row, ['رقم الهاتف', 'الهاتف', 'Phone', 'Mobile', 'Tel']) || row['رقم الهاتف']),
       referenceCode: cleanStringValue(
+        findColumnValue(row, [
+          'الكود المرجعي', 
+          'الرقم المرجعي',
+          'كود مرجعي',
+          'رقم مرجعي',
+          'رمز المرجع',
+          'Reference Code',
+          'Ref Code',
+          'Code',
+          'ID',
+          'الكود',
+          'الرقم'
+        ]) ||
         row['الكود المرجعي'] || 
         row['الرقم المرجعي'] ||
         row['كود مرجعي'] ||
         row['رقم مرجعي'] ||
-        row['رمز المرجع'] ||  // إضافة اسم العمود من القالب
+        row['رمز المرجع'] ||
         row['Reference Code'] ||
         row['Ref Code'] ||
         row['Code'] ||
         row['ID']
       ),
-      monthlySalary: cleanStringValue(row['الراتب الشهري']),
-      contractPeriod: cleanStringValue(row['مدة العقد'] || row['فترة العقد']), // إضافة اسم العمود من القالب
-      position: cleanStringValue(row['الوظيفة المطلوبة'] || row['المنصب'] || row['الوظيفة']), // إضافة عمود الوظيفة من System.csv
-      passportNumber: cleanStringValue(row['رقم الجواز'] || row['رقم جواز السفر']), // إضافة اسم العمود من القالب
+      monthlySalary: cleanStringValue(findColumnValue(row, ['الراتب الشهري', 'الراتب', 'Salary', 'Monthly Salary']) || row['الراتب الشهري']),
+      contractPeriod: cleanStringValue(
+        findColumnValue(row, ['مدة العقد', 'فترة العقد', 'مدة', 'فترة', 'Contract Period', 'Duration']) ||
+        row['مدة العقد'] || 
+        row['فترة العقد']
+      ),
+      position: cleanStringValue(
+        findColumnValue(row, ['الوظيفة المطلوبة', 'المنصب', 'الوظيفة', 'Position', 'Job', 'Job Title']) ||
+        row['الوظيفة المطلوبة'] || 
+        row['المنصب'] || 
+        row['الوظيفة']
+      ),
+      passportNumber: cleanStringValue(
+        findColumnValue(row, ['رقم الجواز', 'رقم جواز السفر', 'الجواز', 'Passport Number', 'Passport']) ||
+        row['رقم الجواز'] || 
+        row['رقم جواز السفر']
+      ),
       passportIssueDate: cleanDateValue(row['تاريخ إصدار الجواز']),
       passportExpiryDate: cleanDateValue(row['تاريخ انتهاء الجواز']),
       passportIssuePlace: cleanStringValue(row['مكان إصدار الجواز']),
@@ -596,7 +689,69 @@ const processExcelRow = (row: ExcelRow, rowNumber: number): ProcessedCV => {
       elderCare: normalizeSkillLevel(row['رعاية المسنين']),
       housekeeping: normalizeSkillLevel(row['التدبير المنزلي']),
       cooking: normalizeSkillLevel(row['الطبخ']),
-      experience: cleanStringValue(row['الخبرة'] || row['الخبرة في الخارج'] || row['الخبرة السابقة']),
+      experience: (() => {
+        // البحث عن عمود الخبرة بأسماء مختلفة
+        const experienceValue = findColumnValue(row, [
+          'الخبرة',
+          'الخبرة في الخارج',
+          'الخبرة السابقة',
+          'المدة',
+          'المده',
+          'سنوات الخبرة',
+          'عدد سنوات الخبرة',
+          'Experience',
+          'Experience Years',
+          'Work Experience',
+          'Years of Experience'
+        ]) ||
+        row['الخبرة'] || 
+        row['المده'] ||
+        row['المدة'] ||
+        row['الخبرة في الخارج'] || 
+        row['الخبرة السابقة']
+        
+        if (!experienceValue) return null as string | null // نرجع null بدلاً من undefined لضمان التحديث
+        
+        // تنظيف القيمة
+        const cleaned = String(experienceValue).trim()
+        
+        // القيم التي تعني "بدون خبرة" أو فارغة
+        const noExperienceValues = [
+          'لا يوجد', 'بدون خبرة', 'لا خبرة', 'غير محدد', 
+          'no', 'none', 'no experience', 'بدون', '', '0',
+          'N/A', 'n/a', 'NA', 'na', '-', '--', '---',
+          'لا توجد خبرة', 'لا يوجد خبرة', 'بدون', 'لا'
+        ]
+        
+        // إذا كانت القيمة تعني "بدون خبرة"، نرجع null
+        if (noExperienceValues.some(val => cleaned.toLowerCase() === val.toLowerCase())) {
+          return null // نرجع null بدلاً من undefined لضمان التحديث
+        }
+        
+        // معالجة خاصة للقيمة "خبرة" فقط (بدون أي نص إضافي)
+        if (cleaned.toLowerCase() === 'خبرة' || cleaned.toLowerCase() === 'experience') {
+          return cleaned // نرجع "خبرة" كقيمة خبرة
+        }
+        
+        // إذا كانت القيمة تحتوي على رقم (سنوات)، فهي خبرة
+        const hasNumber = /\d+/.test(cleaned)
+        if (hasNumber) {
+          return cleaned // مثل "5 سنوات" أو "خبرة 3 سنوات"
+        }
+        
+        // إذا كانت القيمة تحتوي على كلمات تدل على خبرة
+        const experienceKeywords = ['خبرة', 'سنة', 'سنوات', 'عام', 'أعوام', 'experience', 'year', 'years']
+        const hasExperienceKeyword = experienceKeywords.some(keyword => 
+          cleaned.toLowerCase().includes(keyword.toLowerCase())
+        )
+        
+        if (hasExperienceKeyword) {
+          return cleaned
+        }
+        
+        // إذا كانت القيمة غير فارغة ولكن لا تحتوي على معلومات واضحة، نعتبرها خبرة
+        return cleaned || null
+      })(),
       education: cleanStringValue(row['التعليم']),
       skills: cleanStringValue(row['المهارات']),
       summary: cleanStringValue(row['الملخص']),
@@ -836,13 +991,33 @@ export async function POST(request: NextRequest) {
         console.log(`  ${index + 1}. "${col}"`)
       })
       
+      // Check for essential columns
+      const essentialColumns = {
+        'الاسم الكامل': columns.find(col => col.includes('اسم') && (col.includes('كامل') || col.includes('الاسم'))),
+        'الكود المرجعي': columns.find(col => col.includes('كود') || col.includes('مرجعي') || col.toLowerCase().includes('code') || col.toLowerCase().includes('reference')),
+        'رقم الجواز': columns.find(col => col.includes('جواز') || col.toLowerCase().includes('passport')),
+        'الجنسية': columns.find(col => col.includes('جنسية') || col.toLowerCase().includes('nationality')),
+        'الوظيفة': columns.find(col => col.includes('وظيفة') || col.includes('منصب') || col.toLowerCase().includes('position') || col.toLowerCase().includes('job'))
+      }
+      
+      console.log('✅ الأعمدة الأساسية المكتشفة:')
+      Object.entries(essentialColumns).forEach(([key, value]) => {
+        if (value) {
+          console.log(`  ✓ ${key}: "${value}"`)
+        } else {
+          console.log(`  ✗ ${key}: غير موجود`)
+        }
+      })
+      
       // Check specifically for image-related columns
       const imageColumns = columns.filter(col => 
         col.includes('صورة') || col.includes('رابط') || 
         col.toLowerCase().includes('image') || col.toLowerCase().includes('photo') ||
         col.toLowerCase().includes('picture')
       )
-      console.log('🖼️ أعمدة الصور المكتشفة:', imageColumns)
+      if (imageColumns.length > 0) {
+        console.log('🖼️ أعمدة الصور المكتشفة:', imageColumns)
+      }
       
       // Check for reference code columns
       const refCodeColumns = columns.filter(col => 
@@ -850,7 +1025,9 @@ export async function POST(request: NextRequest) {
         col.toLowerCase().includes('reference') || col.toLowerCase().includes('code') ||
         col.toLowerCase().includes('ref') || col === 'ID'
       )
-      console.log('🔢 أعمدة الأرقام المرجعية المكتشفة:', refCodeColumns)
+      if (refCodeColumns.length > 0) {
+        console.log('🔢 أعمدة الأرقام المرجعية المكتشفة:', refCodeColumns)
+      }
       
       // Check for video-related columns
       const videoColumns = columns.filter(col => 
@@ -858,7 +1035,35 @@ export async function POST(request: NextRequest) {
         col.toLowerCase().includes('video') || col.toLowerCase().includes('Video URL') ||
         col.toLowerCase().includes('Video Link')
       )
-      console.log('🎬 أعمدة الفيديو المكتشفة:', videoColumns)
+      if (videoColumns.length > 0) {
+        console.log('🎬 أعمدة الفيديو المكتشفة:', videoColumns)
+      }
+      
+      // Check for experience-related columns
+      const experienceColumns = columns.filter(col => 
+        col.includes('خبرة') || col.includes('خبر') || col.includes('مدة') ||
+        col.toLowerCase().includes('experience') || col.toLowerCase().includes('years') ||
+        col.toLowerCase().includes('work')
+      )
+      if (experienceColumns.length > 0) {
+        console.log('💼 أعمدة الخبرة المكتشفة:', experienceColumns)
+        
+        // تحليل عينة من قيم الخبرة
+        if (jsonData.length > 0) {
+          const sampleExperienceValues = new Set<string>()
+          for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+            experienceColumns.forEach(col => {
+              const value = jsonData[i][col]
+              if (value && String(value).trim()) {
+                sampleExperienceValues.add(String(value).trim())
+              }
+            })
+          }
+          if (sampleExperienceValues.size > 0) {
+            console.log('📊 عينة من قيم الخبرة:', Array.from(sampleExperienceValues).slice(0, 10))
+          }
+        }
+      }
     }
 
     // Analyze each row for duplicates
@@ -881,6 +1086,11 @@ export async function POST(request: NextRequest) {
           processedReferenceCodes.add(refCode)
         }
 
+        // Log experience value for debugging (first 10 rows)
+        if (cv.rowNumber <= 12) {
+          console.log(`💼 الصف ${cv.rowNumber} - الخبرة: "${cv.experience}" (${typeof cv.experience})`)
+        }
+        
         // Check for duplicates
         const duplicateCheck = await checkForDuplicates(cv, processedPassports)
         
@@ -1054,11 +1264,24 @@ export async function POST(request: NextRequest) {
           try {
             console.log(`🔄 تحديث سجل موجود: ${cv.fullName} (ID: ${cv.existingId}, الصف ${cv.rowNumber})`)
             
-            // جلب الحالة القديمة للتحقق من التغيير
+            // جلب الحالة القديمة والبيانات القديمة للتحقق من التغيير
             const existingCV = await db.cV.findUnique({
               where: { id: cv.existingId },
-              select: { status: true }
+              select: { 
+                status: true,
+                experience: true,
+                referenceCode: true
+              }
             })
+            
+            // Log experience changes
+            const oldExperience = existingCV?.experience || null
+            const newExperience = cv.experience || null
+            if (oldExperience !== newExperience) {
+              console.log(`💼 تغيير الخبرة: "${oldExperience}" → "${newExperience}"`)
+            } else {
+              console.log(`💼 الخبرة لم تتغير: "${newExperience}"`)
+            }
             
             const oldStatus = existingCV?.status || 'NEW'
             const newStatus = cv.status || 'NEW'
@@ -1173,7 +1396,7 @@ export async function POST(request: NextRequest) {
                   elderCare: cv.elderCare || null,
                   housekeeping: cv.housekeeping || null,
                   cooking: cv.cooking || null,
-                  experience: cv.experience || null,
+                  experience: cv.experience !== undefined ? (cv.experience === null ? null : cv.experience) : undefined,
                   education: cv.education || null,
                   skills: cv.skills || null,
                   summary: cv.summary || null,

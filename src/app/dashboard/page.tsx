@@ -98,7 +98,7 @@ interface CV {
   driving?: SkillLevel
   // خصائص اختيارية ذكرتها في الفلاتر
   workExperience?: number
-  experience?: number
+  experience?: number | string
   arabicLevel?: string
   languageLevel?: string
   // خصائص إضافية للفلاتر المتقدمة
@@ -389,7 +389,7 @@ export default function CVsPage() {
         (cv.education || '').toLowerCase().includes(term) ||
         (cv.arabicLevel || '').toLowerCase().includes(term) ||
         (cv.englishLevel || '').toLowerCase().includes(term) ||
-        (cv.experience || '').toLowerCase().includes(term) ||
+        (String(cv.experience || '')).toLowerCase().includes(term) ||
         (cv.livingTown || '').toLowerCase().includes(term) ||
         cv.age?.toString().includes(term) ||
         (cv.height?.toString() || '').includes(term) ||
@@ -438,24 +438,75 @@ export default function CVsPage() {
         if (experienceFilter === 'ALL') return true
         
         const expVal = cv.experience
+        // إذا كانت القيمة null أو undefined، فهي بدون خبرة
+        if (expVal === null || expVal === undefined) {
+          return experienceFilter === 'NO_EXPERIENCE'
+        }
+        
         let experience = ''
         if (typeof expVal === 'string') {
           experience = expVal.trim().toLowerCase()
-        } else if (typeof expVal === 'number') {
-          experience = String(expVal)
+        } else {
+          experience = String(expVal).toLowerCase()
         }
         
-        const numbers = experience.match(/\d+/g)
-        const years = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 0
+        // إذا كانت القيمة فارغة، فهي بدون خبرة
+        if (experience === '') {
+          return experienceFilter === 'NO_EXPERIENCE'
+        }
+        
+        // القيم الصريحة التي تعني "بدون خبرة" (مطابقة تامة)
+        const noExperienceExact = [
+          'لا يوجد', 'بدون خبرة', 'لا خبرة', 'غير محدد', 
+          'no', 'none', 'no experience', 'بدون', '0',
+          'N/A', 'n/a', 'NA', 'na', '-', '--', '---',
+          'لا توجد خبرة', 'لا يوجد خبرة', 'لا'
+        ]
+        
+        // التحقق من المطابقة التامة أولاً
+        const isExactNoExperience = noExperienceExact.some(text => 
+          experience === text.toLowerCase()
+        )
+        
+        if (isExactNoExperience) {
+          return experienceFilter === 'NO_EXPERIENCE'
+        }
+        
+        // معالجة خاصة للقيمة "خبرة" فقط (بدون أي نص إضافي)
+        if (experience === 'خبرة' || experience === 'experience') {
+          return experienceFilter === 'WITH_EXPERIENCE' || experienceFilter === 'HAS_EXPERIENCE'
+        }
+        
+        // إذا كانت القيمة تحتوي على رقم (سنوات)، فهي خبرة
+        const hasNumber = /\d+/.test(String(expVal))
+        if (hasNumber) {
+          const numbers = String(expVal).match(/\d+/g)
+          const years = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 0
+          if (years === 0) {
+            return experienceFilter === 'NO_EXPERIENCE'
+          }
+          return experienceFilter === 'WITH_EXPERIENCE' || experienceFilter === 'HAS_EXPERIENCE'
+        }
+        
+        // إذا كانت القيمة تحتوي على كلمات تدل على خبرة
+        const experienceKeywords = ['خبرة', 'سنة', 'سنوات', 'عام', 'أعوام', 'experience', 'year', 'years']
+        const hasExperienceKeyword = experienceKeywords.some(keyword => 
+          experience.includes(keyword.toLowerCase())
+        )
+        
+        if (hasExperienceKeyword) {
+          return experienceFilter === 'WITH_EXPERIENCE' || experienceFilter === 'HAS_EXPERIENCE'
+        }
+        
+        // إذا كانت القيمة غير فارغة ولكن لا تحتوي على معلومات واضحة
+        const hasExperience = !isExactNoExperience && experience !== ''
         
         switch (experienceFilter) {
           case 'NO_EXPERIENCE':
-            return experience === 'لا يوجد' || experience === '' || 
-                   experience === 'no' || experience === 'none' || years === 0
-          case '1-2': return years >= 1 && years <= 2
-          case '3-5': return years >= 3 && years <= 5
-          case '6-10': return years >= 6 && years <= 10
-          case 'MORE_10': return years > 10
+            return !hasExperience
+          case 'HAS_EXPERIENCE':
+          case 'WITH_EXPERIENCE':
+            return hasExperience
           default: return false
         }
       })()
@@ -715,22 +766,76 @@ export default function CVsPage() {
           
         case 'experience':
           const expVal = cv.experience
+          
+          // إذا كانت القيمة null أو undefined، فهي بدون خبرة
+          if (expVal === null || expVal === undefined) {
+            return filterValue === 'NO_EXPERIENCE'
+          }
+          
           let exp = ''
           if (typeof expVal === 'string') {
             exp = expVal.trim().toLowerCase()
-          } else if (typeof expVal === 'number') {
-            exp = String(expVal)
+          } else {
+            exp = String(expVal).toLowerCase()
           }
-          const nums = exp.match(/\d+/g)
-          const yrs = nums && nums.length > 0 ? parseInt(nums[0]) : 0
+          
+          // إذا كانت القيمة فارغة، فهي بدون خبرة
+          if (exp === '') {
+            return filterValue === 'NO_EXPERIENCE'
+          }
+          
+          // القيم الصريحة التي تعني "بدون خبرة" (مطابقة تامة)
+          const noExperienceExact = [
+            'لا يوجد', 'بدون خبرة', 'لا خبرة', 'غير محدد', 
+            'no', 'none', 'no experience', 'بدون', '0',
+            'N/A', 'n/a', 'NA', 'na', '-', '--', '---',
+            'لا توجد خبرة', 'لا يوجد خبرة', 'لا'
+          ]
+          
+          // التحقق من المطابقة التامة أولاً
+          const isExactNoExperience = noExperienceExact.some(text => 
+            exp === text.toLowerCase()
+          )
+          
+          if (isExactNoExperience) {
+            return filterValue === 'NO_EXPERIENCE'
+          }
+          
+          // معالجة خاصة للقيمة "خبرة" فقط (بدون أي نص إضافي)
+          if (exp === 'خبرة' || exp === 'experience') {
+            return filterValue === 'WITH_EXPERIENCE' || filterValue === 'HAS_EXPERIENCE'
+          }
+          
+          // إذا كانت القيمة تحتوي على رقم (سنوات)، فهي خبرة
+          const hasNumber = /\d+/.test(String(expVal))
+          if (hasNumber) {
+            const numbers = String(expVal).match(/\d+/g)
+            const years = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 0
+            if (years === 0) {
+              return filterValue === 'NO_EXPERIENCE'
+            }
+            return filterValue === 'WITH_EXPERIENCE' || filterValue === 'HAS_EXPERIENCE'
+          }
+          
+          // إذا كانت القيمة تحتوي على كلمات تدل على خبرة
+          const experienceKeywords = ['خبرة', 'سنة', 'سنوات', 'عام', 'أعوام', 'experience', 'year', 'years']
+          const hasExperienceKeyword = experienceKeywords.some(keyword => 
+            exp.includes(keyword.toLowerCase())
+          )
+          
+          if (hasExperienceKeyword) {
+            return filterValue === 'WITH_EXPERIENCE' || filterValue === 'HAS_EXPERIENCE'
+          }
+          
+          // إذا كانت القيمة غير فارغة ولكن لا تحتوي على معلومات واضحة
+          const hasExperience = !isExactNoExperience && exp !== ''
           
           if (filterValue === 'NO_EXPERIENCE') {
-            return exp === 'لا يوجد' || exp === '' || exp === 'no' || exp === 'none' || yrs === 0
+            return !hasExperience
           }
-          if (filterValue === '1-2') return yrs >= 1 && yrs <= 2
-          if (filterValue === '3-5') return yrs >= 3 && yrs <= 5
-          if (filterValue === '6-10') return yrs >= 6 && yrs <= 10
-          if (filterValue === 'MORE_10') return yrs > 10
+          if (filterValue === 'HAS_EXPERIENCE' || filterValue === 'WITH_EXPERIENCE') {
+            return hasExperience
+          }
           return false
           
         case 'education':
@@ -1992,19 +2097,16 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 
                 <div className="space-y-2">
                   <label className="flex items-center text-xs sm:text-sm font-semibold text-muted-foreground mb-1 sm:mb-2">
-                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" /> سنوات الخبرة
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" /> الخبرة
                   </label>
                   <select
                     className="w-full rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-primary border border-border bg-background text-foreground"
                     value={experienceFilter}
                     onChange={(e) => setExperienceFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع مستويات الخبرة ({cvs.length})</option>
+                    <option value="ALL">جميع الخبرات ({cvs.length})</option>
+                    <option value="WITH_EXPERIENCE">خبرة ({getCountForFilter('experience', 'WITH_EXPERIENCE')})</option>
                     <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
-                    <option value="1-2">1-2 سنة ({getCountForFilter('experience', '1-2')})</option>
-                    <option value="3-5">3-5 سنوات ({getCountForFilter('experience', '3-5')})</option>
-                    <option value="6-10">6-10 سنوات ({getCountForFilter('experience', '6-10')})</option>
-                    <option value="MORE_10">أكثر من 10 سنوات ({getCountForFilter('experience', 'MORE_10')})</option>
                   </select>
                 </div>
 
@@ -2077,7 +2179,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     setReligionFilter('ALL')
                     setNationalityFilter('ALL')
                     setSkillFilters([])
-                    setAgeFilter('ALL')
+                    setAgeFilterEnabled(false)
                     setMaritalStatusFilter('ALL')
                     setArabicLevelFilter('ALL')
                     setEnglishLevelFilter('ALL')
