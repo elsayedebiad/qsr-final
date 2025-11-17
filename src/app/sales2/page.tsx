@@ -27,7 +27,8 @@ import {
   Camera,
   Phone,
   Mail,
-  MapPin
+  MapPin,
+  RefreshCw
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
@@ -206,6 +207,34 @@ export default function Sales2Page() {
   const [showSharePopup, setShowSharePopup] = useState(false)
   const [sharePopupMessage, setSharePopupMessage] = useState('')
   const salesPageId = 'sales2'
+
+  const resetAllFilters = useCallback(() => {
+    setReligionFilter('ALL')
+    setNationalityFilter('ALL')
+    setSkillFilters([])
+    setPositionFilter('ALL')
+    setMinAge(20)
+    setMaxAge(60)
+    setAgeFilterEnabled(true)
+    setMaritalStatusFilter('ALL')
+    setArabicLevelFilter('ALL')
+    setEnglishLevelFilter('ALL')
+    setEducationFilter('ALL')
+    setExperienceFilter('ALL')
+    setHeightFilter('ALL')
+    setWeightFilter('ALL')
+    setChildrenFilter('ALL')
+    setLocationFilter('ALL')
+    setDrivingFilter('ALL')
+    setContractPeriodFilter('ALL')
+    setPassportStatusFilter('ALL')
+    setSkillFilter('ALL')
+    setLanguageFilter('ALL')
+    setShowAdvancedFilters(false)
+    setSearchTerm('')
+    setSelectedCvs([])
+    setShowSkillsDropdown(false)
+  }, [])
   
   // إغلاق الـModal بزر Escape
   useEffect(() => {
@@ -514,232 +543,221 @@ export default function Sales2Page() {
     return cvNationality === englishFilter || cvNationality.includes(englishFilter) || cvNationality === filter || cvNationality.includes(filter)
   }, [])
 
+  const doesCvMatchFilters = useCallback((cv: CV, overrideNationality?: string) => {
+    const activeNationalityFilter = overrideNationality ?? nationalityFilter
+
+    const matchesSearch = searchTerm === '' || 
+      smartSearch(cv.fullName, searchTerm) ||
+      smartSearch(cv.fullNameArabic || '', searchTerm) ||
+      smartSearch(cv.nationality || '', searchTerm) ||
+      smartSearch(cv.position || '', searchTerm) ||
+      smartSearch(cv.referenceCode || '', searchTerm) ||
+      smartSearch(cv.email || '', searchTerm) ||
+      cv.phone?.includes(searchTerm)
+
+    const matchesStatus = statusFilter === 'ALL' || cv.status === statusFilter
+
+    const matchesPosition = positionFilter === 'ALL' || (() => {
+      const position = (cv.position || '').trim().toLowerCase()
+      const filterValue = positionFilter.toLowerCase()
+      return position === filterValue || position.includes(filterValue)
+    })()
+
+    const matchesNationality = matchesNationalityFilter(cv.nationality, activeNationalityFilter)
+
+    const excludeDriversFromNationality = (() => {
+      if (activeNationalityFilter !== 'ALL') {
+        const position = (cv.position || '').trim()
+        const isDriver = position.includes('سائق') || position.toLowerCase().includes('driver')
+        const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
+        if (isDriver || isService) return false
+      }
+      return true
+    })()
+
+    const matchesMaritalStatus = maritalStatusFilter === 'ALL' || cv.maritalStatus === maritalStatusFilter
+
+    const matchesAge = !ageFilterEnabled || (() => {
+      if (!cv.age) return false
+      return cv.age >= minAge && cv.age <= maxAge
+    })()
+
+    const matchesSkill = skillFilters.length === 0 || skillFilters.some(skill => {
+      switch (skill) {
+        case 'babySitting': return cv.babySitting === 'YES' || cv.babySitting === 'WILLING'
+        case 'childrenCare': return cv.childrenCare === 'YES' || cv.childrenCare === 'WILLING'
+        case 'cleaning': return cv.cleaning === 'YES' || cv.cleaning === 'WILLING'
+        case 'arabicCooking': return cv.arabicCooking === 'YES' || cv.arabicCooking === 'WILLING'
+        case 'driving': return cv.driving === 'YES' || cv.driving === 'WILLING'
+        case 'washing': return cv.washing === 'YES' || cv.washing === 'WILLING'
+        case 'ironing': return cv.ironing === 'YES' || cv.ironing === 'WILLING'
+        case 'tutoring': return cv.tutoring === 'YES' || cv.tutoring === 'WILLING'
+        case 'disabledCare': return cv.disabledCare === 'YES' || cv.disabledCare === 'WILLING'
+        case 'sewing': return cv.sewing === 'YES' || cv.sewing === 'WILLING'
+        default: return false
+      }
+    })
+
+    const matchesExperience = (() => {
+      if (experienceFilter === 'ALL') return true
+
+      const experience = (cv.experience || '').trim().toLowerCase()
+      const numbers = experience.match(/\d+/g)
+      const years = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 0
+
+      switch (experienceFilter) {
+        case 'NO_EXPERIENCE':
+          return experience === 'لا يوجد' || experience === '' || 
+                 experience === 'no' || experience === 'none' || years === 0
+        case '1-2':
+          return years >= 1 && years <= 2
+        case '3-5':
+          return years >= 3 && years <= 5
+        case '6-10':
+          return years >= 6 && years <= 10
+        case 'MORE_10':
+          return years > 10
+        default:
+          return false
+      }
+    })()
+
+    const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
+      const arabicLevel = cv.arabicLevel ?? cv.languageLevel
+      if (arabicLevelFilter === 'WEAK') return arabicLevel === null || arabicLevel === undefined
+      if (arabicLevelFilter === 'NO') return arabicLevel === 'NO'
+      return arabicLevel === arabicLevelFilter
+    })()
+
+    const matchesEnglishLevel = englishLevelFilter === 'ALL' || (() => {
+      const englishLevel = cv.englishLevel
+      if (englishLevelFilter === 'WEAK') return englishLevel === null || englishLevel === undefined
+      if (englishLevelFilter === 'NO') return englishLevel === 'NO'
+      return englishLevel === englishLevelFilter
+    })()
+
+    const matchesReligion = religionFilter === 'ALL' || (() => {
+      if (!cv.religion) return false
+      const religion = cv.religion.toUpperCase()
+      switch (religionFilter) {
+        case 'MUSLIM': return religion.includes('MUSLIM') || cv.religion.includes('مسلم')
+        case 'CHRISTIAN': return religion.includes('CHRISTIAN') || cv.religion.includes('مسيحي')
+        case 'BUDDHIST': return religion.includes('BUDDHIST') || cv.religion.includes('بوذي')
+        case 'HINDU': return religion.includes('HINDU') || cv.religion.includes('هندوسي')
+        default: return cv.religion === religionFilter
+      }
+    })()
+
+    const matchesEducation = (() => {
+      if (educationFilter === 'ALL') return true
+
+      const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
+
+      if (educationFilter === 'متعلم') {
+        return educationLevel === 'نعم' || educationLevel === 'yes' || 
+               educationLevel === 'متعلم' || educationLevel === 'educated'
+      } else if (educationFilter === 'غير متعلم') {
+        return educationLevel === 'لا' || educationLevel === 'no' || 
+               educationLevel === '' || educationLevel === 'غير متعلم' || 
+               educationLevel === 'أمي' || educationLevel === 'none'
+      }
+      return false
+    })()
+
+    const matchesContractPeriod = contractPeriodFilter === 'ALL' || cv.contractPeriod === contractPeriodFilter
+
+    const matchesPassportStatus = passportStatusFilter === 'ALL' || (() => {
+      switch (passportStatusFilter) {
+        case 'VALID': return cv.passportNumber && cv.passportExpiryDate
+        case 'EXPIRED': return cv.passportNumber && !cv.passportExpiryDate
+        case 'MISSING': return !cv.passportNumber
+        default: return true
+      }
+    })()
+
+    const matchesHeight = heightFilter === 'ALL' || (() => {
+      if (!cv.height) return false
+      const height = parseInt(cv.height)
+      switch (heightFilter) {
+        case '<155': return height < 155
+        case '155-160': return height >= 155 && height <= 160
+        case '160-165': return height >= 160 && height <= 165
+        case '165-170': return height >= 165 && height <= 170
+        case '170-175': return height >= 170 && height <= 175
+        case '>175': return height > 175
+        default: return true
+      }
+    })()
+
+    const matchesWeight = weightFilter === 'ALL' || (() => {
+      if (!cv.weight) return false
+      const weight = parseInt(cv.weight)
+      switch (weightFilter) {
+        case '<50': return weight < 50
+        case '50-55': return weight >= 50 && weight <= 55
+        case '55-60': return weight >= 55 && weight <= 60
+        case '60-65': return weight >= 60 && weight <= 65
+        case '65-70': return weight >= 65 && weight <= 70
+        case '70-75': return weight >= 70 && weight <= 75
+        case '>75': return weight > 75
+        default: return true
+      }
+    })()
+
+    const matchesChildren = childrenFilter === 'ALL' || (() => {
+      switch (childrenFilter) {
+        case 'NONE': return cv.numberOfChildren === 0
+        case 'FEW': return cv.numberOfChildren !== undefined && cv.numberOfChildren >= 1 && cv.numberOfChildren <= 2
+        case '3+': return cv.numberOfChildren !== undefined && cv.numberOfChildren >= 3
+        default: return true
+      }
+    })()
+
+    const matchesLocation = locationFilter === 'ALL' || 
+      cv.livingTown?.toLowerCase().includes(locationFilter.toLowerCase()) ||
+      cv.placeOfBirth?.toLowerCase().includes(locationFilter.toLowerCase())
+
+    const matchesDriving = drivingFilter === 'ALL' || cv.driving === drivingFilter
+
+    return matchesSearch && matchesStatus && matchesPosition && matchesNationality && 
+           excludeDriversFromNationality && matchesAge && matchesSkill && matchesArabicLevel && 
+           matchesEnglishLevel && matchesReligion && matchesEducation && matchesExperience &&
+           matchesMaritalStatus && matchesContractPeriod && matchesPassportStatus && matchesHeight &&
+           matchesWeight && matchesChildren && matchesLocation && matchesDriving
+  }, [
+    searchTerm,
+    statusFilter,
+    positionFilter,
+    nationalityFilter,
+    matchesNationalityFilter,
+    maritalStatusFilter,
+    ageFilterEnabled,
+    minAge,
+    maxAge,
+    skillFilters,
+    experienceFilter,
+    arabicLevelFilter,
+    englishLevelFilter,
+    religionFilter,
+    educationFilter,
+    contractPeriodFilter,
+    passportStatusFilter,
+    heightFilter,
+    weightFilter,
+    childrenFilter,
+    locationFilter,
+    drivingFilter
+  ])
+
   // فلترة السير الذاتية - تم تحسينها باستخدام useMemo للأداء
   const allFilteredCvs = useMemo(() => {
-    // التحقق من وجود البيانات أولاً
     if (!cvs || cvs.length === 0) {
       return []
     }
-    
-    return cvs.filter(cv => {
-      // البحث النصي الذكي
-      const matchesSearch = searchTerm === '' || 
-        smartSearch(cv.fullName, searchTerm) ||
-        smartSearch(cv.fullNameArabic || '', searchTerm) ||
-        smartSearch(cv.nationality || '', searchTerm) ||
-        smartSearch(cv.position || '', searchTerm) ||
-        smartSearch(cv.referenceCode || '', searchTerm) ||
-        smartSearch(cv.email || '', searchTerm) ||
-        cv.phone?.includes(searchTerm)
 
-      // فلاتر أساسية
-      const matchesStatus = statusFilter === 'ALL' || cv.status === statusFilter
-      
-      // فلتر الوظيفة - يعمل مع البيانات الفعلية من قاعدة البيانات
-      const matchesPosition = positionFilter === 'ALL' || (() => {
-        const position = (cv.position || '').trim().toLowerCase()
-        const filterValue = positionFilter.toLowerCase()
-        
-        // مطابقة دقيقة مع الوظائف من ملف الإكسل
-        return position === filterValue || position.includes(filterValue)
-      })()
-      
-      // فلتر الجنسية
-      const matchesNationality = matchesNationalityFilter(cv.nationality, nationalityFilter)
-      
-      // استثناء السائقين ونقل الخدمات عند تفعيل فلتر الجنسية
-      const excludeDriversFromNationality = (() => {
-        if (nationalityFilter !== 'ALL') {
-          // التحقق إذا كانت الوظيفة سائق أو نقل خدمات
-          const position = (cv.position || '').trim()
-          const isDriver = position.includes('سائق') || position.includes('driver')
-          const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-          
-          // استثناء السائقين ونقل الخدمات من فلاتر الجنسية
-          if (isDriver || isService) return false
-        }
-        return true
-      })()
-      
-      const matchesMaritalStatus = maritalStatusFilter === 'ALL' || cv.maritalStatus === maritalStatusFilter
-      
-      // فلتر العمر
-      const matchesAge = !ageFilterEnabled || (() => {
-        if (!cv.age) return false
-        return cv.age >= minAge && cv.age <= maxAge
-      })()
+    return cvs.filter(cv => doesCvMatchFilters(cv))
+  }, [cvs, doesCvMatchFilters])
 
-      // فلتر المهارات - اختيار متعدد يعمل مع قاعدة البيانات
-      const matchesSkill = skillFilters.length === 0 || skillFilters.some(skill => {
-        switch (skill) {
-          case 'babySitting': return cv.babySitting === 'YES' || cv.babySitting === 'WILLING'
-          case 'childrenCare': return cv.childrenCare === 'YES' || cv.childrenCare === 'WILLING'
-          case 'cleaning': return cv.cleaning === 'YES' || cv.cleaning === 'WILLING'
-          case 'arabicCooking': return cv.arabicCooking === 'YES' || cv.arabicCooking === 'WILLING'
-          case 'driving': return cv.driving === 'YES' || cv.driving === 'WILLING'
-          case 'washing': return cv.washing === 'YES' || cv.washing === 'WILLING'
-          case 'ironing': return cv.ironing === 'YES' || cv.ironing === 'WILLING'
-          case 'tutoring': return cv.tutoring === 'YES' || cv.tutoring === 'WILLING'
-          case 'disabledCare': return cv.disabledCare === 'YES' || cv.disabledCare === 'WILLING'
-          case 'sewing': return cv.sewing === 'YES' || cv.sewing === 'WILLING'
-          default: return false
-        }
-      })
-
-      // فلتر الخبرة - بناءً على البيانات الفعلية من DUKA.xlsx
-      const matchesExperience = (() => {
-        if (experienceFilter === 'ALL') return true
-        
-        const experience = (cv.experience || '').trim().toLowerCase()
-        
-        // استخراج الرقم من النص
-        const numbers = experience.match(/\d+/g)
-        const years = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 0
-        
-        switch (experienceFilter) {
-          case 'NO_EXPERIENCE': // بدون خبرة
-            return experience === 'لا يوجد' || experience === '' || 
-                   experience === 'no' || experience === 'none' || years === 0
-          
-          case '1-2': // 1-2 سنة
-            return years >= 1 && years <= 2
-          
-          case '3-5': // 3-5 سنوات
-            return years >= 3 && years <= 5
-          
-          case '6-10': // 6-10 سنوات
-            return years >= 6 && years <= 10
-          
-          case 'MORE_10': // أكثر من 10 سنوات
-            return years > 10
-          
-          default:
-            return false
-        }
-      })()
-
-      // فلتر اللغة العربية - يعمل مع قاعدة البيانات
-      const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
-        const arabicLevel = cv.arabicLevel ?? cv.languageLevel
-        if (arabicLevelFilter === 'WEAK') return arabicLevel === null || arabicLevel === undefined
-        if (arabicLevelFilter === 'NO') return arabicLevel === 'NO'
-        return arabicLevel === arabicLevelFilter
-      })()
-
-      // فلتر اللغة الإنجليزية - يعمل مع قاعدة البيانات  
-      const matchesEnglishLevel = englishLevelFilter === 'ALL' || (() => {
-        const englishLevel = cv.englishLevel
-        if (englishLevelFilter === 'WEAK') return englishLevel === null || englishLevel === undefined
-        if (englishLevelFilter === 'NO') return englishLevel === 'NO'
-        return englishLevel === englishLevelFilter
-      })()
-
-      // فلتر الديانة
-      const matchesReligion = religionFilter === 'ALL' || (() => {
-// ...
-        if (!cv.religion) return false
-        const religion = cv.religion.toUpperCase()
-        switch (religionFilter) {
-          case 'MUSLIM': return religion.includes('MUSLIM') || cv.religion.includes('مسلم')
-          case 'CHRISTIAN': return religion.includes('CHRISTIAN') || cv.religion.includes('مسيحي')
-          case 'BUDDHIST': return religion.includes('BUDDHIST') || cv.religion.includes('بوذي')
-          case 'HINDU': return religion.includes('HINDU') || cv.religion.includes('هندوسي')
-          default: return cv.religion === religionFilter
-        }
-      })()
-
-      // فلتر التعليم - متعلم/غير متعلم
-      const matchesEducation = (() => {
-        if (educationFilter === 'ALL') return true
-        const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
-        
-        // البيانات الفعلية في DUKA.xlsx تحتوي على "نعم" أو "لا"
-        if (educationFilter === 'متعلم') {
-          // يعتبر متعلم إذا كانت القيمة "نعم"
-          return educationLevel === 'نعم' || educationLevel === 'yes' || 
-                 educationLevel === 'متعلم' || educationLevel === 'educated'
-        } else if (educationFilter === 'غير متعلم') {
-          // يعتبر غير متعلم إذا كانت القيمة "لا" أو فارغة
-          return educationLevel === 'لا' || educationLevel === 'no' || 
-                 educationLevel === '' || educationLevel === 'غير متعلم' || 
-                 educationLevel === 'أمي' || educationLevel === 'none'
-        }
-        return false
-      })()
-
-      // فلتر فترة العقد
-      const matchesContractPeriod = contractPeriodFilter === 'ALL' || cv.contractPeriod === contractPeriodFilter
-
-      // فلتر حالة الجواز
-      const matchesPassportStatus = passportStatusFilter === 'ALL' || (() => {
-        switch (passportStatusFilter) {
-          case 'VALID': return cv.passportNumber && cv.passportExpiryDate
-          case 'EXPIRED': return cv.passportNumber && !cv.passportExpiryDate
-          case 'MISSING': return !cv.passportNumber
-          default: return true
-        }
-      })()
-
-      // فلتر الطول - يتطابق مع النطاقات في الواجهة
-      const matchesHeight = heightFilter === 'ALL' || (() => {
-        if (!cv.height) return false
-        const height = parseInt(cv.height)
-        switch (heightFilter) {
-          case '<155': return height < 155
-          case '155-160': return height >= 155 && height <= 160
-          case '160-165': return height >= 160 && height <= 165
-          case '165-170': return height >= 165 && height <= 170
-          case '170-175': return height >= 170 && height <= 175
-          case '>175': return height > 175
-          default: return true
-        }
-      })()
-
-      // فلتر الوزن - يتطابق مع النطاقات في الواجهة
-      const matchesWeight = weightFilter === 'ALL' || (() => {
-        if (!cv.weight) return false
-        const weight = parseInt(cv.weight)
-        switch (weightFilter) {
-          case '<50': return weight < 50
-          case '50-55': return weight >= 50 && weight <= 55
-          case '55-60': return weight >= 55 && weight <= 60
-          case '60-65': return weight >= 60 && weight <= 65
-          case '65-70': return weight >= 65 && weight <= 70
-          case '70-75': return weight >= 70 && weight <= 75
-          case '>75': return weight > 75
-          default: return true
-        }
-      })()
-
-      // فلتر عدد الأطفال
-      const matchesChildren = childrenFilter === 'ALL' || (() => {
-        switch (childrenFilter) {
-          case 'NONE': return cv.numberOfChildren === 0
-          case 'FEW': return cv.numberOfChildren !== undefined && cv.numberOfChildren >= 1 && cv.numberOfChildren <= 2
-          case '3+': return cv.numberOfChildren !== undefined && cv.numberOfChildren >= 3
-          default: return true
-        }
-      })()
-
-      // فلتر الموقع
-      const matchesLocation = locationFilter === 'ALL' || 
-        cv.livingTown?.toLowerCase().includes(locationFilter.toLowerCase()) ||
-        cv.placeOfBirth?.toLowerCase().includes(locationFilter.toLowerCase())
-
-      // فلتر السائق الخاص
-      const matchesDriving = drivingFilter === 'ALL' || cv.driving === drivingFilter
-
-      return matchesSearch && matchesStatus && matchesPosition && matchesNationality && 
-             excludeDriversFromNationality && matchesAge && matchesSkill && matchesArabicLevel && 
-             matchesEnglishLevel && matchesReligion && matchesEducation && matchesExperience &&
-             matchesMaritalStatus &&
-             matchesContractPeriod && matchesPassportStatus && matchesHeight &&
-             matchesWeight && matchesChildren && matchesLocation && matchesDriving
-    })
-  }, [cvs, searchTerm, statusFilter, positionFilter, nationalityFilter, minAge, maxAge, ageFilterEnabled, 
-      skillFilters, arabicLevelFilter, englishLevelFilter, religionFilter, educationFilter,
-      contractPeriodFilter, passportStatusFilter, heightFilter, weightFilter,
-      childrenFilter, locationFilter, drivingFilter])
 
   // عرض عدد محدود من السير لتحسين الأداء
   const filteredCvs = useMemo(() => {
@@ -804,6 +822,10 @@ export default function Sales2Page() {
   // دوال حساب عدد البيانات لكل فلتر
   const getCountForFilter = useCallback((filterType: string, filterValue: string): number => {
     if (!cvs || cvs.length === 0) return 0
+
+    if (filterType === 'nationality') {
+      return cvs.filter(cv => doesCvMatchFilters(cv, filterValue)).length
+    }
     
     // معالجة خاصة لقيمة ALL لحساب العدد الفعلي بناءً على نوع الفلتر
     if (filterValue === 'ALL') {
@@ -951,7 +973,7 @@ export default function Sales2Page() {
           return false
       }
     }).length
-  }, [cvs, matchesNationalityFilter])
+  }, [cvs, matchesNationalityFilter, doesCvMatchFilters])
 
   const uniqueArabicLevels = useMemo(() => {
     if (!cvs || cvs.length === 0) return []
@@ -1409,13 +1431,15 @@ export default function Sales2Page() {
 
         {/* البحث والفلاتر - بتصميم qsr.sa */}
         <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 sm:p-6 mb-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-[#1e3a8a] p-3 rounded-lg">
-              <Search className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-[#1e3a8a]">البحث والتصفية</h3>
-              <p className="text-sm text-gray-600">ابحث عن السيرة الذاتية المناسبة</p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-[#1e3a8a] p-3 rounded-lg">
+                <Search className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-[#1e3a8a]">البحث والتصفية</h3>
+                <p className="text-sm text-gray-600">ابحث عن السيرة الذاتية المناسبة</p>
+              </div>
             </div>
           </div>
 
@@ -1482,12 +1506,7 @@ export default function Sales2Page() {
               const isActive = nationalityFilter === filterKey
               
               // حساب عدد السير (باستثناء السائقين ونقل الخدمات)
-              const count = cvs.filter(cv => {
-                const position = (cv.position || '').trim()
-                const isDriver = position.includes('سائق') || position.includes('driver')
-                const isService = position.includes('نقل خدمات') || position.includes('نقل الخدمات')
-                return cv.nationality === nationality && !isDriver && !isService
-              }).length
+              const count = cvs.filter(cv => doesCvMatchFilters(cv, nationality)).length
               
               // عدم عرض الجنسيات التي لا تحتوي على سير (باستثناء السائقين ونقل الخدمات)
               if (count === 0) return null
@@ -1614,7 +1633,16 @@ export default function Sales2Page() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الدولة</label>
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-xs font-semibold text-gray-700">الدولة</label>
+                    <button
+                      onClick={resetAllFilters}
+                      className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-[#1e3a8a]/20 text-[#1e3a8a] bg-white hover:bg-[#1e3a8a]/5 transition-all shadow-sm"
+                      title="إعادة تعيين الفلاتر"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </button>
+                  </div>
                   <select
                     className="w-full px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-sm font-medium text-green-700 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
                     value={nationalityFilter}
@@ -2000,26 +2028,10 @@ export default function Sales2Page() {
 
               <div className="mt-4 flex justify-center">
                 <button
-                  onClick={() => {
-                    setReligionFilter('ALL')
-                    setNationalityFilter('ALL')
-                    setSkillFilters([])
-                    setPositionFilter('ALL')
-                    setMinAge(20)
-                    setMaxAge(60)
-                    setAgeFilterEnabled(false)
-                    setMaritalStatusFilter('ALL')
-                    setArabicLevelFilter('ALL')
-                    setEnglishLevelFilter('ALL')
-                    setEducationFilter('ALL')
-                    setExperienceFilter('ALL')
-                    setHeightFilter('ALL')
-                    setWeightFilter('ALL')
-                    setLocationFilter('ALL')
-                    setSearchTerm('')
-                  }}
-                  className="px-6 py-2 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium hover:from-red-500 hover:to-pink-500"
+                  onClick={resetAllFilters}
+                  className="px-6 py-2 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium hover:from-red-500 hover:to-pink-500 inline-flex items-center gap-2"
                 >
+                  <RefreshCw className="h-4 w-4" />
                   مسح جميع الفلاتر
                 </button>
               </div>
@@ -2051,7 +2063,7 @@ export default function Sales2Page() {
                 <div className="flex-1">
                   <h4 className="text-amber-900 font-bold text-sm mb-1">بخصوص الصور</h4>
                   <p className="text-amber-800 text-sm leading-relaxed">
-                    صور العاملات الموجودة على هذا الموقع معدّلة باستخدام الذكاء الاصطناعي، وهي للعرض التوضيحي فقط
+                    صور العاملات الموجودة على هذا الموقع محسنه باستخدام الذكاء الاصطناعي، وهي للعرض التوضيحي فقط
                   </p>
                 </div>
               </div>
