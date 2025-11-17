@@ -584,25 +584,22 @@ export default function Sales5Page() {
     const matchesExperience = (() => {
       if (experienceFilter === 'ALL') return true
 
-      const experience = (cv.experience || '').trim().toLowerCase()
-      const numbers = experience.match(/\d+/g)
-      const years = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 0
+      const experienceValue = (cv.experience || '').trim().toLowerCase()
+      const hasExperience = experienceValue !== '' &&
+        experienceValue !== 'لا يوجد' &&
+        experienceValue !== 'no' &&
+        experienceValue !== 'none' &&
+        experienceValue !== '0'
 
-      switch (experienceFilter) {
-        case 'NO_EXPERIENCE':
-          return experience === 'لا يوجد' || experience === '' || 
-                 experience === 'no' || experience === 'none' || years === 0
-        case '1-2':
-          return years >= 1 && years <= 2
-        case '3-5':
-          return years >= 3 && years <= 5
-        case '6-10':
-          return years >= 6 && years <= 10
-        case 'MORE_10':
-          return years > 10
-        default:
-          return false
+      if (experienceFilter === 'WITH_EXPERIENCE') {
+        return hasExperience
       }
+
+      if (experienceFilter === 'NO_EXPERIENCE') {
+        return !hasExperience
+      }
+
+      return true
     })()
 
     const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
@@ -902,20 +899,18 @@ export default function Sales5Page() {
                    educationLevel === 'أمي' || educationLevel === 'none'
           }
           return false
-        case 'experience':
-          const exp = (cv.experience || '').trim().toLowerCase()
-          const nums = exp.match(/\d+/g)
-          const yrs = nums && nums.length > 0 ? parseInt(nums[0]) : 0
-          
-          if (filterValue === 'NO_EXPERIENCE') {
-            return exp === 'لا يوجد' || exp === '' || exp === 'no' || exp === 'none' || yrs === 0
-          }
-          if (filterValue === '1-2') return yrs >= 1 && yrs <= 2
-          if (filterValue === '3-5') return yrs >= 3 && yrs <= 5
-          if (filterValue === '6-10') return yrs >= 6 && yrs <= 10
-          if (filterValue === 'MORE_10') return yrs > 10
-          return false
-          
+        case 'experience': {
+          const experienceValue = (cv.experience || '').trim().toLowerCase()
+          const hasExperience = experienceValue !== '' &&
+            experienceValue !== 'لا يوجد' &&
+            experienceValue !== 'no' &&
+            experienceValue !== 'none' &&
+            experienceValue !== '0'
+
+          if (filterValue === 'WITH_EXPERIENCE') return hasExperience
+          if (filterValue === 'NO_EXPERIENCE') return !hasExperience
+          return true
+        }
         case 'skill':
           const skillMap: { [key: string]: keyof typeof cv } = {
             'babySitting': 'babySitting',
@@ -1623,16 +1618,17 @@ export default function Sales5Page() {
           {/* الفلاتر السريعة - من الداشبورد */}
           <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <label className="text-xs font-semibold text-gray-700">الدولة</label>
                     <button
                       onClick={resetAllFilters}
-                      className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-[#1e3a8a]/20 text-[#1e3a8a] bg-white hover:bg-[#1e3a8a]/5 transition-all shadow-sm"
+                      className="inline-flex items-center gap-2 px-3 py-2 text-[11px] font-semibold text-white rounded-xl bg-gradient-to-r from-red-400 to-pink-400 hover:from-red-500 hover:to-pink-500 shadow-sm transition-all"
                       title="إعادة تعيين الفلاتر"
                     >
                       <RefreshCw className="h-4 w-4" />
+                      مسح الفلاتر
                     </button>
                   </div>
                   <select
@@ -1668,12 +1664,9 @@ export default function Sales5Page() {
                     value={experienceFilter}
                     onChange={(e) => setExperienceFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع مستويات الخبرة ({cvs.length})</option>
-                    <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
-                    <option value="1-2">1-2 سنة ({getCountForFilter('experience', '1-2')})</option>
-                    <option value="3-5">3-5 سنوات ({getCountForFilter('experience', '3-5')})</option>
-                    <option value="6-10">6-10 سنوات ({getCountForFilter('experience', '6-10')})</option>
-                    <option value="MORE_10">أكثر من 10 سنوات ({getCountForFilter('experience', 'MORE_10')})</option>
+                                            <option value="ALL">جميع خيارات الخبرة ({cvs.length})</option>
+                        <option value="WITH_EXPERIENCE">لديها خبرة ({getCountForFilter('experience', 'WITH_EXPERIENCE')})</option>
+                        <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
                   </select>
                 </div>
                 <div className={`rounded-2xl border-2 transition-all ${ageFilterEnabled ? 'border-blue-300 bg-blue-50 shadow-inner' : 'border-gray-200 bg-gray-50'}`}>
@@ -1737,7 +1730,7 @@ export default function Sales5Page() {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-gray-700">الوظيفة</label>
                   <select
@@ -1787,7 +1780,7 @@ export default function Sales5Page() {
           {/* الفلاتر المتقدمة - من الداشبورد */}
           <div className={`overflow-hidden transition-all duration-500 ease-in-out ${showAdvancedFilters ? 'max-h-[1000px] opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
                 <div className="space-y-2">
                   <label className="flex items-center text-sm font-semibold text-[#1e3a8a] mb-2">
                     <Star className="h-4 w-4 ml-2" /> المهارات (اختيار متعدد)
@@ -2041,7 +2034,7 @@ export default function Sales5Page() {
                   className="px-6 py-2 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium hover:from-red-500 hover:to-pink-500 inline-flex items-center gap-2"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  مسح جميع الفلاتر
+                  مسح الفلاتر
                 </button>
               </div>
             </div>

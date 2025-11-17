@@ -584,25 +584,22 @@ export default function Sales8Page() {
     const matchesExperience = (() => {
       if (experienceFilter === 'ALL') return true
 
-      const experience = (cv.experience || '').trim().toLowerCase()
-      const numbers = experience.match(/\d+/g)
-      const years = numbers && numbers.length > 0 ? parseInt(numbers[0]) : 0
+      const experienceValue = (cv.experience || '').trim().toLowerCase()
+      const hasExperience = experienceValue !== '' &&
+        experienceValue !== 'لا يوجد' &&
+        experienceValue !== 'no' &&
+        experienceValue !== 'none' &&
+        experienceValue !== '0'
 
-      switch (experienceFilter) {
-        case 'NO_EXPERIENCE':
-          return experience === 'لا يوجد' || experience === '' || 
-                 experience === 'no' || experience === 'none' || years === 0
-        case '1-2':
-          return years >= 1 && years <= 2
-        case '3-5':
-          return years >= 3 && years <= 5
-        case '6-10':
-          return years >= 6 && years <= 10
-        case 'MORE_10':
-          return years > 10
-        default:
-          return false
+      if (experienceFilter === 'WITH_EXPERIENCE') {
+        return hasExperience
       }
+
+      if (experienceFilter === 'NO_EXPERIENCE') {
+        return !hasExperience
+      }
+
+      return true
     })()
 
     const matchesArabicLevel = arabicLevelFilter === 'ALL' || (() => {
@@ -902,20 +899,18 @@ export default function Sales8Page() {
                    educationLevel === 'أمي' || educationLevel === 'none'
           }
           return false
-        case 'experience':
-          const exp = (cv.experience || '').trim().toLowerCase()
-          const nums = exp.match(/\d+/g)
-          const yrs = nums && nums.length > 0 ? parseInt(nums[0]) : 0
-          
-          if (filterValue === 'NO_EXPERIENCE') {
-            return exp === 'لا يوجد' || exp === '' || exp === 'no' || exp === 'none' || yrs === 0
-          }
-          if (filterValue === '1-2') return yrs >= 1 && yrs <= 2
-          if (filterValue === '3-5') return yrs >= 3 && yrs <= 5
-          if (filterValue === '6-10') return yrs >= 6 && yrs <= 10
-          if (filterValue === 'MORE_10') return yrs > 10
-          return false
-          
+        case 'experience': {
+          const experienceValue = (cv.experience || '').trim().toLowerCase()
+          const hasExperience = experienceValue !== '' &&
+            experienceValue !== 'لا يوجد' &&
+            experienceValue !== 'no' &&
+            experienceValue !== 'none' &&
+            experienceValue !== '0'
+
+          if (filterValue === 'WITH_EXPERIENCE') return hasExperience
+          if (filterValue === 'NO_EXPERIENCE') return !hasExperience
+          return true
+        }
         case 'skill':
           const skillMap: { [key: string]: keyof typeof cv } = {
             'babySitting': 'babySitting',
@@ -1620,173 +1615,171 @@ export default function Sales8Page() {
           </div>
 
           {/* الفلاتر السريعة - من الداشبورد */}
-          <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <label className="text-xs font-semibold text-gray-700">الدولة</label>
-                    <button
-                      onClick={resetAllFilters}
-                      className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-[#1e3a8a]/20 text-[#1e3a8a] bg-white hover:bg-[#1e3a8a]/5 transition-all shadow-sm"
-                      title="إعادة تعيين الفلاتر"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <select
-                    className="w-full px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-sm font-medium text-green-700 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-                    value={nationalityFilter}
-                    onChange={(e) => setNationalityFilter(e.target.value)}
-                  >
-                    <option value="ALL">جميع الجنسيات ({getCountForFilter('nationality', 'ALL')})</option>
-                    {uniqueNationalities.map(nationality => (
-                      <option key={nationality} value={nationality}>
-                        {getNationalityArabic(nationality)} ({getCountForFilter('nationality', nationality)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الديانة</label>
-                  <select
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
-                    value={religionFilter}
-                    onChange={(e) => setReligionFilter(e.target.value)}
-                  >
-                    <option value="ALL">جميع الديانات ({getCountForFilter('religion', 'ALL')})</option>
-                    <option value="مسلمة">مسلمة ({getCountForFilter('religion', 'مسلمة')})</option>
-                    <option value="مسيحية">مسيحية ({getCountForFilter('religion', 'مسيحية')})</option>
-                    <option value="أخرى">أخرى ({getCountForFilter('religion', 'أخرى')})</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الخبرة</label>
-                  <select
-                    className="w-full px-4 py-2.5 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
-                    value={experienceFilter}
-                    onChange={(e) => setExperienceFilter(e.target.value)}
-                  >
-                    <option value="ALL">جميع مستويات الخبرة ({cvs.length})</option>
-                    <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
-                    <option value="1-2">1-2 سنة ({getCountForFilter('experience', '1-2')})</option>
-                    <option value="3-5">3-5 سنوات ({getCountForFilter('experience', '3-5')})</option>
-                    <option value="6-10">6-10 سنوات ({getCountForFilter('experience', '6-10')})</option>
-                    <option value="MORE_10">أكثر من 10 سنوات ({getCountForFilter('experience', 'MORE_10')})</option>
-                  </select>
-                </div>
-                <div className={`rounded-2xl border-2 transition-all ${ageFilterEnabled ? 'border-blue-300 bg-blue-50 shadow-inner' : 'border-gray-200 bg-gray-50'}`}>
-                  <div className="flex items-center justify-between px-4 pt-4">
-                    <label className="text-xs font-semibold text-blue-700 flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      العمر
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setAgeFilterEnabled((prev) => !prev)}
-                      className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all ${ageFilterEnabled ? 'bg-white text-blue-600 shadow' : 'bg-gray-200 text-gray-600'}`}
-                    >
-                      {ageFilterEnabled ? 'مفعل' : 'إيقاف'}
-                    </button>
-                  </div>
-                  {ageFilterEnabled && (
-                    <div className="px-4 pb-4 pt-2 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-xs text-blue-600 block mb-1">من</label>
-                          <select
-                            value={minAge}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value)
-                              setMinAge(val)
-                              if (maxAge < val) {
-                                setMaxAge(val)
-                              }
-                            }}
-                            className="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-medium"
-                          >
-                            {Array.from({ length: 41 }, (_, i) => i + 20).map(age => (
-                              <option key={age} value={age}>{age}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs text-blue-600 block mb-1">إلى</label>
-                          <select
-                            value={maxAge}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value)
-                              setMaxAge(val)
-                              if (minAge > val) {
-                                setMinAge(val)
-                              }
-                            }}
-                            className="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-medium"
-                          >
-                            {Array.from({ length: 41 }, (_, i) => i + 20).map(age => (
-                              <option key={age} value={age}>{age}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div className="text-xs text-blue-700 font-medium text-center">
-                        {minAge} - {maxAge} سنة
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الوظيفة</label>
-                  <select
-                    className="w-full px-4 py-2.5 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                    value={positionFilter}
-                    onChange={(e) => setPositionFilter(e.target.value)}
-                  >
-                    <option value="ALL">جميع الوظائف ({getCountForFilter('position', 'ALL')})</option>
-                    {uniquePositions.map(position => (
-                      <option key={position} value={position}>
-                        {position} ({getCountForFilter('position', position)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الحالة الاجتماعية</label>
-                  <select
-                    className="w-full px-4 py-2.5 bg-pink-50 border border-pink-200 rounded-lg text-sm font-medium text-pink-700 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-pink-400 transition-all"
-                    value={maritalStatusFilter}
-                    onChange={(e) => setMaritalStatusFilter(e.target.value)}
-                  >
-                    <option value="ALL">جميع الحالات ({getCountForFilter('maritalStatus', 'ALL')})</option>
-                    <option value="SINGLE">أعزب/عزباء ({getCountForFilter('maritalStatus', 'SINGLE')})</option>
-                    <option value="MARRIED">متزوج/متزوجة ({getCountForFilter('maritalStatus', 'MARRIED')})</option>
-                    <option value="DIVORCED">مطلق/مطلقة ({getCountForFilter('maritalStatus', 'DIVORCED')})</option>
-                    <option value="WIDOWED">أرمل/أرملة ({getCountForFilter('maritalStatus', 'WIDOWED')})</option>
-                  </select>
-                </div>
-                <div className="flex items-end">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-xs font-semibold text-gray-700">الدولة</label>
                   <button
-                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    className={`w-full px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 border-2 flex items-center justify-center gap-2 ${
-                      showAdvancedFilters
-                        ? 'bg-[#1e3a8a] text-white border-[#1e3a8a] shadow-lg shadow-[#1e3a8a]/30'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-[#1e3a8a]/50'
-                    }`}
+                    onClick={resetAllFilters}
+                    className="inline-flex items-center gap-2 px-3 py-2 text-[11px] font-semibold text-white rounded-xl bg-gradient-to-r from-red-400 to-pink-400 hover:from-red-500 hover:to-pink-500 shadow-sm transition-all"
+                    title="إعادة تعيين الفلاتر"
                   >
-                    <SlidersHorizontal className={`h-4 w-4 transition-transform duration-300 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
-                    {showAdvancedFilters ? 'إخفاء الفلاتر' : 'المزيد من الفلاتر'}
+                    <RefreshCw className="h-4 w-4" />
+                    مسح الفلاتر
                   </button>
                 </div>
+                <select
+                  className="w-full px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-sm font-medium text-green-700 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                  value={nationalityFilter}
+                  onChange={(e) => setNationalityFilter(e.target.value)}
+                >
+                  <option value="ALL">جميع الجنسيات ({getCountForFilter('nationality', 'ALL')})</option>
+                  {uniqueNationalities.map(nationality => (
+                    <option key={nationality} value={nationality}>
+                      {getNationalityArabic(nationality)} ({getCountForFilter('nationality', nationality)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-700">الديانة</label>
+                <select
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all"
+                  value={religionFilter}
+                  onChange={(e) => setReligionFilter(e.target.value)}
+                >
+                  <option value="ALL">جميع الديانات ({getCountForFilter('religion', 'ALL')})</option>
+                  <option value="مسلمة">مسلمة ({getCountForFilter('religion', 'مسلمة')})</option>
+                  <option value="مسيحية">مسيحية ({getCountForFilter('religion', 'مسيحية')})</option>
+                  <option value="أخرى">أخرى ({getCountForFilter('religion', 'أخرى')})</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-700">الخبرة</label>
+                <select
+                  className="w-full px-4 py-2.5 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
+                  value={experienceFilter}
+                  onChange={(e) => setExperienceFilter(e.target.value)}
+                >
+                  <option value="ALL">جميع خيارات الخبرة ({cvs.length})</option>
+                  <option value="WITH_EXPERIENCE">لديها خبرة ({getCountForFilter('experience', 'WITH_EXPERIENCE')})</option>
+                  <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
+                </select>
+              </div>
+              <div className={`rounded-2xl border-2 transition-all ${ageFilterEnabled ? 'border-blue-300 bg-blue-50 shadow-inner' : 'border-gray-200 bg-gray-50'}`}>
+                <div className="flex items-center justify-between px-4 pt-4">
+                  <label className="text-xs font-semibold text-blue-700 flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    العمر
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setAgeFilterEnabled((prev) => !prev)}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all ${ageFilterEnabled ? 'bg-white text-blue-600 shadow' : 'bg-gray-200 text-gray-600'}`}
+                  >
+                    {ageFilterEnabled ? 'مفعل' : 'إيقاف'}
+                  </button>
+                </div>
+                {ageFilterEnabled && (
+                  <div className="px-4 pb-4 pt-2 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-blue-600 block mb-1">من</label>
+                        <select
+                          value={minAge}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value)
+                            setMinAge(val)
+                            if (maxAge < val) {
+                              setMaxAge(val)
+                            }
+                          }}
+                          className="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-medium"
+                        >
+                          {Array.from({ length: 41 }, (_, i) => i + 20).map(age => (
+                            <option key={age} value={age}>{age}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-blue-600 block mb-1">إلى</label>
+                        <select
+                          value={maxAge}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value)
+                            setMaxAge(val)
+                            if (minAge > val) {
+                              setMinAge(val)
+                            }
+                          }}
+                          className="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-medium"
+                        >
+                          {Array.from({ length: 41 }, (_, i) => i + 20).map(age => (
+                            <option key={age} value={age}>{age}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="text-xs text-blue-700 font-medium text-center">
+                      {minAge} - {maxAge} سنة
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-700">الوظيفة</label>
+                <select
+                  className="w-full px-4 py-2.5 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                  value={positionFilter}
+                  onChange={(e) => setPositionFilter(e.target.value)}
+                >
+                  <option value="ALL">جميع الوظائف ({getCountForFilter('position', 'ALL')})</option>
+                  {uniquePositions.map(position => (
+                    <option key={position} value={position}>
+                      {position} ({getCountForFilter('position', position)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-700">الحالة الاجتماعية</label>
+                <select
+                  className="w-full px-4 py-2.5 bg-pink-50 border border-pink-200 rounded-lg text-sm font-medium text-pink-700 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-pink-400 transition-all"
+                  value={maritalStatusFilter}
+                  onChange={(e) => setMaritalStatusFilter(e.target.value)}
+                >
+                  <option value="ALL">جميع الحالات ({getCountForFilter('maritalStatus', 'ALL')})</option>
+                  <option value="SINGLE">أعزب/عزباء ({getCountForFilter('maritalStatus', 'SINGLE')})</option>
+                  <option value="MARRIED">متزوج/متزوجة ({getCountForFilter('maritalStatus', 'MARRIED')})</option>
+                  <option value="DIVORCED">مطلق/مطلقة ({getCountForFilter('maritalStatus', 'DIVORCED')})</option>
+                  <option value="WIDOWED">أرمل/أرملة ({getCountForFilter('maritalStatus', 'WIDOWED')})</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className={`w-full px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 border-2 flex items-center justify-center gap-2 ${
+                    showAdvancedFilters
+                      ? 'bg-[#1e3a8a] text-white border-[#1e3a8a] shadow-lg shadow-[#1e3a8a]/30'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-[#1e3a8a]/50'
+                  }`}
+                >
+                  <SlidersHorizontal className={`h-4 w-4 transition-transform duration-300 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+                  {showAdvancedFilters ? 'إخفاء الفلاتر' : 'المزيد من الفلاتر'}
+                </button>
               </div>
             </div>
           </div>
+        </div>
 
           {/* الفلاتر المتقدمة - من الداشبورد */}
           <div className={`overflow-hidden transition-all duration-500 ease-in-out ${showAdvancedFilters ? 'max-h-[1000px] opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
                 <div className="space-y-2">
                   <label className="flex items-center text-sm font-semibold text-[#1e3a8a] mb-2">
                     <Star className="h-4 w-4 ml-2" /> المهارات (اختيار متعدد)
@@ -2040,7 +2033,7 @@ export default function Sales8Page() {
                   className="px-6 py-2 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium hover:from-red-500 hover:to-pink-500 inline-flex items-center gap-2"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  مسح جميع الفلاتر
+                  مسح الفلاتر
                 </button>
               </div>
             </div>
