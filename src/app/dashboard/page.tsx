@@ -59,6 +59,8 @@ import DownloadProgressModal from '@/components/DownloadProgressModal'
 import ModernLoadingSpinner from '@/components/ModernLoadingSpinner'
 import EnhancedProgressModal from '@/components/EnhancedProgressModal'
 import DashboardSkeleton from '@/components/DashboardSkeleton'
+import SalesPagesSharePopup from '@/components/SalesPagesSharePopup'
+import BulkSalesPagesSharePopup from '@/components/BulkSalesPagesSharePopup'
 
 interface User {
   id: string
@@ -246,6 +248,11 @@ export default function CVsPage() {
   const [selectedCVForView, setSelectedCVForView] = useState<CV | null>(null)
   const [showSharePopup, setShowSharePopup] = useState(false)
   const [sharePopupMessage, setSharePopupMessage] = useState('')
+  const [showSalesPagesPopup, setShowSalesPagesPopup] = useState(false)
+  const [assignedSalesPages, setAssignedSalesPages] = useState<Array<{id: string, name: string, url: string, color: string}>>([])
+  const [sharingCvId, setSharingCvId] = useState<string>('')
+  const [sharingCvIds, setSharingCvIds] = useState<string[]>([])
+  const [showBulkSalesPagesPopup, setShowBulkSalesPagesPopup] = useState(false)
 
   const [selectedCvs, setSelectedCvs] = useState<string[]>([])
   const [showBulkDownloader, setShowBulkDownloader] = useState(false)
@@ -1233,6 +1240,79 @@ export default function CVsPage() {
       return
     }
 
+    // التحقق من وجود صفحات مبيعات مخصصة للمستخدم
+    try {
+      const token = localStorage.getItem('token')
+      const userResponse = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (userResponse.ok) {
+        const userData = await userResponse.json()
+        const userId = typeof userData.user.id === 'string' ? parseInt(userData.user.id, 10) : userData.user.id
+        
+        // جلب صفحات المبيعات المخصصة
+        const assignmentsResponse = await fetch(`/api/user-sales-pages?userId=${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        if (assignmentsResponse.ok) {
+          const assignmentsData = await assignmentsResponse.json()
+          const assignments = assignmentsData.assignments || []
+          
+          if (assignments.length > 0) {
+            // هناك صفحات مخصصة - عرض popup للسير المتعددة
+            const SALES_PAGE_NAMES: Record<string, string> = {
+              'sales1': 'Sales 1',
+              'sales2': 'Sales 2',
+              'sales3': 'Sales 3',
+              'sales4': 'Sales 4',
+              'sales5': 'Sales 5',
+              'sales6': 'Sales 6',
+              'sales7': 'Sales 7',
+              'sales8': 'Sales 8',
+              'sales9': 'Sales 9',
+              'sales10': 'Sales 10',
+              'sales11': 'Sales 11',
+              'gallery': 'المعرض الرئيسي',
+              'transfer-services': 'معرض نقل الخدمات'
+            }
+            
+            const SALES_PAGE_COLORS: Record<string, string> = {
+              'sales1': 'from-green-500 to-blue-500',
+              'sales2': 'from-purple-500 to-pink-500',
+              'sales3': 'from-orange-500 to-red-500',
+              'sales4': 'from-indigo-500 to-blue-500',
+              'sales5': 'from-pink-500 to-rose-500',
+              'sales6': 'from-teal-500 to-green-500',
+              'sales7': 'from-red-500 to-orange-500',
+              'sales8': 'from-yellow-500 to-amber-500',
+              'sales9': 'from-cyan-500 to-blue-500',
+              'sales10': 'from-lime-500 to-green-500',
+              'sales11': 'from-fuchsia-500 to-purple-500',
+              'gallery': 'from-blue-500 to-cyan-500',
+              'transfer-services': 'from-amber-500 to-orange-600'
+            }
+            
+            const pages = assignments.map((assignment: any) => ({
+              id: assignment.salesPageId,
+              name: SALES_PAGE_NAMES[assignment.salesPageId] || assignment.salesPageId,
+              color: SALES_PAGE_COLORS[assignment.salesPageId] || 'from-gray-500 to-gray-600'
+            }))
+            
+            setAssignedSalesPages(pages)
+            setSharingCvIds(selectedCvs)
+            setShowBulkSalesPagesPopup(true)
+            return
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking assigned sales pages:', error)
+      // في حالة الخطأ، نتابع مع السلوك الافتراضي
+    }
+
+    // السلوك الافتراضي - مشاركة الصور
     console.log('🔍 عدد السير المحددة:', selectedCvs.length)
 
     // الحصول على السير المحددة
@@ -1529,6 +1609,80 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
 
   // مشاركة سيرة ذاتية واحدة (إرسال الصورة مباشرة)
   const shareSingleCV = async (cv: CV) => {
+    // التحقق من وجود صفحات مبيعات مخصصة للمستخدم
+    try {
+      const token = localStorage.getItem('token')
+      const userResponse = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (userResponse.ok) {
+        const userData = await userResponse.json()
+        const userId = typeof userData.user.id === 'string' ? parseInt(userData.user.id, 10) : userData.user.id
+        
+        // جلب صفحات المبيعات المخصصة
+        const assignmentsResponse = await fetch(`/api/user-sales-pages?userId=${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        if (assignmentsResponse.ok) {
+          const assignmentsData = await assignmentsResponse.json()
+          const assignments = assignmentsData.assignments || []
+          
+          if (assignments.length > 0) {
+            // هناك صفحات مخصصة - عرض popup
+            const SALES_PAGE_NAMES: Record<string, string> = {
+              'sales1': 'Sales 1',
+              'sales2': 'Sales 2',
+              'sales3': 'Sales 3',
+              'sales4': 'Sales 4',
+              'sales5': 'Sales 5',
+              'sales6': 'Sales 6',
+              'sales7': 'Sales 7',
+              'sales8': 'Sales 8',
+              'sales9': 'Sales 9',
+              'sales10': 'Sales 10',
+              'sales11': 'Sales 11',
+              'gallery': 'المعرض الرئيسي',
+              'transfer-services': 'معرض نقل الخدمات'
+            }
+            
+            const SALES_PAGE_COLORS: Record<string, string> = {
+              'sales1': 'from-green-500 to-blue-500',
+              'sales2': 'from-purple-500 to-pink-500',
+              'sales3': 'from-orange-500 to-red-500',
+              'sales4': 'from-indigo-500 to-blue-500',
+              'sales5': 'from-pink-500 to-rose-500',
+              'sales6': 'from-teal-500 to-green-500',
+              'sales7': 'from-red-500 to-orange-500',
+              'sales8': 'from-yellow-500 to-amber-500',
+              'sales9': 'from-cyan-500 to-blue-500',
+              'sales10': 'from-lime-500 to-green-500',
+              'sales11': 'from-fuchsia-500 to-purple-500',
+              'gallery': 'from-blue-500 to-cyan-500',
+              'transfer-services': 'from-amber-500 to-orange-600'
+            }
+            
+            const pages = assignments.map((assignment: any) => ({
+              id: assignment.salesPageId,
+              name: SALES_PAGE_NAMES[assignment.salesPageId] || assignment.salesPageId,
+              url: `${window.location.origin}/cv/${cv.id}?from=${assignment.salesPageId}`,
+              color: SALES_PAGE_COLORS[assignment.salesPageId] || 'from-gray-500 to-gray-600'
+            }))
+            
+            setAssignedSalesPages(pages)
+            setSharingCvId(cv.id)
+            setShowSalesPagesPopup(true)
+            return
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking assigned sales pages:', error)
+      // في حالة الخطأ، نتابع مع السلوك الافتراضي
+    }
+    
+    // السلوك الافتراضي - لا توجد صفحات مخصصة
     const shareUrl = `${window.location.origin}/cv/${cv.id}`
     
     // التحقق من دعم Web Share API
@@ -3304,6 +3458,26 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
         </div>
       )}
     </DashboardLayout>
+    
+    {/* Sales Pages Share Popup */}
+    <SalesPagesSharePopup
+      isOpen={showSalesPagesPopup}
+      onClose={() => setShowSalesPagesPopup(false)}
+      salesPages={assignedSalesPages}
+      cvId={sharingCvId}
+    />
+
+    {/* Bulk Sales Pages Share Popup */}
+    <BulkSalesPagesSharePopup
+      isOpen={showBulkSalesPagesPopup}
+      onClose={() => {
+        setShowBulkSalesPagesPopup(false)
+        setSelectedCvs([]) // إلغاء التحديد بعد الإغلاق
+      }}
+      salesPages={assignedSalesPages}
+      cvIds={sharingCvIds}
+      cvs={cvs}
+    />
 
     {/* مودال الحجز */}
     {isBookingModalOpen && bookingCv && (

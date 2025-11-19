@@ -286,6 +286,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
           adminOnly: true
         },
         {
+          id: 'user-sales-pages',
+          label: 'تخصيص صفحات المبيعات',
+          icon: Users,
+          href: '/dashboard/user-sales-pages',
+          adminOnly: true
+        },
+        {
           id: 'banners',
           label: 'إدارة البنرات',
           icon: Image,

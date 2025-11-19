@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
+  provider      = "prisma-client-js"
+  output        = "../node_modules/.prisma/client"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
@@ -10,30 +10,31 @@ datasource db {
 }
 
 model User {
-  id               Int               @id @default(autoincrement())
-  email            String            @unique
-  name             String
-  password         String
-  role             Role              @default(USER)
-  permissions      String[]          @default([])
-  isActive         Boolean           @default(true)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  activities       ActivityLog[]
-  bookedCVs        Booking[]         @relation("BookedCVs")
-  createdCVs       CV[]              @relation("CVCreatedBy")
-  updatedCVs       CV[]              @relation("CVUpdatedBy")
-  createdContracts Contract[]        @relation("ContractCreatedBy")
-  notifications    Notification[]
-  sessions         Session[]
-  loginActivations LoginActivation[]
-  userSessions     UserSession[]     @relation("UserSessions")
-  assignedDistributions CVDistribution[] @relation("DistributionAssigner")
-  removedDistributions  CVDistribution[] @relation("DistributionRemover")
+  id                    Int                    @id @default(autoincrement())
+  email                 String                 @unique
+  name                  String
+  password              String
+  role                  Role                   @default(USER)
+  permissions           String[]               @default([])
+  isActive              Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  activities            ActivityLog[]
+  bookedCVs             Booking[]              @relation("BookedCVs")
+  createdCVs            CV[]                   @relation("CVCreatedBy")
+  updatedCVs            CV[]                   @relation("CVUpdatedBy")
+  createdContracts      Contract[]             @relation("ContractCreatedBy")
+  notifications         Notification[]
+  sessions              Session[]
+  loginActivations      LoginActivation[]
+  userSessions          UserSession[]          @relation("UserSessions")
+  assignedDistributions CVDistribution[]       @relation("DistributionAssigner")
+  removedDistributions  CVDistribution[]       @relation("DistributionRemover")
   distributionLogs      DistributionLog[]
   contractStatusChanges ContractStatusChange[] @relation("ContractStatusChangedBy")
-  createdNewContracts   NewContract[]    @relation("NewContractCreatedBy")
-  followUpNotes         FollowUpNote[]   @relation("FollowUpNoteCreatedBy")
+  createdNewContracts   NewContract[]          @relation("NewContractCreatedBy")
+  followUpNotes         FollowUpNote[]         @relation("FollowUpNoteCreatedBy")
+  assignedSalesPages    UserSalesPage[]        @relation("UserSalesPageAssignments")
 
   @@map("users")
 }
@@ -50,16 +51,16 @@ model Session {
 }
 
 model CV {
-  id                 Int            @id @default(autoincrement())
+  id                 Int              @id @default(autoincrement())
   fullName           String
   fullNameArabic     String?
   email              String?
   phone              String?
-  referenceCode      String?        @unique
+  referenceCode      String?          @unique
   monthlySalary      String?
   contractPeriod     String?
   position           String?
-  passportNumber     String?        @unique
+  passportNumber     String?          @unique
   passportIssueDate  String?
   passportExpiryDate String?
   passportIssuePlace String?
@@ -76,8 +77,8 @@ model CV {
   age                Int?
   englishLevel       SkillLevel?
   arabicLevel        SkillLevel?
-  englishLevelRaw    String?        // القيمة الأصلية من الشيت
-  arabicLevelRaw     String?        // القيمة الأصلية من الشيت
+  englishLevelRaw    String? // القيمة الأصلية من الشيت
+  arabicLevelRaw     String? // القيمة الأصلية من الشيت
   babySitting        SkillLevel?
   childrenCare       SkillLevel?
   tutoring           SkillLevel?
@@ -90,7 +91,7 @@ model CV {
   driving            SkillLevel?
   previousEmployment String?
   profileImage       String?
-  cvImageUrl         String?  // رابط صورة السيرة الكاملة المصممة
+  cvImageUrl         String? // رابط صورة السيرة الكاملة المصممة
   videoLink          String?
   experience         String?
   education          String?
@@ -99,11 +100,11 @@ model CV {
   content            String?
   notes              String?
   attachments        String?
-  status             CVStatus       @default(NEW)
-  priority           Priority       @default(MEDIUM)
+  status             CVStatus         @default(NEW)
+  priority           Priority         @default(MEDIUM)
   source             String?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
   createdById        Int
   updatedById        Int?
   cooking            SkillLevel?
@@ -114,10 +115,10 @@ model CV {
   booking            Booking?
   contract           Contract?
   versions           CVVersion[]
-  createdBy          User           @relation("CVCreatedBy", fields: [createdById], references: [id])
-  updatedBy          User?          @relation("CVUpdatedBy", fields: [updatedById], references: [id])
+  createdBy          User             @relation("CVCreatedBy", fields: [createdById], references: [id])
+  updatedBy          User?            @relation("CVUpdatedBy", fields: [updatedById], references: [id])
   distributions      CVDistribution[]
-  newContracts       NewContract[]  @relation("NewContractCV")
+  newContracts       NewContract[]    @relation("NewContractCV")
 
   @@map("cvs")
 }
@@ -211,15 +212,15 @@ model SalesConfig {
 }
 
 model Banner {
-  id          Int         @id @default(autoincrement())
-  salesPageId String      // sales1, sales2, sales3, sales4
-  imageUrl    String      @db.Text // الصورة كـ Base64 (محفوظة في قاعدة البيانات)
-  deviceType  DeviceType  // mobile أو desktop
-  bannerType  BannerType  @default(MAIN) // نوع البنر: رئيسي أو إضافي
-  order       Int         @default(0) // ترتيب البنر
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id          Int        @id @default(autoincrement())
+  salesPageId String // sales1, sales2, sales3, sales4
+  imageUrl    String     @db.Text // الصورة كـ Base64 (محفوظة في قاعدة البيانات)
+  deviceType  DeviceType // mobile أو desktop
+  bannerType  BannerType @default(MAIN) // نوع البنر: رئيسي أو إضافي
+  order       Int        @default(0) // ترتيب البنر
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@map("banners")
 }
@@ -239,7 +240,7 @@ model LoginActivation {
 model SystemSettings {
   id        Int      @id @default(autoincrement())
   key       String   @unique // مفتاح الإعداد (مثل: "system_active")
-  value     String   // قيمة الإعداد
+  value     String // قيمة الإعداد
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -256,7 +257,7 @@ model UserSession {
   ipAddress    String?
   userAgent    String?
   isActive     Boolean   @default(true)
-  duration     Int?      // Session duration in minutes
+  duration     Int? // Session duration in minutes
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   user         User      @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
@@ -334,22 +335,22 @@ enum ActivityType {
 
 // نظام التوزيع الجديد
 model CVDistribution {
-  id           Int          @id @default(autoincrement())
-  cvId         Int
-  salesPageId  String       // sales1, sales2, ... sales11
-  assignedAt   DateTime     @default(now())
-  removedAt    DateTime?
-  isActive     Boolean      @default(true)
-  assignedBy   Int
-  removedBy    Int?
-  notes        String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  
-  cv           CV           @relation(fields: [cvId], references: [id], onDelete: Cascade)
-  assigner     User         @relation("DistributionAssigner", fields: [assignedBy], references: [id])
-  remover      User?        @relation("DistributionRemover", fields: [removedBy], references: [id])
-  
+  id          Int       @id @default(autoincrement())
+  cvId        Int
+  salesPageId String // sales1, sales2, ... sales11
+  assignedAt  DateTime  @default(now())
+  removedAt   DateTime?
+  isActive    Boolean   @default(true)
+  assignedBy  Int
+  removedBy   Int?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  cv       CV    @relation(fields: [cvId], references: [id], onDelete: Cascade)
+  assigner User  @relation("DistributionAssigner", fields: [assignedBy], references: [id])
+  remover  User? @relation("DistributionRemover", fields: [removedBy], references: [id])
+
   @@unique([cvId, salesPageId, isActive])
   @@index([salesPageId, isActive])
   @@index([cvId])
@@ -357,55 +358,55 @@ model CVDistribution {
 }
 
 model DistributionRule {
-  id              Int      @id @default(autoincrement())
-  salesPageId     String   @unique
-  dailyLimit      Int?     // حد السير اليومية (null = لا يوجد حد)
-  totalLimit      Int?     // الحد الأقصى الكلي
-  minCVs          Int      @default(0)  // الحد الأدنى
-  maxCVs          Int?     // الحد الأقصى
-  priority        Int      @default(0)  // أولوية الصفحة في التوزيع
-  isActive        Boolean  @default(true)
-  autoDistribute  Boolean  @default(false) // التوزيع التلقائي
-  nationality     String?  // تخصيص لجنسية معينة
-  position        String?  // تخصيص لوظيفة معينة
-  googleWeight    Float    @default(0)    // نسبة التوزيع لزيارات Google
-  otherWeight     Float    @default(0)    // نسبة التوزيع لباقي الزيارات
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id             Int      @id @default(autoincrement())
+  salesPageId    String   @unique
+  dailyLimit     Int? // حد السير اليومية (null = لا يوجد حد)
+  totalLimit     Int? // الحد الأقصى الكلي
+  minCVs         Int      @default(0) // الحد الأدنى
+  maxCVs         Int? // الحد الأقصى
+  priority       Int      @default(0) // أولوية الصفحة في التوزيع
+  isActive       Boolean  @default(true)
+  autoDistribute Boolean  @default(false) // التوزيع التلقائي
+  nationality    String? // تخصيص لجنسية معينة
+  position       String? // تخصيص لوظيفة معينة
+  googleWeight   Float    @default(0) // نسبة التوزيع لزيارات Google
+  otherWeight    Float    @default(0) // نسبة التوزيع لباقي الزيارات
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
   @@map("distribution_rules")
 }
 
 model DistributionLog {
-  id              Int      @id @default(autoincrement())
-  action          String   // ASSIGNED, REMOVED, BULK_ASSIGNED, etc.
-  salesPageId     String
-  cvIds           Int[]    // قائمة معرفات السير
-  userId          Int
-  count           Int      // عدد السير المتأثرة
-  details         Json?    // تفاصيل إضافية
-  timestamp       DateTime @default(now())
-  
-  user            User     @relation(fields: [userId], references: [id])
-  
+  id          Int      @id @default(autoincrement())
+  action      String // ASSIGNED, REMOVED, BULK_ASSIGNED, etc.
+  salesPageId String
+  cvIds       Int[] // قائمة معرفات السير
+  userId      Int
+  count       Int // عدد السير المتأثرة
+  details     Json? // تفاصيل إضافية
+  timestamp   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
   @@index([salesPageId, timestamp])
   @@map("distribution_logs")
 }
 
 // إحصائيات التوزيع
 model DistributionStats {
-  id              Int      @id @default(autoincrement())
-  salesPageId     String   
-  date            DateTime @db.Date
-  totalAssigned   Int      @default(0)
-  totalRemoved    Int      @default(0)
-  activeCount     Int      @default(0)
-  viewCount       Int      @default(0)
-  bookingCount    Int      @default(0)
-  contractCount   Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id            Int      @id @default(autoincrement())
+  salesPageId   String
+  date          DateTime @db.Date
+  totalAssigned Int      @default(0)
+  totalRemoved  Int      @default(0)
+  activeCount   Int      @default(0)
+  viewCount     Int      @default(0)
+  bookingCount  Int      @default(0)
+  contractCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   @@unique([salesPageId, date])
   @@index([salesPageId])
   @@index([date])
@@ -414,40 +415,40 @@ model DistributionStats {
 
 // تتبع الزيارات
 model Visit {
-  id              Int      @id @default(autoincrement())
-  ipAddress       String
-  country         String?
-  city            String?
-  userAgent       String?
-  referer         String?
-  utmSource       String?
-  utmMedium       String?
-  utmCampaign     String?
-  targetPage      String   // الصفحة التي تم التوجيه إليها
-  isGoogle        Boolean  @default(false)
-  isArchived      Boolean  @default(false)  // للأرشفة
-  archivedAt      DateTime?                 // تاريخ الأرشفة
-  timestamp       DateTime @default(now())
-  
+  id          Int       @id @default(autoincrement())
+  ipAddress   String
+  country     String?
+  city        String?
+  userAgent   String?
+  referer     String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  targetPage  String // الصفحة التي تم التوجيه إليها
+  isGoogle    Boolean   @default(false)
+  isArchived  Boolean   @default(false) // للأرشفة
+  archivedAt  DateTime? // تاريخ الأرشفة
+  timestamp   DateTime  @default(now())
+
   // معلومات الحملات الإعلانية
-  gclid           String?  // Google Click ID
-  fbclid          String?  // Facebook Click ID
-  msclkid         String?  // Microsoft/Bing Click ID
-  ttclid          String?  // TikTok Click ID
-  
+  gclid   String? // Google Click ID
+  fbclid  String? // Facebook Click ID
+  msclkid String? // Microsoft/Bing Click ID
+  ttclid  String? // TikTok Click ID
+
   // معلومات الجهاز والمتصفح
-  device          String?  // mobile, desktop, tablet
-  browser         String?  // Chrome, Safari, Firefox, etc.
-  os              String?  // Windows, macOS, iOS, Android, etc.
-  browserVersion  String?  // إصدار المتصفح
-  osVersion       String?  // إصدار نظام التشغيل
-  
+  device         String? // mobile, desktop, tablet
+  browser        String? // Chrome, Safari, Firefox, etc.
+  os             String? // Windows, macOS, iOS, Android, etc.
+  browserVersion String? // إصدار المتصفح
+  osVersion      String? // إصدار نظام التشغيل
+
   // معلومات إضافية
-  screenWidth     Int?     // عرض الشاشة
-  screenHeight    Int?     // ارتفاع الشاشة
-  language        String?  // لغة المتصفح
-  timezone        String?  // المنطقة الزمنية
-  
+  screenWidth  Int? // عرض الشاشة
+  screenHeight Int? // ارتفاع الشاشة
+  language     String? // لغة المتصفح
+  timezone     String? // المنطقة الزمنية
+
   @@index([timestamp])
   @@index([targetPage])
   @@index([country])
@@ -461,38 +462,38 @@ model Visit {
 
 // نظام العقود الجديد
 model NewContract {
-  id                       Int                    @id @default(autoincrement())
-  contractType             ContractType           // نوع العقد
-  salesRepName             String                 // اسم ممثل المبيعات
-  clientName               String                 // اسم العميل
-  contractNumber           String                 @unique // رقم العقد
-  supportMobileNumber      String?                // رقم الجوال المساند
-  salesMobileNumber        String?                // رقم المبيعات
-  currentMonth             Int                    // رقم الشهر الميلادي
-  currentDate              DateTime               @default(now()) // التاريخ الحالي
-  countryName              String                 // اسم الدولة
-  profession               String                 // المهنة
-  employerIdNumber         String                 // رقم هوية صاحب العمل
-  workerPassportNumber     String                 // رقم جواز العاملة
-  cvId                     Int?                   // ربط مع السيرة الذاتية
-  office                   String                 // المكتب المختار
-  status                   NewContractStatus      @default(CV_REQUEST) // الحالة
-  statusHistory            Json?                  // تاريخ الحالات
-  lastStatusUpdate         DateTime               @default(now()) // آخر تحديث للحالة
-  cvUploadRequestDate      DateTime?              // تاريخ طلب رفع السيرة
-  employmentRequestDate    DateTime?              // تاريخ طلب التوظيف
-  followUpNotes            String?                // ملاحظات المتابعة
-  hasCVIssue               Boolean                @default(false) // وجود مشكلة في السيرة
-  cvIssueType              String?                // نوع المشكلة (تبديل / توثيق)
-  createdById              Int                    // الموظف المنشئ
-  createdAt                DateTime               @default(now())
-  updatedAt                DateTime               @updatedAt
-  
-  statusChanges            ContractStatusChange[] // سجل تغييرات الحالة
-  followUpNotesHistory     FollowUpNote[]         // سجل ملاحظات المتابعة
-  cv                       CV?                    @relation("NewContractCV", fields: [cvId], references: [id])
-  createdBy                User                   @relation("NewContractCreatedBy", fields: [createdById], references: [id])
-  
+  id                    Int               @id @default(autoincrement())
+  contractType          ContractType // نوع العقد
+  salesRepName          String // اسم ممثل المبيعات
+  clientName            String // اسم العميل
+  contractNumber        String            @unique // رقم العقد
+  supportMobileNumber   String? // رقم الجوال المساند
+  salesMobileNumber     String? // رقم المبيعات
+  currentMonth          Int // رقم الشهر الميلادي
+  currentDate           DateTime          @default(now()) // التاريخ الحالي
+  countryName           String // اسم الدولة
+  profession            String // المهنة
+  employerIdNumber      String // رقم هوية صاحب العمل
+  workerPassportNumber  String // رقم جواز العاملة
+  cvId                  Int? // ربط مع السيرة الذاتية
+  office                String // المكتب المختار
+  status                NewContractStatus @default(CV_REQUEST) // الحالة
+  statusHistory         Json? // تاريخ الحالات
+  lastStatusUpdate      DateTime          @default(now()) // آخر تحديث للحالة
+  cvUploadRequestDate   DateTime? // تاريخ طلب رفع السيرة
+  employmentRequestDate DateTime? // تاريخ طلب التوظيف
+  followUpNotes         String? // ملاحظات المتابعة
+  hasCVIssue            Boolean           @default(false) // وجود مشكلة في السيرة
+  cvIssueType           String? // نوع المشكلة (تبديل / توثيق)
+  createdById           Int // الموظف المنشئ
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  statusChanges        ContractStatusChange[] // سجل تغييرات الحالة
+  followUpNotesHistory FollowUpNote[] // سجل ملاحظات المتابعة
+  cv                   CV?                    @relation("NewContractCV", fields: [cvId], references: [id])
+  createdBy            User                   @relation("NewContractCreatedBy", fields: [createdById], references: [id])
+
   @@index([contractNumber])
   @@index([status])
   @@index([createdById])
@@ -503,17 +504,17 @@ model NewContract {
 
 // سجل تغييرات حالة العقد
 model ContractStatusChange {
-  id              Int               @id @default(autoincrement())
-  contractId      Int
-  fromStatus      NewContractStatus?
-  toStatus        NewContractStatus
-  changedAt       DateTime          @default(now())
-  changedById     Int
-  notes           String?
-  
-  contract        NewContract       @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  changedBy       User              @relation("ContractStatusChangedBy", fields: [changedById], references: [id])
-  
+  id          Int                @id @default(autoincrement())
+  contractId  Int
+  fromStatus  NewContractStatus?
+  toStatus    NewContractStatus
+  changedAt   DateTime           @default(now())
+  changedById Int
+  notes       String?
+
+  contract  NewContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  changedBy User        @relation("ContractStatusChangedBy", fields: [changedById], references: [id])
+
   @@index([contractId])
   @@index([changedById])
   @@map("contract_status_changes")
@@ -521,15 +522,15 @@ model ContractStatusChange {
 
 // سجل ملاحظات المتابعة
 model FollowUpNote {
-  id              Int         @id @default(autoincrement())
-  contractId      Int
-  note            String      @db.Text
-  createdById     Int
-  createdAt       DateTime    @default(now())
-  
-  contract        NewContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  createdBy       User        @relation("FollowUpNoteCreatedBy", fields: [createdById], references: [id])
-  
+  id          Int      @id @default(autoincrement())
+  contractId  Int
+  note        String   @db.Text
+  createdById Int
+  createdAt   DateTime @default(now())
+
+  contract  NewContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  createdBy User        @relation("FollowUpNoteCreatedBy", fields: [createdById], references: [id])
+
   @@index([contractId])
   @@index([createdById])
   @@map("follow_up_notes")
@@ -542,24 +543,40 @@ model SalesRepresentative {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@map("sales_representatives")
 }
 
+// تخصيص صفحات المبيعات للمستخدمين
+model UserSalesPage {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  salesPageId String // sales1, sales2, sales3, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation("UserSalesPageAssignments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, salesPageId])
+  @@index([userId])
+  @@index([salesPageId])
+  @@map("user_sales_pages")
+}
+
 enum ContractType {
-  SPECIFIC           // معين
-  BY_SPECIFICATIONS  // حسب المواصفات
+  SPECIFIC // معين
+  BY_SPECIFICATIONS // حسب المواصفات
 }
 
 enum NewContractStatus {
-  CV_REQUEST                  // طلب رفع سيرة
-  EXTERNAL_OFFICE_APPROVAL    // موافقة مكتب الإرسال الخارجي
-  FOREIGN_MINISTRY_APPROVAL   // موافقة وزارة العمل الأجنبية
-  VISA_ISSUED                 // تم إصدار التأشيرة
-  EMBASSY_SENT                // تم الإرسال للسفارة السعودية
-  EMBASSY_APPROVAL            // وصل للمملكة العربية السعودية
-  TICKET_DATE_NOTIFIED        // تم التبليغ بموعد التذكرة
-  REJECTED                    // مرفوض
-  CANCELLED                   // ملغي
-  OUTSIDE_KINGDOM             // خارج المملكة
+  CV_REQUEST // طلب رفع سيرة
+  EXTERNAL_OFFICE_APPROVAL // موافقة مكتب الإرسال الخارجي
+  FOREIGN_MINISTRY_APPROVAL // موافقة وزارة العمل الأجنبية
+  VISA_ISSUED // تم إصدار التأشيرة
+  EMBASSY_SENT // تم الإرسال للسفارة السعودية
+  EMBASSY_APPROVAL // وصل للمملكة العربية السعودية
+  TICKET_DATE_NOTIFIED // تم التبليغ بموعد التذكرة
+  REJECTED // مرفوض
+  CANCELLED // ملغي
+  OUTSIDE_KINGDOM // خارج المملكة
 }
