@@ -35,7 +35,7 @@ import ClarityScript from '@/components/ClarityScript'
 import VideoPlayer from '@/components/VideoPlayer'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
-import ScrollDownIndicator from '@/components/ScrollDownIndicator'
+import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -1451,8 +1451,7 @@ export default function Sales1Page() {
       <style>{customStyles}</style>
       <ClarityScript />
       <SalesRedirectCheck />
-      <ScrollDownIndicator />
-      
+      <AutoScrollIndicatorEnhanced />      
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" dir="rtl">
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">
@@ -1467,7 +1466,7 @@ export default function Sales1Page() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs bg-white/10 px-3 py-1 rounded-full">
-                  {filteredCvs.length} سيرة متاحة
+                  {allFilteredCvs.length} سيرة متاحة
                 </span>
               </div>
             </div>
@@ -2765,8 +2764,7 @@ export default function Sales1Page() {
           </div>
         </div>
       )}
-      <ScrollDownIndicator />
-</div>
-  </>
-)
+    </div>
+    </>
+  )
 }

@@ -36,8 +36,8 @@ import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
+import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
 import VideoPlayer from '@/components/VideoPlayer'
-import ScrollDownIndicator from '@/components/ScrollDownIndicator'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -1363,8 +1363,7 @@ export default function Sales2Page() {
       <style>{customStyles}</style>
       <ClarityScript />
       <SalesRedirectCheck />
-      <ScrollDownIndicator />
-      
+      <AutoScrollIndicatorEnhanced />      
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" dir="rtl">
         {/* التحقق من نظام التوزيع */}
         <header className="bg-white shadow-md sticky top-0 z-50">
@@ -1379,7 +1378,7 @@ export default function Sales2Page() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs bg-white/10 px-3 py-1 rounded-full">
-                  {filteredCvs.length} سيرة متاحة
+                  {allFilteredCvs.length} سيرة متاحة
                 </span>
               </div>
             </div>
@@ -2656,9 +2655,9 @@ export default function Sales2Page() {
           </div>
         </div>
       )}
-</div>
-  </>
-)
+    </div>
+    </>
+  )
 }
 
 

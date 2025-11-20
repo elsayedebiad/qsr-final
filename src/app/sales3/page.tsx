@@ -36,8 +36,8 @@ import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
+import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
 import VideoPlayer from '@/components/VideoPlayer'
-import ScrollDownIndicator from '@/components/ScrollDownIndicator'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -1357,8 +1357,7 @@ export default function Sales3Page() {
       <style>{customStyles}</style>
       <ClarityScript />
       <SalesRedirectCheck />
-      <ScrollDownIndicator />
-      
+      <AutoScrollIndicatorEnhanced />      
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" dir="rtl">
       {/* Microsoft Clarity Analytics */}
       {/* التحقق من نظام التوزيع */}
@@ -1375,7 +1374,7 @@ export default function Sales3Page() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs bg-white/10 px-3 py-1 rounded-full">
-                  {filteredCvs.length} سيرة متاحة
+                  {allFilteredCvs.length} سيرة متاحة
                 </span>
               </div>
             </div>
@@ -1948,13 +1947,6 @@ export default function Sales3Page() {
                   })}
                 </div>
               )}
-            </>
-          )
-        }}
-      )}
-    </>
-  )
-}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
@@ -2599,9 +2591,9 @@ export default function Sales3Page() {
           </div>
         </div>
       )}
-</div>
-  </>
-)
+    </div>
+    </>
+  )
 }
 
 

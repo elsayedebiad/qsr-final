@@ -36,8 +36,8 @@ import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
+import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
 import VideoPlayer from '@/components/VideoPlayer'
-import ScrollDownIndicator from '@/components/ScrollDownIndicator'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -1372,8 +1372,7 @@ export default function Sales4Page() {
       <style>{customStyles}</style>
       <ClarityScript />
       <SalesRedirectCheck />
-      <ScrollDownIndicator />
-      
+      <AutoScrollIndicatorEnhanced />      
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" dir="rtl">
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">
