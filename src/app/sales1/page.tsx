@@ -35,6 +35,7 @@ import ClarityScript from '@/components/ClarityScript'
 import VideoPlayer from '@/components/VideoPlayer'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
+import ScrollDownIndicator from '@/components/ScrollDownIndicator'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -388,7 +389,6 @@ export default function Sales1Page() {
     
     checkAuthStatus()
   }, [])
-
 
   useEffect(() => {
     const fetchCVs = async () => {
@@ -1447,12 +1447,13 @@ export default function Sales1Page() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col" dir="rtl">
-      {/* Microsoft Clarity Analytics */}
-      <ClarityScript />
-      {/* التحقق من نظام التوزيع */}
-      <SalesRedirectCheck />
+    <>
       <style>{customStyles}</style>
+      <ClarityScript />
+      <SalesRedirectCheck />
+      <ScrollDownIndicator />
+      
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" dir="rtl">
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">
           {/* شريط علوي بمعلومات التواصل */}
@@ -2164,8 +2165,6 @@ export default function Sales1Page() {
                     <option value="NO">لا ({getCountForFilter('englishLevel', 'NO')})</option>
                   </select>
                 </div>
-
-
               </div>
 
               {/* الفلاتر الإضافية - التعليم والمواصفات */}
@@ -2766,8 +2765,8 @@ export default function Sales1Page() {
           </div>
         </div>
       )}
+      <ScrollDownIndicator />
 </div>
-  )
+  </>
+)
 }
-
-

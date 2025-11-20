@@ -133,27 +133,6 @@ export default function SimpleImageCarousel({
           >
             <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 drop-shadow-lg" />
           </button>
-
-          {/* مؤشرات النقاط */}
-          <div className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-            {desktopImages.map((_: string, index: number) => (
-              <button
-                key={index}
-                onClick={() => goToSlide(index)}
-                className={`transition-all duration-500 rounded-full backdrop-blur-md ${
-                  currentIndex === index
-                    ? 'bg-blue-600/70 w-8 md:w-10 h-2 shadow-lg'
-                    : 'bg-blue-600/30 w-2 h-2 hover:bg-blue-600/50 hover:scale-125'
-                }`}
-                style={{
-                  boxShadow: currentIndex === index 
-                    ? '0 4px 16px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)'
-                    : '0 2px 8px rgba(37, 99, 235, 0.2)'
-                }}
-                aria-label={`انتقل إلى الصورة ${index + 1}`}
-              />
-            ))}
-          </div>
         </>
       )}
     </div>

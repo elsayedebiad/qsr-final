@@ -31,6 +31,7 @@ import ClarityScript from '@/components/ClarityScript'
 import VideoPlayer from '@/components/VideoPlayer'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
+import ScrollDownIndicator from '@/components/ScrollDownIndicator'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -2341,8 +2342,9 @@ export default function TransferServicesPage() {
           </div>
         </div>
       )}
+      <ScrollDownIndicator />
 </div>
-  )
-}
+  </>
+)
 
 

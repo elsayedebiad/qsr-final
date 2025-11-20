@@ -37,6 +37,7 @@ import ClarityScript from '@/components/ClarityScript'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import VideoPlayer from '@/components/VideoPlayer'
+import ScrollDownIndicator from '@/components/ScrollDownIndicator'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -2566,8 +2567,10 @@ export default function Sales11Page() {
           </div>
         </div>
       )}
+      <ScrollDownIndicator />
 </div>
-  )
+  </>
+)
 }
 
 
