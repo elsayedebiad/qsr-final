@@ -2343,8 +2343,8 @@ export default function TransferServicesPage() {
         </div>
       )}
       <ScrollDownIndicator />
-</div>
-  </>
-)
+    </div>
+  )
+}
 
 
