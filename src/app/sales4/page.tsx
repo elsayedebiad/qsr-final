@@ -154,7 +154,7 @@ interface CV {
   cvImageUrl?: string
 }
 
-export default function Sales1Page() {
+export default function Sales4Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
   const [isLoading, setIsLoading] = useState(true)
