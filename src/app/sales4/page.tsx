@@ -36,6 +36,7 @@ import VideoPlayer from '@/components/VideoPlayer'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
+import { logSearchAnalytics, logPageView } from '@/lib/search-analytics'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -749,15 +750,9 @@ export default function Sales4Page() {
       // إذا كانت القيمة غير فارغة ولكن لا تحتوي على معلومات واضحة
       // نعتبرها خبرة (لأنها ليست "بدون خبرة" صريحة)
       const hasExperience = !isExactNoExperience && experienceValue !== ''
-      
-      if (experienceFilter === 'WITH_EXPERIENCE') {
-        return hasExperience
-      }
 
-      if (experienceFilter === 'NO_EXPERIENCE') {
-        return !hasExperience
-      }
-
+      if (experienceFilter === 'WITH_EXPERIENCE') return hasExperience
+      if (experienceFilter === 'NO_EXPERIENCE') return !hasExperience
       return true
     })()
 
@@ -1215,6 +1210,11 @@ export default function Sales4Page() {
       }, 100)
     }
   }, [nationalityFilter, statusFilter, positionFilter, searchTerm])
+
+  useEffect(() => {
+    if (cvs.length === 0) return
+    logSearchAnalytics({salesPageId, searchTerm: searchTerm || undefined, nationality: nationalityFilter !== 'ALL' ? nationalityFilter : undefined, position: positionFilter !== 'ALL' ? positionFilter : undefined, ageFilter: ageFilterEnabled ? `${minAge}-${maxAge}` : undefined, experience: experienceFilter !== 'ALL' ? experienceFilter : undefined, arabicLevel: arabicLevelFilter !== 'ALL' ? arabicLevelFilter : undefined, englishLevel: englishLevelFilter !== 'ALL' ? englishLevelFilter : undefined, maritalStatus: maritalStatusFilter !== 'ALL' ? maritalStatusFilter : undefined, skills: skillFilters.length > 0 ? skillFilters : undefined, religion: religionFilter !== 'ALL' ? religionFilter : undefined, education: educationFilter !== 'ALL' ? educationFilter : undefined, resultsCount: allFilteredCvs.length})
+  }, [salesPageId, searchTerm, nationalityFilter, positionFilter, minAge, maxAge, ageFilterEnabled, experienceFilter, arabicLevelFilter, englishLevelFilter, maritalStatusFilter, skillFilters, religionFilter, educationFilter, allFilteredCvs.length, cvs.length])
 
   // دالة للتعامل مع تبديل المهارات
   const toggleSkillFilter = (skill: string) => {
@@ -1678,6 +1678,7 @@ export default function Sales4Page() {
                 autoPlay={true}
                 autoPlayInterval={4000}
                 className=""
+                whatsappNumber={whatsappNumber}
               />
             </div>
           )}
@@ -1691,6 +1692,7 @@ export default function Sales4Page() {
                 autoPlay={true}
                 autoPlayInterval={4000}
                 className=""
+                whatsappNumber={whatsappNumber}
               />
             </div>
           )}

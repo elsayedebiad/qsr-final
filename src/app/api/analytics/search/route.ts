@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
     // تسجيل عملية البحث
-    const analytics = await prisma.searchAnalytics.create({
+    const analytics = await db.searchAnalytics.create({
       data: {
         salesPageId,
         searchTerm: searchTerm || null,
@@ -66,6 +66,8 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     const limit = parseInt(searchParams.get('limit') || '100')
 
+    console.log('Analytics Request:', { salesPageId, startDate, endDate, limit })
+
     const where: any = {}
     
     if (salesPageId && salesPageId !== 'all') {
@@ -73,17 +75,25 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate && endDate) {
+      const start = new Date(startDate)
+      const end = new Date(endDate)
+      end.setHours(23, 59, 59, 999) // Include the entire end day
+      
       where.timestamp = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
+        gte: start,
+        lte: end
       }
     }
 
-    const analytics = await prisma.searchAnalytics.findMany({
+    console.log('Query where:', where)
+
+    const analytics = await db.searchAnalytics.findMany({
       where,
       orderBy: { timestamp: 'desc' },
       take: limit
     })
+
+    console.log(`Found ${analytics.length} analytics records`)
 
     // إحصائيات ملخصة
     const stats = {
@@ -98,13 +108,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ analytics, stats })
   } catch (error) {
     console.error('Error fetching search analytics:', error)
-    return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to fetch analytics', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 })
   }
 }
 
 // دوال مساعدة
 async function getTopSearchTerms(where: any) {
-  const searches = await prisma.searchAnalytics.groupBy({
+  const searches = await db.searchAnalytics.groupBy({
     by: ['searchTerm'],
     where: {
       ...where,
@@ -122,7 +135,7 @@ async function getTopSearchTerms(where: any) {
 }
 
 async function getTopNationalities(where: any) {
-  const nationalities = await prisma.searchAnalytics.groupBy({
+  const nationalities = await db.searchAnalytics.groupBy({
     by: ['nationality'],
     where: {
       ...where,
@@ -140,7 +153,7 @@ async function getTopNationalities(where: any) {
 }
 
 async function getTopPositions(where: any) {
-  const positions = await prisma.searchAnalytics.groupBy({
+  const positions = await db.searchAnalytics.groupBy({
     by: ['position'],
     where: {
       ...where,
@@ -158,7 +171,7 @@ async function getTopPositions(where: any) {
 }
 
 async function getTopSkills(where: any) {
-  const allSearches = await prisma.searchAnalytics.findMany({
+  const allSearches = await db.searchAnalytics.findMany({
     where,
     select: { skills: true }
   })
@@ -177,7 +190,7 @@ async function getTopSkills(where: any) {
 }
 
 async function getSearchesByPage(where: any) {
-  const byPage = await prisma.searchAnalytics.groupBy({
+  const byPage = await db.searchAnalytics.groupBy({
     by: ['salesPageId'],
     where,
     _count: true,

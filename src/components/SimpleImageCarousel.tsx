@@ -9,6 +9,7 @@ interface SimpleImageCarouselProps {
   autoPlay?: boolean
   autoPlayInterval?: number
   className?: string
+  whatsappNumber?: string
 }
 
 export default function SimpleImageCarousel({ 
@@ -16,9 +17,19 @@ export default function SimpleImageCarousel({
   mobileImages,
   autoPlay = true,
   autoPlayInterval = 3000,
-  className = ""
+  className = "",
+  whatsappNumber
 }: SimpleImageCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
+
+  // دالة فتح الواتساب عند النقر على الصورة
+  const handleImageClick = () => {
+    if (whatsappNumber) {
+      const message = 'مرحباً، أود الاستفسار عن الخدمات'
+      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+      window.open(whatsappUrl, '_blank')
+    }
+  }
 
   // Auto-play functionality
   useEffect(() => {
@@ -67,10 +78,12 @@ export default function SimpleImageCarousel({
                 alt={`صورة ${index + 1}`} 
                 className="w-full h-auto object-contain flex-shrink-0"
                 style={{ 
-                  imageRendering: 'high-quality'
+                  imageRendering: 'high-quality',
+                  cursor: whatsappNumber ? 'pointer' : 'default'
                 }}
                 loading="eager"
                 decoding="sync"
+                onClick={handleImageClick}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
                   target.src = '/placeholder-image.png'
@@ -95,10 +108,12 @@ export default function SimpleImageCarousel({
                 alt={`صورة ${index + 1} موبايل`} 
                 className="w-full h-auto object-contain flex-shrink-0"
                 style={{ 
-                  imageRendering: 'high-quality'
+                  imageRendering: 'high-quality',
+                  cursor: whatsappNumber ? 'pointer' : 'default'
                 }}
                 loading="eager"
                 decoding="sync"
+                onClick={handleImageClick}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
                   target.src = '/placeholder-image.png'

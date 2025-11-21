@@ -38,6 +38,7 @@ import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
 import VideoPlayer from '@/components/VideoPlayer'
+import { logSearchAnalytics, logPageView } from '@/lib/search-analytics'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -1121,6 +1122,11 @@ export default function Sales9Page() {
     }
   }, [nationalityFilter, statusFilter, positionFilter, searchTerm])
 
+  useEffect(() => {
+    if (cvs.length === 0) return
+    logSearchAnalytics({salesPageId, searchTerm: searchTerm || undefined, nationality: nationalityFilter !== 'ALL' ? nationalityFilter : undefined, position: positionFilter !== 'ALL' ? positionFilter : undefined, ageFilter: ageFilterEnabled ? `${minAge}-${maxAge}` : undefined, experience: experienceFilter !== 'ALL' ? experienceFilter : undefined, arabicLevel: arabicLevelFilter !== 'ALL' ? arabicLevelFilter : undefined, englishLevel: englishLevelFilter !== 'ALL' ? englishLevelFilter : undefined, maritalStatus: maritalStatusFilter !== 'ALL' ? maritalStatusFilter : undefined, skills: skillFilters.length > 0 ? skillFilters : undefined, religion: religionFilter !== 'ALL' ? religionFilter : undefined, education: educationFilter !== 'ALL' ? educationFilter : undefined, resultsCount: allFilteredCvs.length})
+  }, [salesPageId, searchTerm, nationalityFilter, positionFilter, minAge, maxAge, ageFilterEnabled, experienceFilter, arabicLevelFilter, englishLevelFilter, maritalStatusFilter, skillFilters, religionFilter, educationFilter, allFilteredCvs.length, cvs.length])
+
   // دالة للتعامل مع تبديل المهارات
   const toggleSkillFilter = (skill: string) => {
     setSkillFilters(prev => {
@@ -1572,6 +1578,7 @@ export default function Sales9Page() {
                 autoPlay={true}
                 autoPlayInterval={4000}
                 className=""
+                whatsappNumber={whatsappNumber}
               />
             </div>
           )}
@@ -1585,6 +1592,7 @@ export default function Sales9Page() {
                 autoPlay={true}
                 autoPlayInterval={4000}
                 className=""
+                whatsappNumber={whatsappNumber}
               />
             </div>
           )}

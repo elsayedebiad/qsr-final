@@ -36,6 +36,7 @@ import VideoPlayer from '@/components/VideoPlayer'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
+import { logSearchAnalytics, logPageView } from '@/lib/search-analytics'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -918,7 +919,7 @@ export default function Sales1Page() {
     return Array.from(new Set(positions)).sort()
   }, [cvs])
 
-  // استخراج الجنسيات الفريدة من البيانات المرفوعة
+  // استخراج الجنسيات الفريقة من البيانات المرفوعة
   const uniqueNationalities = useMemo(() => {
     const nationalities = cvs
       .map(cv => cv.nationality)
@@ -1215,6 +1216,45 @@ export default function Sales1Page() {
       }, 100)
     }
   }, [nationalityFilter, statusFilter, positionFilter, searchTerm])
+
+  // تسجيل عمليات البحث والفلاتر
+  useEffect(() => {
+    // تسجيل فقط إذا تم تحميل البيانات
+    if (cvs.length === 0) return
+
+    logSearchAnalytics({
+      salesPageId,
+      searchTerm: searchTerm || undefined,
+      nationality: nationalityFilter !== 'ALL' ? nationalityFilter : undefined,
+      position: positionFilter !== 'ALL' ? positionFilter : undefined,
+      ageFilter: ageFilterEnabled ? `${minAge}-${maxAge}` : undefined,
+      experience: experienceFilter !== 'ALL' ? experienceFilter : undefined,
+      arabicLevel: arabicLevelFilter !== 'ALL' ? arabicLevelFilter : undefined,
+      englishLevel: englishLevelFilter !== 'ALL' ? englishLevelFilter : undefined,
+      maritalStatus: maritalStatusFilter !== 'ALL' ? maritalStatusFilter : undefined,
+      skills: skillFilters.length > 0 ? skillFilters : undefined,
+      religion: religionFilter !== 'ALL' ? religionFilter : undefined,
+      education: educationFilter !== 'ALL' ? educationFilter : undefined,
+      resultsCount: allFilteredCvs.length
+    })
+  }, [
+    salesPageId,
+    searchTerm,
+    nationalityFilter,
+    positionFilter,
+    minAge,
+    maxAge,
+    ageFilterEnabled,
+    experienceFilter,
+    arabicLevelFilter,
+    englishLevelFilter,
+    maritalStatusFilter,
+    skillFilters,
+    religionFilter,
+    educationFilter,
+    allFilteredCvs.length,
+    cvs.length
+  ])
 
   // دالة للتعامل مع تبديل المهارات
   const toggleSkillFilter = (skill: string) => {
@@ -1678,6 +1718,7 @@ export default function Sales1Page() {
                 autoPlay={true}
                 autoPlayInterval={4000}
                 className=""
+                whatsappNumber={whatsappNumber}
               />
             </div>
           )}
@@ -1691,6 +1732,7 @@ export default function Sales1Page() {
                 autoPlay={true}
                 autoPlayInterval={4000}
                 className=""
+                whatsappNumber={whatsappNumber}
               />
             </div>
           )}

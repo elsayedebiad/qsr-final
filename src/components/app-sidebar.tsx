@@ -35,6 +35,7 @@ import {
   Network,
   Clock,
   Briefcase,
+  Search,
 } from "lucide-react"
 
 import {
@@ -431,6 +432,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       adminOnly: true
     },
     {
+      id: 'search-analytics',
+      label: 'تحليلات البحث والفلاتر',
+      icon: Search,
+      href: '/dashboard/search-analytics',
+      adminOnly: true
+    },
+    {
       id: 'users',
       label: 'إدارة المستخدمين',
       icon: Users,
@@ -471,9 +479,9 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       if (user?.role === 'DEVELOPER' || user?.email === 'developer@system.local') {
         // Developer sees everything - no restrictions
       }
-      // Allow SUB_ADMIN to see CV-related items and contracts
+      // Allow SUB_ADMIN to see CV-related items, contracts, and banners
       else if (user?.role === 'SUB_ADMIN') {
-        const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets', 'contracts']
+        const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets', 'contracts', 'banners', 'secondary-banners']
         if (!subAdminAllowedItems.includes(item.id)) {
           return null
         }
