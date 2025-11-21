@@ -580,3 +580,31 @@ enum NewContractStatus {
   CANCELLED // ملغي
   OUTSIDE_KINGDOM // خارج المملكة
 }
+
+// تتبع عمليات البحث والفلاتر
+model SearchAnalytics {
+  id            Int      @id @default(autoincrement())
+  salesPageId   String // sales1, sales2, ... sales11
+  searchTerm    String? // كلمة البحث
+  nationality   String? // فلتر الجنسية
+  position      String? // فلتر الوظيفة
+  ageFilter     String? // فلتر العمر
+  experience    String? // فلتر الخبرة
+  arabicLevel   String? // فلتر اللغة العربية
+  englishLevel  String? // فلتر اللغة الإنجليزية
+  maritalStatus String? // فلتر الحالة الاجتماعية
+  skills        String[] @default([]) // المهارات المحددة
+  religion      String? // فلتر الديانة
+  education     String? // فلتر التعليم
+  ipAddress     String? // عنوان IP
+  userAgent     String? // معلومات المتصفح
+  sessionId     String? // معرف الجلسة
+  resultsCount  Int? // عدد النتائج
+  timestamp     DateTime @default(now())
+
+  @@index([salesPageId, timestamp])
+  @@index([searchTerm])
+  @@index([nationality])
+  @@index([position])
+  @@map("search_analytics")
+}

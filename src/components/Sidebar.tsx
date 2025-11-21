@@ -384,9 +384,9 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
       if (user?.role === 'DEVELOPER' || user?.email === 'developer@system.local') {
         // Developer sees everything - no restrictions
       }
-      // Allow SUB_ADMIN to see CV-related items only (add, import, smart-import, google-sheets)
+      // Allow SUB_ADMIN to see CV-related items and analytics
       else if (user?.role === 'SUB_ADMIN') {
-        const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets']
+        const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets', 'analytics']
         if (!subAdminAllowedItems.includes(item.id)) {
           return null
         }

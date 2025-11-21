@@ -16,7 +16,12 @@ import {
   RefreshCw,
   FileImage,
   AlertCircle,
-  Loader2
+  Loader2,
+  CheckSquare,
+  Square,
+  ChevronDown,
+  Monitor,
+  Smartphone
 } from 'lucide-react'
 import { compressAndConvertImage, isValidImageFile, isValidFileSize, getImageInfo } from '@/lib/image-utils'
 
@@ -39,12 +44,13 @@ export default function SecondaryBannersPage() {
   const [editingBanner, setEditingBanner] = useState<SecondaryBanner | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [imagePreview, setImagePreview] = useState<string>('')
-  const [imageInfo, setImageInfo] = useState<{width: number, height: number, size: string} | null>(null)
+  const [imagePreviews, setImagePreviews] = useState<Array<{preview: string, info: {width: number, height: number, size: string}, url: string}>>([]) 
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [selectedBanners, setSelectedBanners] = useState<number[]>([])
+  const [showBulkActions, setShowBulkActions] = useState(false)
 
   // بيانات النموذج
   const [formData, setFormData] = useState({
-    imageUrl: '',
     deviceType: 'DESKTOP',
     order: 0
   })
@@ -86,108 +92,166 @@ export default function SecondaryBannersPage() {
     fetchBanners()
   }, [fetchBanners])
 
-  // معالجة اختيار الصورة
+  // معالجة اختيار الصور المتعددة
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    const fileArray = Array.from(files)
+    const validFiles: File[] = []
+    
+    // التحقق من صحة جميع الملفات
+    for (const file of fileArray) {
+      if (!isValidImageFile(file)) {
+        toast.error(`نوع الملف "${file.name}" غير مدعوم`)
+        continue
+      }
+      if (!isValidFileSize(file, 5)) {
+        toast.error(`حجم الملف "${file.name}" كبير جداً. الحد الأقصى 5 ميجابايت`)
+        continue
+      }
+      validFiles.push(file)
+    }
+
+    if (validFiles.length === 0) return
 
     try {
-      // التحقق من نوع الملف
-      if (!isValidImageFile(file)) {
-        toast.error('نوع الملف غير مدعوم. يرجى اختيار صورة (JPG, PNG, WebP, GIF)')
-        return
-      }
-
-      // التحقق من حجم الملف
-      if (!isValidFileSize(file, 5)) {
-        toast.error('حجم الملف كبير جداً. الحد الأقصى 5 ميجابايت')
-        return
-      }
-
       setIsUploading(true)
       setUploadProgress(0)
 
-      // محاكاة تقدم سلس للرفع
-      const simulateProgress = async (target: number, duration: number) => {
-        const steps = 10
-        const stepDelay = duration / steps
-        const stepSize = (target - uploadProgress) / steps
-        
-        for (let i = 1; i <= steps; i++) {
-          await new Promise(resolve => setTimeout(resolve, stepDelay))
-          setUploadProgress(prev => Math.min(prev + stepSize, target))
+      const processedImages = []
+      const totalFiles = validFiles.length
+      
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i]
+        const progressBase = (i / totalFiles) * 100
+        const progressStep = 100 / totalFiles
+
+        // محاكاة تقدم سلس للرفع
+        const simulateProgress = async (target: number, duration: number) => {
+          const steps = 5
+          const stepDelay = duration / steps
+          const stepSize = (target - uploadProgress) / steps
+          
+          for (let j = 1; j <= steps; j++) {
+            await new Promise(resolve => setTimeout(resolve, stepDelay))
+            setUploadProgress(prev => Math.min(prev + stepSize, target))
+          }
         }
+
+        // الحصول على معلومات الصورة
+        await simulateProgress(progressBase + progressStep * 0.3, 200)
+        const info = await getImageInfo(file)
+
+        // إنشاء معاينة
+        await simulateProgress(progressBase + progressStep * 0.6, 300)
+        const preview = await compressAndConvertImage(file, 400, 300, 0.7)
+
+        // ضغط الصورة للتخزين
+        await simulateProgress(progressBase + progressStep * 0.9, 400)
+        const maxWidth = formData.deviceType === 'DESKTOP' ? 1200 : 800
+        const maxHeight = formData.deviceType === 'DESKTOP' ? 600 : 800
+        
+        const compressedImage = await compressAndConvertImage(file, maxWidth, maxHeight, 0.8)
+        
+        processedImages.push({
+          preview,
+          info,
+          url: compressedImage
+        })
+
+        await simulateProgress(progressBase + progressStep, 100)
       }
-
-      // الحصول على معلومات الصورة (20%)
-      await simulateProgress(20, 300)
-      const info = await getImageInfo(file)
-      setImageInfo(info)
-
-      // إنشاء معاينة (50%)
-      await simulateProgress(50, 400)
-      const preview = await compressAndConvertImage(file, 400, 300, 0.7)
-      setImagePreview(preview)
-
-      // ضغط الصورة للتخزين (100%)
-      await simulateProgress(80, 500)
-      const maxWidth = formData.deviceType === 'DESKTOP' ? 1200 : 800
-      const maxHeight = formData.deviceType === 'DESKTOP' ? 600 : 800
       
-      const compressedImage = await compressAndConvertImage(file, maxWidth, maxHeight, 0.8)
+      // إضافة الصور الجديدة للقائمة الموجودة (أو استبدالها في حالة التعديل)
+      setImagePreviews(prev => editingBanner ? processedImages : [...prev, ...processedImages])
+      setSelectedFiles(prev => [...prev, ...validFiles])
+      toast.success(`تم رفع ${validFiles.length} صورة بنجاح`)
       
-      await simulateProgress(100, 200)
-      setFormData(prev => ({ ...prev, imageUrl: compressedImage }))
-      
-      toast.success('تم رفع الصورة بنجاح')
+      // إعادة تعيين الـ input
+      event.target.value = ''
     } catch (error) {
-      console.error('Error processing image:', error)
-      toast.error('فشل في معالجة الصورة')
+      console.error('Error processing images:', error)
+      toast.error('فشل في معالجة بعض الصور')
     } finally {
       setIsUploading(false)
       setUploadProgress(0)
     }
   }
 
-  // إزالة الصورة المختارة
-  const handleRemoveImage = () => {
-    setImagePreview('')
-    setImageInfo(null)
-    setFormData(prev => ({ ...prev, imageUrl: '' }))
+  // إزالة صورة معينة من القائمة
+  const handleRemoveImage = (index: number) => {
+    setImagePreviews(prev => prev.filter((_, i) => i !== index))
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // إزالة جميع الصور
+  const handleRemoveAllImages = () => {
+    setImagePreviews([])
+    setSelectedFiles([])
   }
 
   // إعادة تعيين النموذج
   const resetForm = () => {
-    setFormData({ imageUrl: '', deviceType: 'DESKTOP', order: 0 })
-    setImagePreview('')
-    setImageInfo(null)
+    setFormData({ deviceType: 'DESKTOP', order: 0 })
+    setImagePreviews([])
+    setSelectedFiles([])
     setEditingBanner(null)
   }
 
-  // إضافة بنر جديد
+  // إضافة بنرات جديدة (متعددة)
   const handleAddBanner = async () => {
-    try {
-      const response = await fetch('/api/secondary-banners', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          salesPageId: selectedSalesPage,
-          ...formData
-        })
-      })
+    if (imagePreviews.length === 0) {
+      toast.error('يرجى اختيار صورة واحدة على الأقل')
+      return
+    }
 
-      if (response.ok) {
-        toast.success('تم إضافة البنر بنجاح')
+    try {
+      setIsUploading(true)
+      let successCount = 0
+      let failCount = 0
+
+      // رفع كل صورة على حدة
+      for (let i = 0; i < imagePreviews.length; i++) {
+        const image = imagePreviews[i]
+        try {
+          const response = await fetch('/api/secondary-banners', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              salesPageId: selectedSalesPage,
+              imageUrl: image.url,
+              deviceType: formData.deviceType,
+              order: formData.order + i // ترتيب تلقائي متسلسل
+            })
+          })
+
+          if (response.ok) {
+            successCount++
+          } else {
+            failCount++
+          }
+        } catch (error) {
+          console.error('Error adding banner:', error)
+          failCount++
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`تم إضافة ${successCount} بنر بنجاح`)
         resetForm()
         setShowAddModal(false)
         fetchBanners()
-      } else {
-        const errorData = await response.json()
-        toast.error(errorData.error || 'فشل في إضافة البنر')
+      }
+      
+      if (failCount > 0) {
+        toast.error(`فشل في إضافة ${failCount} بنر`)
       }
     } catch (error) {
-      console.error('Error adding banner:', error)
-      toast.error('حدث خطأ أثناء إضافة البنر')
+      console.error('Error adding banners:', error)
+      toast.error('حدث خطأ أثناء إضافة البنرات')
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -196,13 +260,21 @@ export default function SecondaryBannersPage() {
     if (!editingBanner) return
 
     try {
+      const updateData: any = {
+        id: editingBanner.id,
+        deviceType: formData.deviceType,
+        order: formData.order
+      }
+
+      // إذا تم اختيار صورة جديدة
+      if (imagePreviews.length > 0) {
+        updateData.imageUrl = imagePreviews[0].url
+      }
+
       const response = await fetch('/api/secondary-banners', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editingBanner.id,
-          ...formData
-        })
+        body: JSON.stringify(updateData)
       })
 
       if (response.ok) {
@@ -269,13 +341,164 @@ export default function SecondaryBannersPage() {
   const openEditModal = (banner: SecondaryBanner) => {
     setEditingBanner(banner)
     setFormData({
-      imageUrl: banner.imageUrl,
       deviceType: banner.deviceType,
       order: banner.order
     })
     // عرض الصورة الحالية كمعاينة
     if (banner.imageUrl) {
-      setImagePreview(banner.imageUrl)
+      setImagePreviews([{
+        preview: banner.imageUrl,
+        url: banner.imageUrl,
+        info: { width: 0, height: 0, size: '' }
+      }])
+    }
+  }
+
+  // تحديد/إلغاء تحديد بنر
+  const toggleSelectBanner = (id: number) => {
+    setSelectedBanners(prev => 
+      prev.includes(id) ? prev.filter(bannerId => bannerId !== id) : [...prev, id]
+    )
+  }
+
+  // تحديد/إلغاء تحديد الكل
+  const toggleSelectAll = () => {
+    if (selectedBanners.length === banners.length) {
+      setSelectedBanners([])
+    } else {
+      setSelectedBanners(banners.map(b => b.id))
+    }
+  }
+
+  // حذف البانرات المحددة
+  const handleBulkDelete = async () => {
+    if (selectedBanners.length === 0) {
+      toast.error('لم تقم بتحديد أي بنرات')
+      return
+    }
+
+    if (!confirm(`هل أنت متأكد من حذف ${selectedBanners.length} بنر؟`)) return
+
+    try {
+      let successCount = 0
+      let failCount = 0
+
+      for (const id of selectedBanners) {
+        try {
+          const response = await fetch(`/api/secondary-banners?id=${id}`, {
+            method: 'DELETE'
+          })
+          if (response.ok) {
+            successCount++
+          } else {
+            failCount++
+          }
+        } catch (error) {
+          console.error('Error deleting banner:', error)
+          failCount++
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`تم حذف ${successCount} بنر بنجاح`)
+        setSelectedBanners([])
+        fetchBanners()
+      }
+
+      if (failCount > 0) {
+        toast.error(`فشل في حذف ${failCount} بنر`)
+      }
+    } catch (error) {
+      console.error('Error in bulk delete:', error)
+      toast.error('حدث خطأ أثناء الحذف الجماعي')
+    }
+  }
+
+  // تفعيل/تعطيل البانرات المحددة
+  const handleBulkToggleStatus = async (isActive: boolean) => {
+    if (selectedBanners.length === 0) {
+      toast.error('لم تقم بتحديد أي بنرات')
+      return
+    }
+
+    try {
+      let successCount = 0
+      let failCount = 0
+
+      for (const id of selectedBanners) {
+        try {
+          const response = await fetch('/api/secondary-banners', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, isActive })
+          })
+          if (response.ok) {
+            successCount++
+          } else {
+            failCount++
+          }
+        } catch (error) {
+          console.error('Error updating banner:', error)
+          failCount++
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`تم ${isActive ? 'تفعيل' : 'تعطيل'} ${successCount} بنر بنجاح`)
+        setSelectedBanners([])
+        fetchBanners()
+      }
+
+      if (failCount > 0) {
+        toast.error(`فشل في تحديث ${failCount} بنر`)
+      }
+    } catch (error) {
+      console.error('Error in bulk status update:', error)
+      toast.error('حدث خطأ أثناء التحديث الجماعي')
+    }
+  }
+
+  // تغيير نوع الجهاز للبانرات المحددة
+  const handleBulkChangeDeviceType = async (deviceType: string) => {
+    if (selectedBanners.length === 0) {
+      toast.error('لم تقم بتحديد أي بنرات')
+      return
+    }
+
+    try {
+      let successCount = 0
+      let failCount = 0
+
+      for (const id of selectedBanners) {
+        try {
+          const response = await fetch('/api/secondary-banners', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, deviceType })
+          })
+          if (response.ok) {
+            successCount++
+          } else {
+            failCount++
+          }
+        } catch (error) {
+          console.error('Error updating banner:', error)
+          failCount++
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`تم تحديث ${successCount} بنر بنجاح`)
+        setSelectedBanners([])
+        fetchBanners()
+      }
+
+      if (failCount > 0) {
+        toast.error(`فشل في تحديث ${failCount} بنر`)
+      }
+    } catch (error) {
+      console.error('Error in bulk device type update:', error)
+      toast.error('حدث خطأ أثناء التحديث الجماعي')
     }
   }
 
@@ -290,6 +513,7 @@ export default function SecondaryBannersPage() {
               <div>
                 <h1 className="text-2xl font-bold text-foreground">إدارة البنرات الإضافية</h1>
                 <p className="text-muted-foreground">إدارة صور الكاروسل الإضافي في صفحات المبيعات</p>
+                <p className="text-xs text-blue-600 font-medium mt-1">✨ جديد: رفع أكثر من صورة في نفس الوقت</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -329,6 +553,8 @@ export default function SecondaryBannersPage() {
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <h4 className="text-sm font-medium text-blue-800 mb-2">💡 نصائح مهمة:</h4>
               <ul className="text-xs text-blue-700 space-y-1">
+                <li>• ✨ <strong>يمكنك رفع أكثر من صورة في نفس الوقت!</strong></li>
+                <li>• 🎯 <strong>استخدم التحديد الجماعي لحذف أو تعديل عدة بنرات دفعة واحدة</strong></li>
                 <li>• أضف صور منفصلة للكمبيوتر (💻) والموبايل (📱) لأفضل عرض</li>
                 <li>• صور الكمبيوتر يُفضل أن تكون عريضة (مثل 1200x400)</li>
                 <li>• صور الموبايل يُفضل أن تكون أكثر طولاً (مثل 800x600)</li>
@@ -336,6 +562,99 @@ export default function SecondaryBannersPage() {
               </ul>
             </div>
           </div>
+
+          {/* شريط العمليات الجماعية */}
+          {banners.length > 0 && (
+            <div className="bg-card border border-border rounded-lg p-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="flex items-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+                  >
+                    {selectedBanners.length === banners.length ? (
+                      <CheckSquare className="h-5 w-5 text-primary" />
+                    ) : (
+                      <Square className="h-5 w-5" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {selectedBanners.length === banners.length ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
+                    </span>
+                  </button>
+                  
+                  {selectedBanners.length > 0 && (
+                    <span className="text-sm text-muted-foreground bg-primary/10 px-3 py-2 rounded-lg">
+                      محدد: <strong className="text-primary">{selectedBanners.length}</strong> من {banners.length}
+                    </span>
+                  )}
+                </div>
+
+                {selectedBanners.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => handleBulkToggleStatus(true)}
+                      className="flex items-center gap-2 px-3 py-2 bg-success hover:opacity-90 text-white rounded-lg transition-all text-sm"
+                    >
+                      <Eye className="h-4 w-4" />
+                      تفعيل المحدد
+                    </button>
+                    
+                    <button
+                      onClick={() => handleBulkToggleStatus(false)}
+                      className="flex items-center gap-2 px-3 py-2 bg-warning hover:opacity-90 text-white rounded-lg transition-all text-sm"
+                    >
+                      <EyeOff className="h-4 w-4" />
+                      تعطيل المحدد
+                    </button>
+
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowBulkActions(!showBulkActions)}
+                        className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all text-sm"
+                      >
+                        <Edit className="h-4 w-4" />
+                        تعديل النوع
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                      
+                      {showBulkActions && (
+                        <div className="absolute top-full left-0 mt-2 bg-card border border-border rounded-lg shadow-lg z-10 min-w-[180px]">
+                          <button
+                            onClick={() => {
+                              handleBulkChangeDeviceType('DESKTOP')
+                              setShowBulkActions(false)
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2 hover:bg-muted transition-colors text-sm"
+                          >
+                            <Monitor className="h-4 w-4" />
+                            كمبيوتر
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleBulkChangeDeviceType('MOBILE')
+                              setShowBulkActions(false)
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2 hover:bg-muted transition-colors text-sm"
+                          >
+                            <Smartphone className="h-4 w-4" />
+                            موبايل
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <button
+                      onClick={handleBulkDelete}
+                      className="flex items-center gap-2 px-3 py-2 bg-destructive hover:opacity-90 text-white rounded-lg transition-all text-sm"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      حذف المحدد ({selectedBanners.length})
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* قائمة البنرات */}
           <div className="bg-card border border-border overflow-hidden rounded-lg">
@@ -360,8 +679,22 @@ export default function SecondaryBannersPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                 {banners.map((banner) => (
-                  <div key={banner.id} className="bg-muted rounded-lg overflow-hidden">
+                  <div key={banner.id} className="bg-muted rounded-lg overflow-hidden border-2 border-transparent hover:border-primary/30 transition-all">
                     <div className="relative">
+                      {/* Checkbox للتحديد */}
+                      <div className="absolute top-2 left-2 z-10">
+                        <button
+                          onClick={() => toggleSelectBanner(banner.id)}
+                          className="bg-white/90 dark:bg-gray-800/90 p-1.5 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-colors shadow-lg"
+                        >
+                          {selectedBanners.includes(banner.id) ? (
+                            <CheckSquare className="h-5 w-5 text-primary" />
+                          ) : (
+                            <Square className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </button>
+                      </div>
+
                       <img
                         src={banner.imageUrl}
                         alt={`Banner ${banner.id}`}
@@ -437,8 +770,7 @@ export default function SecondaryBannersPage() {
                   <button
                     onClick={() => {
                       setShowAddModal(false)
-                      setEditingBanner(null)
-                      setFormData({ imageUrl: '', deviceType: 'DESKTOP', order: 0 })
+                      resetForm()
                     }}
                     className="text-muted-foreground hover:text-foreground transition-colors"
                   >
@@ -447,17 +779,18 @@ export default function SecondaryBannersPage() {
                 </div>
 
                 <div className="space-y-4">
-                  {/* رفع الصورة */}
+                  {/* رفع الصور */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      رفع الصورة:
+                      {editingBanner ? 'رفع صورة جديدة (اختياري):' : 'رفع الصور:'}
                     </label>
                     
-                    {!imagePreview ? (
+                    {imagePreviews.length === 0 ? (
                       <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
                         <input
                           type="file"
                           accept="image/*"
+                          multiple={!editingBanner}
                           onChange={handleFileSelect}
                           className="hidden"
                           id="image-upload"
@@ -478,41 +811,89 @@ export default function SecondaryBannersPage() {
                                 color="bg-gradient-to-r from-primary to-primary/80"
                               />
                               <p className="text-sm text-muted-foreground text-center mt-2">
-                                جاري معالجة الصورة...
+                                جاري معالجة الصور...
                               </p>
                             </div>
                           ) : (
                             <>
                               <FileImage className="h-8 w-8 text-muted-foreground" />
                               <p className="text-sm text-muted-foreground">
-                                اضغط لاختيار صورة أو اسحبها هنا
+                                {editingBanner ? 'اضغط لاختيار صورة' : 'اضغط لاختيار صور متعددة أو اسحبها هنا'}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                JPG, PNG, WebP, GIF (حتى 5 ميجابايت)
+                                JPG, PNG, WebP, GIF (حتى 5 ميجابايت لكل صورة)
                               </p>
+                              {!editingBanner && (
+                                <p className="text-xs text-blue-600 font-medium mt-1">
+                                  ✨ يمكنك اختيار أكثر من صورة في نفس الوقت
+                                </p>
+                              )}
                             </>
                           )}
                         </label>
                       </div>
                     ) : (
-                      <div className="relative">
-                        <img
-                          src={imagePreview}
-                          alt="معاينة"
-                          className="w-full h-48 object-cover rounded-lg border border-border"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleRemoveImage}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                        {imageInfo && (
-                          <div className="mt-2 text-xs text-muted-foreground">
-                            📏 {imageInfo.width}×{imageInfo.height} • 📁 {imageInfo.size}
+                      <div className="space-y-3">
+                        {/* عرض جميع الصور المختارة */}
+                        <div className="grid grid-cols-2 gap-3">
+                          {imagePreviews.map((image, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={image.preview}
+                                alt={`معاينة ${index + 1}`}
+                                className="w-full h-32 object-cover rounded-lg border border-border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(index)}
+                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                              {image.info && image.info.width > 0 && (
+                                <div className="absolute bottom-2 left-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded">
+                                  {image.info.width}×{image.info.height}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* عداد الصور وأزرار التحكم */}
+                        <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                          <div className="flex items-center gap-2">
+                            <FileImage className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                              {imagePreviews.length} {imagePreviews.length === 1 ? 'صورة مختارة' : 'صور مختارة'}
+                            </span>
                           </div>
-                        )}
+                          <div className="flex gap-2">
+                            {!editingBanner && (
+                              <label
+                                htmlFor="image-upload-more"
+                                className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer font-medium"
+                              >
+                                + إضافة المزيد
+                              </label>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple={!editingBanner}
+                              onChange={handleFileSelect}
+                              className="hidden"
+                              id="image-upload-more"
+                              disabled={isUploading}
+                            />
+                            <button
+                              type="button"
+                              onClick={handleRemoveAllImages}
+                              className="text-xs text-red-600 hover:text-red-700 font-medium"
+                            >
+                              حذف الكل
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -547,11 +928,11 @@ export default function SecondaryBannersPage() {
                   </div>
 
                   {/* تحذير إذا لم يتم اختيار صورة */}
-                  {!formData.imageUrl && (
+                  {!editingBanner && imagePreviews.length === 0 && (
                     <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <AlertCircle className="h-4 w-4 text-yellow-600" />
                       <p className="text-sm text-yellow-800">
-                        يرجى اختيار صورة قبل الحفظ
+                        يرجى اختيار صورة واحدة على الأقل قبل الحفظ
                       </p>
                     </div>
                   )}
@@ -569,11 +950,15 @@ export default function SecondaryBannersPage() {
                   </button>
                   <button
                     onClick={editingBanner ? handleUpdateBanner : handleAddBanner}
-                    disabled={!formData.imageUrl || isUploading}
-                    className="flex-1 btn-primary flex items-center justify-center gap-2"
+                    disabled={(imagePreviews.length === 0 && !editingBanner) || isUploading}
+                    className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save className="h-4 w-4" />
-                    {editingBanner ? 'تحديث' : 'إضافة'}
+                    {isUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    {isUploading ? 'جاري الحفظ...' : (editingBanner ? 'تحديث' : `إضافة ${imagePreviews.length > 0 ? `(${imagePreviews.length})` : ''}`)}
                   </button>
                 </div>
               </div>
