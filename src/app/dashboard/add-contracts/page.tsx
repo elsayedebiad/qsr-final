@@ -892,7 +892,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   }
 
   return (
-          <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+          <div className="space-y-4 sm:space-y-6 px-2 sm:px-0" style={{ zoom: '0.9' }}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center">
