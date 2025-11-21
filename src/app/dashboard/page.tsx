@@ -199,6 +199,7 @@ export default function CVsPage() {
   const [skillFilters, setSkillFilters] = useState<string[]>([])
   const [showSkillsDropdown, setShowSkillsDropdown] = useState(false)
   const [maritalStatusFilter, setMaritalStatusFilter] = useState<string>('ALL')
+  const [positionFilter, setPositionFilter] = useState<string>('ALL') // فلتر الوظيفة
   const [minAge, setMinAge] = useState<number>(18)
   const [maxAge, setMaxAge] = useState<number>(60)
   const [ageFilterEnabled, setAgeFilterEnabled] = useState(false)
@@ -217,6 +218,20 @@ export default function CVsPage() {
   const [childrenFilter, setChildrenFilter] = useState<string>('ALL')
   const [locationFilter, setLocationFilter] = useState<string>('ALL')
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
+
+  // استخراج الوظائف الفريدة من البيانات
+  const uniquePositions = useMemo(() => {
+    // استثناء السير المتعاقدة والمؤرشفة
+    const visibleCvs = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED)
+    
+    const positions = visibleCvs
+      .map(cv => cv.position)
+      .filter((position): position is string => !!position && position.trim() !== '')
+      .map(position => position.trim())
+    
+    // إزالة التكرارات
+    return Array.from(new Set(positions)).sort()
+  }, [cvs])
 
   // استخراج الجنسيات الفريدة من البيانات (مثل صفحات السلز)
   const uniqueNationalities = useMemo(() => {
@@ -417,6 +432,13 @@ export default function CVsPage() {
       // فلتر الحالة الاجتماعية
       const matchesMaritalStatus = maritalStatusFilter === 'ALL' || cv.maritalStatus === maritalStatusFilter
       
+      // فلتر الوظيفة
+      const matchesPosition = positionFilter === 'ALL' || (() => {
+        const position = (cv.position || '').trim().toLowerCase()
+        const filterValue = positionFilter.toLowerCase()
+        return position === filterValue || position.includes(filterValue)
+      })()
+      
       // فلتر العمر
       const matchesAge = !ageFilterEnabled || (() => {
         if (!cv.age) return false
@@ -590,12 +612,12 @@ export default function CVsPage() {
       return matchesSearch && matchesReligion && matchesNationality && 
              matchesAge && matchesSkill && matchesArabicLevel && 
              matchesEnglishLevel && matchesEducation && matchesExperience &&
-             matchesMaritalStatus && matchesHeight &&
+             matchesMaritalStatus && matchesPosition && matchesHeight &&
              matchesWeight && matchesLocation
     })
   }, [cvs, searchTerm, religionFilter, nationalityFilter, minAge, maxAge, ageFilterEnabled,
       skillFilters, arabicLevelFilter, englishLevelFilter, educationFilter,
-      experienceFilter, maritalStatusFilter, heightFilter, weightFilter, locationFilter])
+      experienceFilter, maritalStatusFilter, positionFilter, heightFilter, weightFilter, locationFilter])
 
   useEffect(() => {
     setFilteredCvs(allFilteredCvs)
@@ -915,6 +937,11 @@ export default function CVsPage() {
           if (filterValue === 'FEW' && children >= 1 && children <= 2) return true
           if (filterValue === 'MANY' && children > 2) return true
           return false
+          
+        case 'position':
+          const position = (cv.position || '').trim().toLowerCase()
+          const filterPos = filterValue.toLowerCase()
+          return position === filterPos || position.includes(filterPos)
           
         default:
           return false
@@ -2018,6 +2045,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 )}
               </div>
 
+              {/* Position Filter - فلتر الوظيفة */}
+              <select
+                className="w-full lg:flex-1 lg:min-w-[160px] px-3 sm:px-4 py-2 sm:py-2.5 bg-background border border-border rounded-lg text-xs sm:text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                value={positionFilter}
+                onChange={(e) => setPositionFilter(e.target.value)}
+              >
+                <option value="ALL">جميع الوظائف ({getCountForFilter('position', 'ALL')})</option>
+                {uniquePositions.map(position => (
+                  <option key={position} value={position}>
+                    {position} ({getCountForFilter('position', position)})
+                  </option>
+                ))}
+              </select>
+
               <select
                 className="w-full lg:flex-1 lg:min-w-[160px] px-3 sm:px-4 py-2 sm:py-2.5 bg-background border border-border rounded-lg text-xs sm:text-sm font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                 value={maritalStatusFilter}
@@ -2335,6 +2376,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     setSkillFilters([])
                     setAgeFilterEnabled(false)
                     setMaritalStatusFilter('ALL')
+                    setPositionFilter('ALL')
                     setArabicLevelFilter('ALL')
                     setEnglishLevelFilter('ALL')
                     setEducationFilter('ALL')
