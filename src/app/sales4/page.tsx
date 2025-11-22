@@ -206,7 +206,7 @@ export default function Sales4Page() {
   const [selectedCVForView, setSelectedCVForView] = useState<CV | null>(null)
   const [showSharePopup, setShowSharePopup] = useState(false)
   const [sharePopupMessage, setSharePopupMessage] = useState('')
-  const salesPageId = 'sales1'
+  const salesPageId = 'sales4'
 
   const resetAllFilters = useCallback(() => {
     setReligionFilter('ALL')

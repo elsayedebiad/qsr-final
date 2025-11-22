@@ -14,12 +14,29 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // دعم pagination عبر query parameters
+    const { searchParams } = new URL(request.url)
+    const limit = parseInt(searchParams.get('limit') || '10000') // افتراضي 10000
+    const offset = parseInt(searchParams.get('offset') || '0')
+
     const clicks = await db.bookingClick.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 1000
+      take: limit,
+      skip: offset
     })
 
-    return NextResponse.json({ clicks })
+    // حساب إجمالي عدد السجلات
+    const total = await db.bookingClick.count()
+
+    return NextResponse.json({ 
+      clicks,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: (offset + clicks.length) < total
+      }
+    })
   } catch (error) {
     console.error('Error fetching booking clicks:', error)
     return NextResponse.json(

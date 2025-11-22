@@ -35,6 +35,12 @@ interface PageStats {
   recentClicks: ClickData[]
 }
 
+// جميع صفحات السيلز المتاحة
+const ALL_SALES_PAGES = [
+  'sales1', 'sales2', 'sales3', 'sales4', 'sales5', 'sales6',
+  'sales7', 'sales8', 'sales9', 'sales10', 'sales11'
+]
+
 export default function BookingClicksPage() {
   const router = useRouter()
   const [stats, setStats] = useState<PageStats[]>([])
@@ -44,6 +50,8 @@ export default function BookingClicksPage() {
   const [selectedPage, setSelectedPage] = useState<string>('ALL')
   const [dateFilter, setDateFilter] = useState<string>('ALL')
   const [messageSentFilter, setMessageSentFilter] = useState<string>('ALL')
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [displayLimit, setDisplayLimit] = useState(100) // عرض 100 سجل افتراضياً
 
   // تحميل البيانات
   const fetchData = async () => {
@@ -61,6 +69,7 @@ export default function BookingClicksPage() {
       if (response.ok) {
         const data = await response.json()
         setAllClicks(data.clicks || [])
+        setTotalRecords(data.pagination?.total || data.clicks?.length || 0)
         calculateStats(data.clicks || [])
       } else {
         toast.error('فشل في تحميل البيانات')
@@ -235,11 +244,14 @@ export default function BookingClicksPage() {
               className="px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary"
             >
               <option value="ALL">جميع الصفحات</option>
-              {stats.map(s => (
-                <option key={s.salesPageId} value={s.salesPageId}>
-                  {s.salesPageId} ({s.totalClicks})
-                </option>
-              ))}
+              {ALL_SALES_PAGES.map(pageId => {
+                const stat = stats.find(s => s.salesPageId === pageId)
+                return (
+                  <option key={pageId} value={pageId}>
+                    {pageId} ({stat?.totalClicks || 0})
+                  </option>
+                )
+              })}
             </select>
 
             <select
@@ -252,8 +264,18 @@ export default function BookingClicksPage() {
               <option value="NOT_SENT">بدون رسالة ✗</option>
             </select>
 
-            <div className="text-sm text-muted-foreground flex items-center justify-center">
-              {filteredClicks.length} نتيجة
+            <div className="flex flex-col items-center justify-center gap-1">
+              <div className="text-sm text-muted-foreground">
+                {filteredClicks.length} من أصل {totalRecords} سجل
+              </div>
+              {filteredClicks.length > displayLimit && (
+                <button
+                  onClick={() => setDisplayLimit(displayLimit + 100)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  عرض المزيد
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -335,7 +357,7 @@ export default function BookingClicksPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredClicks.slice(0, 50).map((click) => (
+                {filteredClicks.slice(0, displayLimit).map((click) => (
                   <tr key={click.id} className="hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3">
                       <span className="font-medium text-foreground">{click.salesPageId}</span>
@@ -371,6 +393,18 @@ export default function BookingClicksPage() {
               </tbody>
             </table>
           </div>
+
+          {/* زر تحميل المزيد */}
+          {filteredClicks.length > displayLimit && (
+            <div className="p-6 border-t border-border text-center">
+              <button
+                onClick={() => setDisplayLimit(displayLimit + 100)}
+                className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-all"
+              >
+                تحميل المزيد ({filteredClicks.length - displayLimit} سجل متبقي)
+              </button>
+            </div>
+          )}
 
           {filteredClicks.length === 0 && (
             <div className="p-12 text-center">
