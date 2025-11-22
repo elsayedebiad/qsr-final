@@ -13,31 +13,30 @@ import {
   Archive,
   SlidersHorizontal,
   Star,
-  Heart,
   Globe,
   Calendar,
   BookOpen,
-  DollarSign,
   X,
   ChevronDown,
   Share2,
   Play,
   Image as ImageIcon,
-  AlertTriangle,
-  Camera,
+  MapPin,
   Phone,
   Mail,
-  MapPin,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle,
+  Camera
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
 import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
+import VideoPlayer from '@/components/VideoPlayer'
+import FlyingLantern from '@/components/FlyingLantern'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
-import VideoPlayer from '@/components/VideoPlayer'
 import { logSearchAnalytics, logPageView } from '@/lib/search-analytics'
 
 // إضافة أنيميشن CSS محسّن للأداء
@@ -112,7 +111,7 @@ const customStyles = `
 
 interface CV {
   languageLevel: string | undefined
-  education: string | undefined
+  education?: string
   id: string
   fullName: string
   fullNameArabic?: string
@@ -157,7 +156,7 @@ interface CV {
   cvImageUrl?: string
 }
 
-export default function Sales5Page() {
+export default function Sales4Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -208,7 +207,7 @@ export default function Sales5Page() {
   const [selectedCVForView, setSelectedCVForView] = useState<CV | null>(null)
   const [showSharePopup, setShowSharePopup] = useState(false)
   const [sharePopupMessage, setSharePopupMessage] = useState('')
-  const salesPageId = 'sales5'
+  const salesPageId = 'sales4'
 
   const resetAllFilters = useCallback(() => {
     setReligionFilter('ALL')
@@ -393,7 +392,6 @@ export default function Sales5Page() {
     checkAuthStatus()
   }, [])
 
-
   useEffect(() => {
     const fetchCVs = async () => {
       try {
@@ -410,6 +408,12 @@ export default function Sales5Page() {
         )
         
         setCvs(uniqueCvs)
+        
+        // تشخيص: طباعة الجنسيات الفعلية
+        const nationalities = uniqueCvs.map((cv: CV) => cv.nationality).filter((n: string | undefined) => n)
+        const uniqueNats = [...new Set(nationalities)]
+        console.log('الجنسيات الفعلية في البيانات:', uniqueNats)
+        
       } catch (error) {
         console.error('Error fetching CVs:', error)
         toast.error('فشل في جلب السير الذاتية')
@@ -508,25 +512,126 @@ export default function Sales5Page() {
     if (!nationality) return 'غير محدد'
     
     const nationalityArabicMap: { [key: string]: string } = {
-      'FILIPINO': 'الفلبين',
-      'INDIAN': 'الهند',
-      'BANGLADESHI': 'بنغلاديش',
-      'ETHIOPIAN': 'إثيوبيا',
-      'KENYAN': 'كينيا',
-      'UGANDAN': 'اوغندية'
+      'FILIPINO': 'فلبينية',
+      'INDIAN': 'هندية', 
+      'BANGLADESHI': 'بنغلاديشية',
+      'ETHIOPIAN': 'إثيوبية',
+      'KENYAN': 'كينية',
+      'UGANDAN': 'أوغندية',
+      'BURUNDIAN': 'بوروندية',
+      'RWANDAN': 'رواندية',
+      'TANZANIAN': 'تنزانية',
+      'MALAWIAN': 'مالاوية',
+      'ZAMBIAN': 'زامبية',
+      'ZIMBABWEAN': 'زيمبابوية',
+      'GHANAIAN': 'غانية',
+      'NIGERIAN': 'نيجيرية',
+      'CAMEROONIAN': 'كاميرونية',
+      'CONGOLESE': 'كونغولية',
+      'SUDANESE': 'سودانية',
+      'SOMALI': 'صومالية',
+      'ERITREAN': 'إريترية',
+      'DJIBOUTIAN': 'جيبوتية',
+      'MALAGASY': 'مدغشقرية',
+      'MAURITIAN': 'موريشيوسية',
+      'SEYCHELLOIS': 'سيشيلية',
+      'COMORAN': 'قمرية',
+      'CAPE_VERDEAN': 'رأس أخضر',
+      'SAO_TOMEAN': 'ساو تومية',
+      'GUINEAN': 'غينية',
+      'SIERRA_LEONEAN': 'سيراليونية',
+      'LIBERIAN': 'ليبيرية',
+      'IVORIAN': 'عاجية',
+      'BURKINABE': 'بوركينية',
+      'MALIAN': 'مالية',
+      'SENEGALESE': 'سنغالية',
+      'GAMBIAN': 'غامبية',
+      'GUINEA_BISSAUAN': 'غينيا بيساو',
+      'MOROCCAN': 'مغربية',
+      'ALGERIAN': 'جزائرية',
+      'TUNISIAN': 'تونسية',
+      'LIBYAN': 'ليبية',
+      'EGYPTIAN': 'مصرية',
+      'PAKISTANI': 'باكستانية',
+      'SRI_LANKAN': 'سريلانكية',
+      'NEPALESE': 'نيبالية',
+      'BURMESE': 'ميانمارية',
+      'THAI': 'تايلاندية',
+      'VIETNAMESE': 'فيتنامية',
+      'CAMBODIAN': 'كمبودية',
+      'LAOTIAN': 'لاوسية',
+      'INDONESIAN': 'إندونيسية',
+      'MALAYSIAN': 'ماليزية'
     }
     
-    return nationalityArabicMap[nationality] || nationality
+    return nationalityArabicMap[nationality.toUpperCase()] || nationality
   }
 
   // دالة مطابقة الجنسية - مطابقة مباشرة مع البيانات من الإكسل
-  const matchesNationalityFilter = (cvNationality: string | null | undefined, filter: string): boolean => {
+  const matchesNationalityFilter = useCallback((cvNationality: string | null | undefined, filter: string): boolean => {
     if (filter === 'ALL') return true
     if (!cvNationality) return false
     
+    // خريطة تحويل من العربية إلى الإنجليزية للمطابقة
+    const arabicToEnglishMap: { [key: string]: string } = {
+      'فلبينية': 'FILIPINO',
+      'هندية': 'INDIAN',
+      'بنغلاديشية': 'BANGLADESHI',
+      'إثيوبية': 'ETHIOPIAN',
+      'كينية': 'KENYAN',
+      'أوغندية': 'UGANDAN',
+      'بوروندية': 'BURUNDIAN',
+      'رواندية': 'RWANDAN',
+      'تنزانية': 'TANZANIAN',
+      'مالاوية': 'MALAWIAN',
+      'زامبية': 'ZAMBIAN',
+      'زيمبابوية': 'ZIMBABWEAN',
+      'غانية': 'GHANAIAN',
+      'نيجيرية': 'NIGERIAN',
+      'كاميرونية': 'CAMEROONIAN',
+      'كونغولية': 'CONGOLESE',
+      'سودانية': 'SUDANESE',
+      'صومالية': 'SOMALI',
+      'إريترية': 'ERITREAN',
+      'جيبوتية': 'DJIBOUTIAN',
+      'مدغشقرية': 'MALAGASY',
+      'موريشيوسية': 'MAURITIAN',
+      'سيشيلية': 'SEYCHELLOIS',
+      'قمرية': 'COMORAN',
+      'رأس أخضر': 'CAPE_VERDEAN',
+      'ساو تومية': 'SAO_TOMEAN',
+      'غينية': 'GUINEAN',
+      'سيراليونية': 'SIERRA_LEONEAN',
+      'ليبيرية': 'LIBERIAN',
+      'عاجية': 'IVORIAN',
+      'بوركينية': 'BURKINABE',
+      'مالية': 'MALIAN',
+      'سنغالية': 'SENEGALESE',
+      'غامبية': 'GAMBIAN',
+      'غينيا بيساو': 'GUINEA_BISSAUAN',
+      'مغربية': 'MOROCCAN',
+      'جزائرية': 'ALGERIAN',
+      'تونسية': 'TUNISIAN',
+      'ليبية': 'LIBYAN',
+      'مصرية': 'EGYPTIAN',
+      'باكستانية': 'PAKISTANI',
+      'سريلانكية': 'SRI_LANKAN',
+      'نيبالية': 'NEPALESE',
+      'ميانمارية': 'BURMESE',
+      'تايلاندية': 'THAI',
+      'فيتنامية': 'VIETNAMESE',
+      'كمبودية': 'CAMBODIAN',
+      'لاوسية': 'LAOTIAN',
+      'إندونيسية': 'INDONESIAN',
+      'ماليزية': 'MALAYSIAN'
+    }
+    
+    // إذا كان الفلتر بالعربية، حوله للإنجليزية
+    const englishFilter = arabicToEnglishMap[filter] || filter
+    
     // مطابقة مباشرة مع البيانات من ملف الإكسل
-    return cvNationality === filter || cvNationality.includes(filter)
-  }
+    return cvNationality === englishFilter || cvNationality.includes(englishFilter) || cvNationality === filter || cvNationality.includes(filter)
+  }, [])
 
   const doesCvMatchFilters = useCallback((cv: CV, overrideNationality?: string) => {
     const activeNationalityFilter = overrideNationality ?? nationalityFilter
@@ -583,7 +688,7 @@ export default function Sales5Page() {
       }
     })
 
-        const matchesExperience = (() => {
+    const matchesExperience = (() => {
       if (experienceFilter === 'ALL') return true
 
       const experienceValue = (cv.experience || '').trim()
@@ -646,15 +751,9 @@ export default function Sales5Page() {
       // إذا كانت القيمة غير فارغة ولكن لا تحتوي على معلومات واضحة
       // نعتبرها خبرة (لأنها ليست "بدون خبرة" صريحة)
       const hasExperience = !isExactNoExperience && experienceValue !== ''
-      
-      if (experienceFilter === 'WITH_EXPERIENCE') {
-        return hasExperience
-      }
 
-      if (experienceFilter === 'NO_EXPERIENCE') {
-        return !hasExperience
-      }
-
+      if (experienceFilter === 'WITH_EXPERIENCE') return hasExperience
+      if (experienceFilter === 'NO_EXPERIENCE') return !hasExperience
       return true
     })()
 
@@ -828,15 +927,6 @@ export default function Sales5Page() {
     return unique
   }, [cvs])
 
-  // استخراج المناطق الفريدة من البيانات
-  const uniqueLocations = useMemo(() => {
-    const locations = cvs
-      .map(cv => cv.livingTown)
-      .filter((location): location is string => !!location && location.trim() !== '')
-      .map(location => location.trim())
-    return Array.from(new Set(locations)).sort()
-  }, [cvs])
-
   // خريطة تحويل الجنسيات من الإنجليزية للعربية
   const nationalityDisplayMap: { [key: string]: string } = {
     'FILIPINO': 'الفلبين',
@@ -863,7 +953,6 @@ export default function Sales5Page() {
     // وإلا استخدم الاسم الإنجليزي
     return nationality
   }
-
 
   // دوال حساب عدد البيانات لكل فلتر
   const getCountForFilter = useCallback((filterType: string, filterValue: string): number => {
@@ -955,6 +1044,7 @@ export default function Sales5Page() {
                    educationLevel === 'أمي' || educationLevel === 'none'
           }
           return false
+          
         case 'experience': {
           const experienceValue = (cv.experience || '').trim()
           
@@ -1107,7 +1197,7 @@ export default function Sales5Page() {
     setDisplayLimit(prev => prev + 20)
   }, [])
 
-  // إعادة ضبط حد العرض عند تغيير الفلاتر
+  // إعادة ضبط حد العرض عند تغيير الفلتر
   useEffect(() => {
     setDisplayLimit(20) // إعادة تعيين إلى 20 عند تغيير الفلتر
   }, [searchTerm, statusFilter, nationalityFilter, skillFilters, minAge, maxAge, ageFilterEnabled, 
@@ -1182,7 +1272,7 @@ export default function Sales5Page() {
         (window as any).gtag('event', 'whatsapp_click', {
           'event_category': 'engagement',
           'event_label': `CV: ${cv.fullName || 'Unknown'}`,
-          'page_title': 'Sales 5',
+          'page_title': 'Sales 1',
           'cv_id': cv.id
         });
       }
@@ -1194,7 +1284,7 @@ export default function Sales5Page() {
 
   // مشاركة سيرة ذاتية واحدة
   const shareSingleCV = async (cv: CV) => {
-    const shareUrl = `${window.location.origin}/cv/${cv.id}?from=sales5`
+    const shareUrl = `${window.location.origin}/cv/${cv.id}?from=sales1`
     
     // التحقق من دعم Web Share API
     if (!navigator.share) {
@@ -1368,13 +1458,12 @@ export default function Sales5Page() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col" dir="rtl">
-      {/* Microsoft Clarity Analytics */}
-      <ClarityScript />
-      {/* التحقق من نظام التوزيع */}
-      <SalesRedirectCheck />
-      <AutoScrollIndicatorEnhanced />
+    <>
       <style>{customStyles}</style>
+      <ClarityScript />
+      <SalesRedirectCheck />
+      <AutoScrollIndicatorEnhanced />      
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" dir="rtl">
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">
           {/* شريط علوي بمعلومات التواصل */}
@@ -1424,25 +1513,10 @@ export default function Sales5Page() {
                   )}
                   {whatsappNumber && (
                     <a 
-                      href={`https://wa.me/${whatsappNumber.replace(/^\+/, '')}`} 
+                      href={`https://wa.me/${whatsappNumber}`} 
                       className="bg-[#25d366] hover:bg-[#1fb855] text-white px-4 sm:px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg font-bold text-sm sm:text-base"
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={(e) => {
-                        // Track with Google Analytics
-                        if (typeof window !== 'undefined' && (window as any).gtag) {
-                          (window as any).gtag('event', 'header_whatsapp_click', {
-                            'event_category': 'engagement',
-                            'event_label': 'Header WhatsApp Button',
-                            'page_title': 'Sales 5',
-                            'button_location': 'header'
-                          });
-                        }
-                        // Track with Microsoft Clarity
-                        if (typeof window !== 'undefined' && (window as any).clarity) {
-                          (window as any).clarity('event', 'header_whatsapp_click');
-                        }
-                      }}
                     >
                       <svg className="h-5 w-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
@@ -1457,6 +1531,33 @@ export default function Sales5Page() {
         </header>
 
         <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 w-full">
+          {/* إشعار للسير المعادة */}
+          {filteredCvs.some(cv => cv.status === 'RETURNED') && (
+            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-2xl p-4 sm:p-6 mb-6 shadow-lg mt-6 animate-slideUp">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="bg-gradient-to-br from-orange-400 to-yellow-500 rounded-xl p-2 sm:p-3 flex-shrink-0 shadow-md">
+                  <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-base sm:text-lg font-bold text-orange-900">سير ذاتية معادة من العقود</h3>
+                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
+                      {filteredCvs.filter(cv => cv.status === 'RETURNED').length}
+                    </span>
+                  </div>
+                  <p className="text-gray-700 text-xs sm:text-sm leading-relaxed">
+                    يوجد <strong className="text-orange-700">{filteredCvs.filter(cv => cv.status === 'RETURNED').length}</strong> سيرة ذاتية تم إعادتها من العقود. 
+                    هذه السير متاحة للتعاقد مرة أخرى ويمكنك التواصل بشأنها.
+                  </p>
+                  <div className="mt-3 flex items-center gap-2 text-xs text-orange-800">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>السير المعادة مميزة بخلفية برتقالية في القائمة</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Header القديم للمستخدمين المسجلين - مخفي الآن */}
           {false && isLoggedIn && (
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 sm:p-6 mb-6">
@@ -1474,7 +1575,7 @@ export default function Sales5Page() {
               </div>
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg sm:text-2xl font-semibold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent truncate">
-                  Sales 5 - معرض السير الذاتية
+                  Sales 1 - معرض السير الذاتية
                 </h1>
                 <p className="text-gray-600 text-xs sm:text-sm hidden sm:block">صفحة مبيعات مخصصة مع رقم واتساب منفصل</p>
               </div>
@@ -1664,7 +1765,6 @@ export default function Sales5Page() {
               )
             })}
 
-
             {/* فلتر سائقين */}
             <div
               onClick={() => {
@@ -1701,7 +1801,6 @@ export default function Sales5Page() {
                 </div>
               </div>
             </div>
-
 
             {/* فلتر نقل خدمات */}
             <div
@@ -1773,10 +1872,10 @@ export default function Sales5Page() {
                     value={nationalityFilter}
                     onChange={(e) => setNationalityFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الجنسيات ({getCountForFilter('nationality', 'ALL')})</option>
+                    <option value="ALL">جميع الجنسيات</option>
                     {uniqueNationalities.map(nationality => (
                       <option key={nationality} value={nationality}>
-                        {getNationalityArabic(nationality)} ({getCountForFilter('nationality', nationality)})
+                        {getNationalityArabic(nationality)}
                       </option>
                     ))}
                   </select>
@@ -1789,10 +1888,10 @@ export default function Sales5Page() {
                     value={religionFilter}
                     onChange={(e) => setReligionFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الديانات ({getCountForFilter('religion', 'ALL')})</option>
-                    <option value="مسلمة">مسلمة ({getCountForFilter('religion', 'مسلمة')})</option>
-                    <option value="مسيحية">مسيحية ({getCountForFilter('religion', 'مسيحية')})</option>
-                    <option value="أخرى">أخرى ({getCountForFilter('religion', 'أخرى')})</option>
+                    <option value="ALL">جميع الديانات</option>
+                    <option value="مسلمة">مسلمة</option>
+                    <option value="مسيحية">مسيحية</option>
+                    <option value="أخرى">أخرى</option>
                   </select>
                 </div>
                 
@@ -1803,9 +1902,9 @@ export default function Sales5Page() {
                     value={experienceFilter}
                     onChange={(e) => setExperienceFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الخبرات ({cvs.length})</option>
-                    <option value="WITH_EXPERIENCE">خبرة ({getCountForFilter('experience', 'WITH_EXPERIENCE')})</option>
-                    <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
+                    <option value="ALL">جميع الخبرات</option>
+                    <option value="WITH_EXPERIENCE">خبرة</option>
+                    <option value="NO_EXPERIENCE">بدون خبرة</option>
                   </select>
                 </div>
                 
@@ -1816,10 +1915,10 @@ export default function Sales5Page() {
                     value={positionFilter}
                     onChange={(e) => setPositionFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الوظائف ({getCountForFilter('position', 'ALL')})</option>
+                    <option value="ALL">جميع الوظائف</option>
                     {uniquePositions.map(position => (
                       <option key={position} value={position}>
-                        {position} ({getCountForFilter('position', position)})
+                        {position}
                       </option>
                     ))}
                   </select>
@@ -1832,11 +1931,11 @@ export default function Sales5Page() {
                     value={maritalStatusFilter}
                     onChange={(e) => setMaritalStatusFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الحالات ({getCountForFilter('maritalStatus', 'ALL')})</option>
-                    <option value="SINGLE">أعزب/عزباء ({getCountForFilter('maritalStatus', 'SINGLE')})</option>
-                    <option value="MARRIED">متزوج/متزوجة ({getCountForFilter('maritalStatus', 'MARRIED')})</option>
-                    <option value="DIVORCED">مطلق/مطلقة ({getCountForFilter('maritalStatus', 'DIVORCED')})</option>
-                    <option value="WIDOWED">أرمل/أرملة ({getCountForFilter('maritalStatus', 'WIDOWED')})</option>
+                    <option value="ALL">جميع الحالات</option>
+                    <option value="SINGLE">أعزب/عزباء</option>
+                    <option value="MARRIED">متزوج/متزوجة</option>
+                    <option value="DIVORCED">مطلق/مطلقة</option>
+                    <option value="WIDOWED">أرمل/أرملة</option>
                   </select>
                 </div>
                 
@@ -1980,7 +2079,6 @@ export default function Sales5Page() {
                               { id: 'disabledCare', label: 'رعاية كبار السن', icon: '👴' },
                               { id: 'sewing', label: 'خياطة', icon: '🧵' }
                             ].map(skill => {
-                              const count = getCountForFilter('skill', skill.id)
                               return (
                               <label
                                 key={skill.id}
@@ -1997,7 +2095,7 @@ export default function Sales5Page() {
                                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
                                 <span className="text-lg">{skill.icon}</span>
-                                <span className="text-sm flex-1">{skill.label} ({count})</span>
+                                <span className="text-sm flex-1">{skill.label}</span>
                                 {skillFilters.includes(skill.id) && (
                                   <span className="text-blue-600 text-xs">✓</span>
                                 )}
@@ -2054,11 +2152,11 @@ export default function Sales5Page() {
                     value={arabicLevelFilter}
                     onChange={(e) => setArabicLevelFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات ({getCountForFilter('arabicLevel', 'ALL')})</option>
-                    <option value="YES">ممتاز ({getCountForFilter('arabicLevel', 'YES')})</option>
-                    <option value="WILLING">جيد ({getCountForFilter('arabicLevel', 'WILLING')})</option>
-                    <option value="WEAK">ضعيف ({getCountForFilter('arabicLevel', 'WEAK')})</option>
-                    <option value="NO">لا ({getCountForFilter('arabicLevel', 'NO')})</option>
+                    <option value="ALL">جميع المستويات</option>
+                    <option value="YES">ممتاز</option>
+                    <option value="WILLING">جيد</option>
+                    <option value="WEAK">ضعيف</option>
+                    <option value="NO">لا</option>
                   </select>
                 </div>
 
@@ -2071,14 +2169,13 @@ export default function Sales5Page() {
                     value={englishLevelFilter}
                     onChange={(e) => setEnglishLevelFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات ({getCountForFilter('englishLevel', 'ALL')})</option>
-                    <option value="YES">ممتاز ({getCountForFilter('englishLevel', 'YES')})</option>
-                    <option value="WILLING">جيد ({getCountForFilter('englishLevel', 'WILLING')})</option>
-                    <option value="WEAK">ضعيف ({getCountForFilter('englishLevel', 'WEAK')})</option>
-                    <option value="NO">لا ({getCountForFilter('englishLevel', 'NO')})</option>
+                    <option value="ALL">جميع المستويات</option>
+                    <option value="YES">ممتاز</option>
+                    <option value="WILLING">جيد</option>
+                    <option value="WEAK">ضعيف</option>
+                    <option value="NO">لا</option>
                   </select>
                 </div>
-
               </div>
 
               {/* الفلاتر الإضافية - التعليم والمواصفات */}
@@ -2092,9 +2189,9 @@ export default function Sales5Page() {
                     value={educationFilter}
                     onChange={(e) => setEducationFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات ({getCountForFilter('education', 'ALL')})</option>
-                    <option value="متعلم">متعلم ({getCountForFilter('education', 'متعلم')})</option>
-                    <option value="غير متعلم">غير متعلم ({getCountForFilter('education', 'غير متعلم')})</option>
+                    <option value="ALL">جميع المستويات</option>
+                    <option value="متعلم">متعلم</option>
+                    <option value="غير متعلم">غير متعلم</option>
                   </select>
                 </div>
                 
@@ -2107,71 +2204,71 @@ export default function Sales5Page() {
                     value={heightFilter}
                     onChange={(e) => setHeightFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الأطوال ({cvs.length})</option>
-                    <option value="<155">أقل من 155 سم ({getCountForFilter('height', '<155')})</option>
-                    <option value="155-160">155-160 سم ({getCountForFilter('height', '155-160')})</option>
-                    <option value="160-165">160-165 سم ({getCountForFilter('height', '160-165')})</option>
-                    <option value="165-170">165-170 سم ({getCountForFilter('height', '165-170')})</option>
-                    <option value="170-175">170-175 سم ({getCountForFilter('height', '170-175')})</option>
-                    <option value=">175">أكثر من 175 سم ({getCountForFilter('height', '>175')})</option>
+                    <option value="ALL">جميع الأطوال</option>
+                    <option value="<155">أقل من 155 سم</option>
+                    <option value="155-160">155-160 سم</option>
+                    <option value="160-165">160-165 سم</option>
+                    <option value="165-170">165-170 سم</option>
+                    <option value="170-175">170-175 سم</option>
+                    <option value=">175">أكثر من 175 سم</option>
                   </select>
                 </div>
-
+                
                 <div className="space-y-2">
-                  <label className="flex items-center text-sm font-semibold text-pink-600 mb-2">
-                    <BookOpen className="h-4 w-4 ml-2" /> الوزن
+                  <label className="flex items-center text-sm font-semibold text-teal-600 mb-2">
+                    <MapPin className="h-4 w-4 ml-2" /> الوزن
                   </label>
                   <select
-                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-pink-500 border border-gray-300"
+                    className="w-full rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-teal-500 border border-gray-300 bg-white"
                     value={weightFilter}
                     onChange={(e) => setWeightFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الأوزان ({cvs.length})</option>
-                    <option value="<50">خفيف: أقل من 50 كجم ({getCountForFilter('weight', '<50')})</option>
-                    <option value="50-55">من 50 إلى 55 كجم ({getCountForFilter('weight', '50-55')})</option>
-                    <option value="55-60">من 55 إلى 60 كجم ({getCountForFilter('weight', '55-60')})</option>
-                    <option value="60-65">من 60 إلى 65 كجم ({getCountForFilter('weight', '60-65')})</option>
-                    <option value="65-70">من 65 إلى 70 كجم ({getCountForFilter('weight', '65-70')})</option>
-                    <option value="70-75">من 70 إلى 75 كجم ({getCountForFilter('weight', '70-75')})</option>
-                    <option value=">75">ثقيل: أكثر من 75 كجم ({getCountForFilter('weight', '>75')})</option>
+                    <option value="ALL">جميع الأوزان</option>
+                    <option value="<50">أقل من 50 كجم</option>
+                    <option value="50-55">50-55 كجم</option>
+                    <option value="55-60">55-60 كجم</option>
+                    <option value="60-65">60-65 كجم</option>
+                    <option value="65-70">65-70 كجم</option>
+                    <option value="70-75">70-75 كجم</option>
+                    <option value=">75">أكثر من 75 كجم</option>
                   </select>
                 </div>
-
+                
                 <div className="space-y-2">
                   <label className="flex items-center text-sm font-semibold text-indigo-600 mb-2">
                     <MapPin className="h-4 w-4 ml-2" /> المنطقة
                   </label>
                   <select
-                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 border border-gray-300"
+                    className="w-full rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 border border-gray-300 bg-white"
                     value={locationFilter}
                     onChange={(e) => setLocationFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المناطق ({cvs.length})</option>
-                    {uniqueLocations.map(location => (
-                      <option key={location} value={location}>
-                        {location} ({getCountForFilter('location', location)})
+                    <option value="ALL">جميع المناطق</option>
+                    {Array.from(new Set(cvs.map(cv => cv.livingTown).filter(Boolean))).sort().map(location => (
+                      <option key={location} value={location!}>
+                        {location}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              <div className="mt-4 flex justify-center">
+              {/* زر مسح الفلاتر */}
+              <div className="mt-6 pt-6 border-t border-gray-200 flex justify-center">
                 <button
                   onClick={resetAllFilters}
-                  className="px-6 py-2 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-full text-sm font-medium hover:from-red-500 hover:to-pink-500 inline-flex items-center gap-2"
+                  className="px-6 py-2.5 bg-gradient-to-r from-red-400 to-pink-400 text-white rounded-lg text-sm font-medium hover:from-red-500 hover:to-pink-500 inline-flex items-center gap-2 shadow-sm transition-all"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  مسح الفلاتر
+                  مسح جميع الفلاتر
                 </button>
               </div>
             </div>
           </div>
-        </div>        {/* ملاحظات مهمة */}
-        <div className="relative mb-8">
-          {/* خلفية ديكورية */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-100/20 via-purple-100/20 to-pink-100/20 rounded-2xl blur-2xl"></div>
-          
+        </div>
+
+        {/* ملاحظات هامة */}
+        <div className="mb-8">
           <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             {/* رأس البطاقة */}
             <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 p-3">
@@ -2219,7 +2316,6 @@ export default function Sales5Page() {
           </div>
         </div>
 
-
         {/* عرض السير الذاتية */}
         <div ref={cvsContainerRef} className="min-h-[400px]">
         {filteredCvs.length === 0 ? (
@@ -2259,7 +2355,10 @@ export default function Sales5Page() {
                               e.preventDefault();
                               e.stopPropagation();
                               console.log('CV clicked:', cv.fullName, cv.id);
+                              console.log('CV object:', cv);
+                              console.log('Setting selectedCVForView to:', cv);
                               setSelectedCVForView(cv);
+                              console.log('selectedCVForView should be set now');
                             }}
                             className="w-full h-full focus:outline-none cursor-pointer group relative"
                             title="اضغط لعرض السيرة الكاملة"
@@ -2291,7 +2390,7 @@ export default function Sales5Page() {
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 flex items-center justify-center">
                           <div className="text-white text-center">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-xl">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-full mb-2 sm:mb-3 shadow-xl">
                               <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                               </svg>
@@ -2308,7 +2407,7 @@ export default function Sales5Page() {
                       <div className="mb-2 sm:mb-3">
                         <button
                           onClick={() => sendWhatsAppMessage(cv)}
-                          className="w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white py-3 sm:py-3.5 px-2 sm:px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-green-500/50 active:scale-95 hover:scale-[1.02] group relative overflow-hidden"
+                          className="w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white py-3 sm:py-3.5 px-2 sm:px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-green-500/50 hover:scale-105 group relative overflow-hidden"
                         >
                           {/* تأثير النبض المتوهج في الخلفية */}
                           <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
@@ -2333,27 +2432,35 @@ export default function Sales5Page() {
                       {/* زر الفيديو - بتصميم احترافي - يخفى عندما يكون فلتر نقل خدمات مفعل */}
                       {positionFilter !== 'نقل خدمات' && (
                         <div className="mb-2 sm:mb-3">
-                        <button
-                          onClick={() => {
-                            if (cv.videoLink && cv.videoLink.trim() !== '') {
-                              setVideoModalKey(prev => prev + 1);
-                              setSelectedVideo(cv.videoLink);
-                            } else {
-                              toast.error('لا يوجد رابط فيديو لهذه السيرة');
-                            }
-                          }}
-                          className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] group relative overflow-hidden"
-                        >
-                          <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
-                          <span className="absolute inset-0 bg-white/10 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 blur-xl"></span>
-                          <div className="relative z-10 bg-white/20 rounded-full p-1 group-hover:bg-white/30 transition-all duration-300">
-                            <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
-                          </div>
-                          <span className="font-bold relative z-10 text-[9px] sm:text-sm leading-tight">شاهد طريقة استخراج التأشيرة</span>
-                          <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 relative z-10 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
-                        </button>
+                          <button
+                            onClick={() => {
+                              if (cv.videoLink && cv.videoLink.trim() !== '') {
+                                setVideoModalKey(prev => prev + 1);
+                                setSelectedVideo(cv.videoLink);
+                              } else {
+                                toast.error('لا يوجد رابط فيديو لهذه السيرة');
+                              }
+                            }}
+                            className="w-full bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:via-indigo-700 hover:to-blue-700 text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] group relative overflow-hidden"
+                          >
+                            {/* تأثير النبض المتوهج */}
+                            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
+                            
+                            {/* دائرة متوهجة */}
+                            <span className="absolute inset-0 bg-white/10 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 blur-xl"></span>
+                            
+                            {/* أيقونة Play احترافية */}
+                            <div className="relative z-10 bg-white/20 rounded-full p-1 group-hover:bg-white/30 transition-all duration-300">
+                              <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
+                            </div>
+                            
+                            <span className="font-bold relative z-10 text-[9px] sm:text-sm leading-tight">شاهد طريقة استخراج التأشيرة</span>
+                            
+                            {/* أيقونة سهم */}
+                            <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 relative z-10 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                          </button>
                         </div>
                       )}
                       
@@ -2452,7 +2559,7 @@ export default function Sales5Page() {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => sendWhatsAppMessage(cv)}
-                        className="bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center gap-2"
+                        className="bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
                       >
                         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
@@ -2488,10 +2595,16 @@ export default function Sales5Page() {
           <div className="flex items-center justify-center gap-3 mb-4">
             <img src="/logo-2.png" alt="الاسناد السريع" className="h-12 w-auto object-contain bg-white rounded-lg p-2" />
             <div>
-              <h3 className="text-lg font-bold">الاسناد السريع للاستقدام</h3>
-              <p className="text-sm text-blue-200">شريكك الأمثل في استقدام العمالة</p>
+              <h2 className="text-2xl font-bold">الاسناد السريع للاستقدام</h2>
+              <p className="text-sm text-blue-200">خدمات استقدام العمالة المنزلية</p>
             </div>
           </div>
+          
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <MapPin className="h-5 w-5 text-yellow-400" />
+            <span className="text-lg">الرياض - المملكة العربية السعودية</span>
+          </div>
+          
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-6">
             {whatsappNumber && (
               <>
@@ -2499,12 +2612,9 @@ export default function Sales5Page() {
                   <Phone className="h-5 w-5" />
                   <span className="font-semibold" dir="ltr">{whatsappNumber}</span>
                 </a>
-                <a 
-                  href={`https://wa.me/${whatsappNumber.replace(/^\+/, '')}`}
-                  className="flex items-center gap-2 hover:text-green-300 transition-colors"
-                >
+                <a href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`} className="flex items-center gap-2 hover:text-green-300 transition-colors">
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                   </svg>
                   <span className="font-semibold">واتساب</span>
                 </a>
@@ -2515,8 +2625,9 @@ export default function Sales5Page() {
               <span className="font-semibold" dir="ltr">info@qsr.sa</span>
             </a>
           </div>
-          <div className="border-t border-blue-700 pt-4">
-            <p className="text-sm text-blue-200"> 2025 الاسناد السريع للاستقدام - جميع الحقوق محفوظة</p>
+          
+          <div className="pt-4 border-t border-blue-700">
+            <p className="text-sm text-blue-200">© 2025 الاسناد السريع للاستقدام - جميع الحقوق محفوظة</p>
           </div>
         </div>
         </footer>
@@ -2536,20 +2647,20 @@ export default function Sales5Page() {
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-lg border-2 border-white/20 max-w-sm">
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0">
-                {sharePopupMessage.includes('') && (
+                {sharePopupMessage.includes('⏳') && (
                   <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
                 )}
-                {sharePopupMessage.includes('') && (
+                {sharePopupMessage.includes('✅') && (
                   <svg className="w-6 h-6 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
-                {sharePopupMessage.includes('') && (
+                {sharePopupMessage.includes('❌') && (
                   <svg className="w-6 h-6 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 )}
-                {sharePopupMessage.includes('') && (
+                {sharePopupMessage.includes('📤') && (
                   <svg className="w-6 h-6 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                   </svg>
@@ -2601,7 +2712,7 @@ export default function Sales5Page() {
                   <div className="relative inline-block w-full max-w-4xl group">
                     {/* Tooltip */}
                     <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
-                      اضغط للتكبير 
+                      اضغط للتكبير 🔍
                     </div>
                     <ImageWithFallback
                       src={selectedCVForView.cvImageUrl}
@@ -2666,7 +2777,8 @@ export default function Sales5Page() {
         </div>
       )}
     </div>
+      {/* الفوانيس والشريط الرمضاني */}
+      <FlyingLantern />
+    </>
   )
 }
-
-

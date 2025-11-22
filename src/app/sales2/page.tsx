@@ -38,6 +38,7 @@ import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
 import VideoPlayer from '@/components/VideoPlayer'
+import FlyingLantern from '@/components/FlyingLantern'
 import { logSearchAnalytics, logPageView } from '@/lib/search-analytics'
 
 // إضافة أنيميشن CSS محسّن للأداء
@@ -1812,10 +1813,10 @@ export default function Sales2Page() {
                     value={nationalityFilter}
                     onChange={(e) => setNationalityFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الجنسيات ({getCountForFilter('nationality', 'ALL')})</option>
+                    <option value="ALL">جميع الجنسيات</option>
                     {uniqueNationalities.map(nationality => (
                       <option key={nationality} value={nationality}>
-                        {getNationalityArabic(nationality)} ({getCountForFilter('nationality', nationality)})
+                        {getNationalityArabic(nationality)}
                       </option>
                     ))}
                   </select>
@@ -1828,10 +1829,10 @@ export default function Sales2Page() {
                     value={religionFilter}
                     onChange={(e) => setReligionFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الديانات ({getCountForFilter('religion', 'ALL')})</option>
-                    <option value="مسلمة">مسلمة ({getCountForFilter('religion', 'مسلمة')})</option>
-                    <option value="مسيحية">مسيحية ({getCountForFilter('religion', 'مسيحية')})</option>
-                    <option value="أخرى">أخرى ({getCountForFilter('religion', 'أخرى')})</option>
+                    <option value="ALL">جميع الديانات</option>
+                    <option value="مسلمة">مسلمة</option>
+                    <option value="مسيحية">مسيحية</option>
+                    <option value="أخرى">أخرى</option>
                   </select>
                 </div>
                 
@@ -1842,9 +1843,9 @@ export default function Sales2Page() {
                     value={experienceFilter}
                     onChange={(e) => setExperienceFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الخبرات ({cvs.length})</option>
-                    <option value="WITH_EXPERIENCE">خبرة ({getCountForFilter('experience', 'WITH_EXPERIENCE')})</option>
-                    <option value="NO_EXPERIENCE">بدون خبرة ({getCountForFilter('experience', 'NO_EXPERIENCE')})</option>
+                    <option value="ALL">جميع الخبرات</option>
+                    <option value="WITH_EXPERIENCE">خبرة</option>
+                    <option value="NO_EXPERIENCE">بدون خبرة</option>
                   </select>
                 </div>
                 
@@ -1855,10 +1856,10 @@ export default function Sales2Page() {
                     value={positionFilter}
                     onChange={(e) => setPositionFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الوظائف ({getCountForFilter('position', 'ALL')})</option>
+                    <option value="ALL">جميع الوظائف</option>
                     {uniquePositions.map(position => (
                       <option key={position} value={position}>
-                        {position} ({getCountForFilter('position', position)})
+                        {position}
                       </option>
                     ))}
                   </select>
@@ -1871,11 +1872,11 @@ export default function Sales2Page() {
                     value={maritalStatusFilter}
                     onChange={(e) => setMaritalStatusFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الحالات ({getCountForFilter('maritalStatus', 'ALL')})</option>
-                    <option value="SINGLE">أعزب/عزباء ({getCountForFilter('maritalStatus', 'SINGLE')})</option>
-                    <option value="MARRIED">متزوج/متزوجة ({getCountForFilter('maritalStatus', 'MARRIED')})</option>
-                    <option value="DIVORCED">مطلق/مطلقة ({getCountForFilter('maritalStatus', 'DIVORCED')})</option>
-                    <option value="WIDOWED">أرمل/أرملة ({getCountForFilter('maritalStatus', 'WIDOWED')})</option>
+                    <option value="ALL">جميع الحالات</option>
+                    <option value="SINGLE">أعزب/عزباء</option>
+                    <option value="MARRIED">متزوج/متزوجة</option>
+                    <option value="DIVORCED">مطلق/مطلقة</option>
+                    <option value="WIDOWED">أرمل/أرملة</option>
                   </select>
                 </div>
                 
@@ -2019,7 +2020,6 @@ export default function Sales2Page() {
                               { id: 'disabledCare', label: 'رعاية كبار السن', icon: '👴' },
                               { id: 'sewing', label: 'خياطة', icon: '🧵' }
                             ].map(skill => {
-                              const count = getCountForFilter('skill', skill.id)
                               return (
                               <label
                                 key={skill.id}
@@ -2036,7 +2036,7 @@ export default function Sales2Page() {
                                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
                                 <span className="text-lg">{skill.icon}</span>
-                                <span className="text-sm flex-1">{skill.label} ({count})</span>
+                                <span className="text-sm flex-1">{skill.label}</span>
                                 {skillFilters.includes(skill.id) && (
                                   <span className="text-blue-600 text-xs">✓</span>
                                 )}
@@ -2093,11 +2093,11 @@ export default function Sales2Page() {
                     value={arabicLevelFilter}
                     onChange={(e) => setArabicLevelFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات ({getCountForFilter('arabicLevel', 'ALL')})</option>
-                    <option value="YES">ممتاز ({getCountForFilter('arabicLevel', 'YES')})</option>
-                    <option value="WILLING">جيد ({getCountForFilter('arabicLevel', 'WILLING')})</option>
-                    <option value="WEAK">ضعيف ({getCountForFilter('arabicLevel', 'WEAK')})</option>
-                    <option value="NO">لا ({getCountForFilter('arabicLevel', 'NO')})</option>
+                    <option value="ALL">جميع المستويات</option>
+                    <option value="YES">ممتاز</option>
+                    <option value="WILLING">جيد</option>
+                    <option value="WEAK">ضعيف</option>
+                    <option value="NO">لا</option>
                   </select>
                 </div>
 
@@ -2110,11 +2110,11 @@ export default function Sales2Page() {
                     value={englishLevelFilter}
                     onChange={(e) => setEnglishLevelFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات ({getCountForFilter('englishLevel', 'ALL')})</option>
-                    <option value="YES">ممتاز ({getCountForFilter('englishLevel', 'YES')})</option>
-                    <option value="WILLING">جيد ({getCountForFilter('englishLevel', 'WILLING')})</option>
-                    <option value="WEAK">ضعيف ({getCountForFilter('englishLevel', 'WEAK')})</option>
-                    <option value="NO">لا ({getCountForFilter('englishLevel', 'NO')})</option>
+                    <option value="ALL">جميع المستويات</option>
+                    <option value="YES">ممتاز</option>
+                    <option value="WILLING">جيد</option>
+                    <option value="WEAK">ضعيف</option>
+                    <option value="NO">لا</option>
                   </select>
                 </div>
 
@@ -2131,9 +2131,9 @@ export default function Sales2Page() {
                     value={educationFilter}
                     onChange={(e) => setEducationFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المستويات ({getCountForFilter('education', 'ALL')})</option>
-                    <option value="متعلم">متعلم ({getCountForFilter('education', 'متعلم')})</option>
-                    <option value="غير متعلم">غير متعلم ({getCountForFilter('education', 'غير متعلم')})</option>
+                    <option value="ALL">جميع المستويات</option>
+                    <option value="متعلم">متعلم</option>
+                    <option value="غير متعلم">غير متعلم</option>
                   </select>
                 </div>
                 
@@ -2146,13 +2146,13 @@ export default function Sales2Page() {
                     value={heightFilter}
                     onChange={(e) => setHeightFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الأطوال ({cvs.length})</option>
-                    <option value="<155">أقل من 155 سم ({getCountForFilter('height', '<155')})</option>
-                    <option value="155-160">155-160 سم ({getCountForFilter('height', '155-160')})</option>
-                    <option value="160-165">160-165 سم ({getCountForFilter('height', '160-165')})</option>
-                    <option value="165-170">165-170 سم ({getCountForFilter('height', '165-170')})</option>
-                    <option value="170-175">170-175 سم ({getCountForFilter('height', '170-175')})</option>
-                    <option value=">175">أكثر من 175 سم ({getCountForFilter('height', '>175')})</option>
+                    <option value="ALL">جميع الأطوال</option>
+                    <option value="<155">أقل من 155 سم</option>
+                    <option value="155-160">155-160 سم</option>
+                    <option value="160-165">160-165 سم</option>
+                    <option value="165-170">165-170 سم</option>
+                    <option value="170-175">170-175 سم</option>
+                    <option value=">175">أكثر من 175 سم</option>
                   </select>
                 </div>
                 
@@ -2165,14 +2165,14 @@ export default function Sales2Page() {
                     value={weightFilter}
                     onChange={(e) => setWeightFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع الأوزان ({cvs.length})</option>
-                    <option value="<50">أقل من 50 كجم ({getCountForFilter('weight', '<50')})</option>
-                    <option value="50-55">50-55 كجم ({getCountForFilter('weight', '50-55')})</option>
-                    <option value="55-60">55-60 كجم ({getCountForFilter('weight', '55-60')})</option>
-                    <option value="60-65">60-65 كجم ({getCountForFilter('weight', '60-65')})</option>
-                    <option value="65-70">65-70 كجم ({getCountForFilter('weight', '65-70')})</option>
-                    <option value="70-75">70-75 كجم ({getCountForFilter('weight', '70-75')})</option>
-                    <option value=">75">أكثر من 75 كجم ({getCountForFilter('weight', '>75')})</option>
+                    <option value="ALL">جميع الأوزان</option>
+                    <option value="<50">أقل من 50 كجم</option>
+                    <option value="50-55">50-55 كجم</option>
+                    <option value="55-60">55-60 كجم</option>
+                    <option value="60-65">60-65 كجم</option>
+                    <option value="65-70">65-70 كجم</option>
+                    <option value="70-75">70-75 كجم</option>
+                    <option value=">75">أكثر من 75 كجم</option>
                   </select>
                 </div>
                 
@@ -2185,10 +2185,10 @@ export default function Sales2Page() {
                     value={locationFilter}
                     onChange={(e) => setLocationFilter(e.target.value)}
                   >
-                    <option value="ALL">جميع المناطق ({cvs.length})</option>
+                    <option value="ALL">جميع المناطق</option>
                     {Array.from(new Set(cvs.map(cv => cv.livingTown).filter(Boolean))).sort().map(location => (
                       <option key={location} value={location!}>
-                        {location} ({getCountForFilter('location', location!)})
+                        {location}
                       </option>
                     ))}
                   </select>
@@ -2707,6 +2707,8 @@ export default function Sales2Page() {
           </div>
         </div>
       )}
+      {/* شخصية فنانيس الكرتونية المتحركة */}
+      <FlyingLantern />
     </div>
     </>
   )
