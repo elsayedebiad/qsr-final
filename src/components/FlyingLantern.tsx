@@ -71,21 +71,6 @@ export default function FlyingLantern() {
         .swing { animation: swing 2s ease-in-out infinite; }
         .glow-effect { animation: glow 2s ease-in-out infinite; }
 
-        @keyframes slideDown {
-          from {
-            transform: translateY(-100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-
-        .ramadan-banner {
-          animation: slideDown 1s ease-out;
-        }
-
         @media (max-width: 768px) {
           /* تصغير الفوانيس على الموبايل */
           .lantern1, .lantern2, .lantern3 {
@@ -109,11 +94,6 @@ export default function FlyingLantern() {
           .lantern2 .text-xs,
           .lantern3 .text-xs {
             font-size: 0.5rem !important;
-          }
-          
-          /* إخفاء الشريط تماماً على الموبايل */
-          .ramadan-banner {
-            display: none !important;
           }
         }
       `}</style>
@@ -246,41 +226,6 @@ export default function FlyingLantern() {
         </div>
       </div>
 
-      {/* شريط رمضان يجمعنا - قريباً */}
-      <div className="ramadan-banner fixed top-0 right-0 z-50 overflow-hidden pointer-events-none">
-        <div className="relative w-56 h-56">
-          {/* الشريط المائل */}
-          <div className="absolute top-12 -right-16 w-80 transform rotate-45">
-            <div className="bg-gradient-to-br from-amber-600 via-orange-500 to-red-600 text-white shadow-2xl relative py-3 px-6">
-              {/* النمط الخلفي */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute top-0 left-0 w-full h-full" style={{ 
-                  backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,255,255,0.15) 8px, rgba(255,255,255,0.15) 16px)',
-                }}></div>
-              </div>
-
-              {/* المحتوى */}
-              <div className="relative flex items-center justify-center gap-3">
-                <span className="text-2xl animate-pulse">🌙</span>
-                <div className="flex flex-col items-center">
-                  <div className="text-base font-bold tracking-wider whitespace-nowrap" style={{ textShadow: '2px 2px 6px rgba(0,0,0,0.4)' }}>
-                    رمضان يجمعنا
-                  </div>
-                  <div className="text-xs font-bold bg-yellow-400 text-amber-900 px-3 py-1 rounded-full flex items-center gap-1 mt-1.5 shadow-md">
-                    <span>قريباً</span>
-                    <span className="text-sm">🎉</span>
-                  </div>
-                </div>
-                <span className="text-2xl animate-pulse" style={{ animationDelay: '0.5s' }}>✨</span>
-              </div>
-
-              {/* التوهج العلوي والسفلي */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-yellow-300 to-transparent"></div>
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-yellow-300 to-transparent"></div>
-            </div>
-          </div>
-        </div>
-      </div>
     </>
   )
 }
