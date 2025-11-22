@@ -14,27 +14,34 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // دعم pagination عبر query parameters
+    // دعم pagination عبر query parameters (اختياري)
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '10000') // افتراضي 10000
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const limitParam = searchParams.get('limit')
+    const offsetParam = searchParams.get('offset')
+    
+    // إذا تم تحديد limit، استخدمه، وإلا جلب الكل
+    const limit = limitParam ? parseInt(limitParam) : undefined
+    const offset = offsetParam ? parseInt(offsetParam) : 0
 
     const clicks = await db.bookingClick.findMany({
       orderBy: { createdAt: 'desc' },
-      take: limit,
-      skip: offset
+      ...(limit !== undefined && { take: limit }), // فقط إذا تم تحديد limit
+      ...(offset > 0 && { skip: offset }) // فقط إذا كان offset > 0
     })
 
     // حساب إجمالي عدد السجلات
     const total = await db.bookingClick.count()
+    
+    console.log(`📊 Booking Clicks API: Loaded ${clicks.length} out of ${total} total records (limit: ${limit || 'UNLIMITED'})`)
 
     return NextResponse.json({ 
       clicks,
       pagination: {
         total,
-        limit,
+        limit: limit || 'unlimited', // يعرض "unlimited" إذا لم يكن هناك حد
         offset,
-        hasMore: (offset + clicks.length) < total
+        hasMore: limit ? (offset + clicks.length) < total : false,
+        loaded: clicks.length
       }
     })
   } catch (error) {
