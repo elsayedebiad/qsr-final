@@ -106,10 +106,33 @@ export default function PublicCVPage() {
   
   // الحصول على صفحة المصدر من URL
   const fromPage = searchParams.get('from') || 'dashboard'
+  const trackId = searchParams.get('track') // معرف تتبع النقرة
 
   useEffect(() => {
     if (params.id) {
       fetchCV(params.id as string)
+    }
+    
+    // تسجيل فتح الرابط من الواتساب (إذا كان فيه معرف تتبع)
+    if (trackId) {
+      console.log('🔗 تم فتح الرابط من الواتساب! Track ID:', trackId);
+      
+      // تحديث حالة الرسالة إلى "تم الإرسال"
+      fetch('/api/booking-clicks/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clickId: parseInt(trackId),
+          messageSent: true
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          console.log('✅ تم تأكيد إرسال الرسالة!', data);
+        })
+        .catch(err => {
+          console.error('❌ فشل تحديث حالة الرسالة:', err);
+        });
     }
     
     // التحقق من معامل التحميل التلقائي

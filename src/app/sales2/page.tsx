@@ -1180,15 +1180,25 @@ export default function Sales2Page() {
   }
 
   // إرسال رسالة واتساب
-  const sendWhatsAppMessage = (cv: CV) => {
+  const sendWhatsAppMessage = async (cv: CV) => {
     try {
       if (!whatsappNumber) {
         toast.error('لم يتم تعيين رقم واتساب لهذه الصفحة. يرجى التواصل مع الإدارة.');
         return;
       }
 
+      // تسجيل النقرة في قاعدة البيانات
+      const { trackBookingClick } = await import('@/lib/booking-tracker')
+      const trackingData = await trackBookingClick(salesPageId, cv)
+      const clickId = trackingData?.click?.id
+
       // تنظيف رقم الهاتف (إزالة أي أحرف غير رقمية)
       const cleanPhone = whatsappNumber.replace(/\D/g, '');
+      
+      // إنشاء رابط تتبع مخفي - عندما يفتحه العميل من الواتساب نعرف أنه أرسل الرسالة!
+      const trackingUrl = clickId 
+        ? `${window.location.origin}/cv/${cv.id}?from=${salesPageId}&track=${clickId}`
+        : `${window.location.origin}/cv/${cv.id}?from=${salesPageId}`;
       
       // إنشاء الرسالة مع تنسيق محسن
       const message = `هلا والله 
@@ -1198,7 +1208,7 @@ export default function Sales2Page() {
 المهنة: ${cv.position || 'غير محددة'}
 عنده خبرة ${cv.experience || 'غير محددة'}، وعمره ${cv.age || 'غير محدد'} سنة
 
-هذا رابط سيرته: ${window.location.origin}/cv/${cv.id}?from=sales2
+هذا رابط سيرته: ${trackingUrl}
 
 إذا متوفر علمّوني الله يعطيكم العافية `;
 

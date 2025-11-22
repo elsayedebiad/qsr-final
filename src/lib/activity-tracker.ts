@@ -21,6 +21,12 @@ export type ActivityType =
   | 'SEARCH_PERFORMED' | 'FILTER_APPLIED' | 'REPORT_GENERATED'
   // أنشطة جماعية
   | 'BULK_DELETE' | 'BULK_UPDATE' | 'BULK_DOWNLOAD' | 'BULK_ARCHIVE'
+  // أنشطة الرفع والتحميل
+  | 'IMAGE_UPLOADED' | 'FILE_UPLOADED' | 'FILE_DELETED'
+  // أنشطة البنرات
+  | 'BANNER_CREATED' | 'BANNER_UPDATED' | 'BANNER_DELETED' | 'BANNER_ACTIVATED' | 'BANNER_DEACTIVATED'
+  // أنشطة المعرض
+  | 'GALLERY_IMAGE_ADDED' | 'GALLERY_IMAGE_DELETED' | 'GALLERY_REORDERED'
   // أنشطة أخرى
   | 'STATUS_CHANGED' | 'PRIORITY_CHANGED' | 'DATA_IMPORTED' | 'DATA_EXPORTED'
 
@@ -306,10 +312,10 @@ export const ActivityTracker = {
     type: `BULK_${operation.toUpperCase()}` as ActivityType,
     action: `BULK_${operation.toUpperCase()}`,
     description: `تم تنفيذ عملية ${operation} على ${count} ${type}`,
+    targetDetails: { count, type },
     metadata: { 
       importance: 'high', 
-      tags: ['bulk', operation.toLowerCase()],
-      targetDetails: { count, type }
+      tags: ['bulk', operation.toLowerCase()]
     }
   }),
   
@@ -347,6 +353,113 @@ export const ActivityTracker = {
     targetType: 'SYSTEM',
     targetDetails: details,
     metadata: { importance: 'high', tags: ['system', 'warning'] }
+  }),
+  
+  // تتبع رفع الصور والملفات
+  imageUploaded: (fileName: string, fileSize: number, targetType?: string) => trackActivity({
+    type: 'IMAGE_UPLOADED',
+    action: 'UPLOAD',
+    description: `تم رفع صورة: ${fileName} (${(fileSize / 1024).toFixed(2)} KB)`,
+    targetDetails: { fileName, fileSize, targetType },
+    metadata: { importance: 'medium', tags: ['upload', 'image'] }
+  }),
+  
+  fileUploaded: (fileName: string, fileSize: number, fileType: string) => trackActivity({
+    type: 'FILE_UPLOADED',
+    action: 'UPLOAD',
+    description: `تم رفع ملف: ${fileName} (${fileType})`,
+    targetDetails: { fileName, fileSize, fileType },
+    metadata: { importance: 'medium', tags: ['upload', 'file'] }
+  }),
+  
+  fileDeleted: (fileName: string) => trackActivity({
+    type: 'FILE_DELETED',
+    action: 'DELETE',
+    description: `تم حذف ملف: ${fileName}`,
+    targetDetails: { fileName },
+    metadata: { importance: 'medium', tags: ['delete', 'file'] }
+  }),
+  
+  // تتبع البنرات
+  bannerCreated: (bannerTitle: string, bannerId: string, bannerType: string) => trackActivity({
+    type: 'BANNER_CREATED',
+    action: 'CREATE',
+    description: `تم إنشاء بنر جديد: ${bannerTitle} (${bannerType})`,
+    targetType: 'SYSTEM',
+    targetId: bannerId,
+    targetName: bannerTitle,
+    targetDetails: { bannerType },
+    metadata: { importance: 'high', tags: ['banner', 'create'] }
+  }),
+  
+  bannerUpdated: (bannerTitle: string, bannerId: string) => trackActivity({
+    type: 'BANNER_UPDATED',
+    action: 'UPDATE',
+    description: `تم تحديث البنر: ${bannerTitle}`,
+    targetType: 'SYSTEM',
+    targetId: bannerId,
+    targetName: bannerTitle,
+    metadata: { importance: 'medium', tags: ['banner', 'update'] }
+  }),
+  
+  bannerDeleted: (bannerTitle: string, bannerId: string) => trackActivity({
+    type: 'BANNER_DELETED',
+    action: 'DELETE',
+    description: `تم حذف البنر: ${bannerTitle}`,
+    targetType: 'SYSTEM',
+    targetId: bannerId,
+    targetName: bannerTitle,
+    metadata: { importance: 'high', tags: ['banner', 'delete'] }
+  }),
+  
+  bannerActivated: (bannerTitle: string, bannerId: string) => trackActivity({
+    type: 'BANNER_ACTIVATED',
+    action: 'ACTIVATE',
+    description: `تم تفعيل البنر: ${bannerTitle}`,
+    targetType: 'SYSTEM',
+    targetId: bannerId,
+    targetName: bannerTitle,
+    metadata: { importance: 'medium', tags: ['banner', 'activate'] }
+  }),
+  
+  bannerDeactivated: (bannerTitle: string, bannerId: string) => trackActivity({
+    type: 'BANNER_DEACTIVATED',
+    action: 'DEACTIVATE',
+    description: `تم إلغاء تفعيل البنر: ${bannerTitle}`,
+    targetType: 'SYSTEM',
+    targetId: bannerId,
+    targetName: bannerTitle,
+    metadata: { importance: 'medium', tags: ['banner', 'deactivate'] }
+  }),
+  
+  // تتبع المعرض
+  galleryImageAdded: (imageName: string, imageId: string) => trackActivity({
+    type: 'GALLERY_IMAGE_ADDED',
+    action: 'ADD',
+    description: `تم إضافة صورة للمعرض: ${imageName}`,
+    targetType: 'SYSTEM',
+    targetId: imageId,
+    targetName: imageName,
+    metadata: { importance: 'medium', tags: ['gallery', 'add'] }
+  }),
+  
+  galleryImageDeleted: (imageName: string, imageId: string) => trackActivity({
+    type: 'GALLERY_IMAGE_DELETED',
+    action: 'DELETE',
+    description: `تم حذف صورة من المعرض: ${imageName}`,
+    targetType: 'SYSTEM',
+    targetId: imageId,
+    targetName: imageName,
+    metadata: { importance: 'medium', tags: ['gallery', 'delete'] }
+  }),
+  
+  galleryReordered: (count: number) => trackActivity({
+    type: 'GALLERY_REORDERED',
+    action: 'REORDER',
+    description: `تم إعادة ترتيب ${count} صورة في المعرض`,
+    targetType: 'SYSTEM',
+    targetDetails: { count },
+    metadata: { importance: 'low', tags: ['gallery', 'reorder'] }
   })
 }
 

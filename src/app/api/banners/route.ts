@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import ActivityTracker from '@/lib/activity-tracker'
 
 // نحفظ البنرات كـ Base64 في قاعدة البيانات Neon PostgreSQL
 // لا حاجة للـ file system أو Vercel Blob Storage
@@ -124,6 +125,17 @@ export async function POST(request: NextRequest) {
 
       console.log(`✅ تم حفظ البنر بنجاح - ID: ${banner.id}`)
       
+      // تسجيل النشاط
+      try {
+        await ActivityTracker.bannerCreated(
+          `${salesPageId} - ${deviceType}`,
+          banner.id.toString(),
+          'رئيسي'
+        )
+      } catch (activityError) {
+        console.error('خطأ في تسجيل النشاط:', activityError)
+      }
+      
       // إرجاع البنر بنجاح
       return NextResponse.json({
         ...banner,
@@ -197,9 +209,26 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    // جلب البنر قبل الحذف للحصول على المعلومات
+    const banner = await db.banner.findUnique({
+      where: { id: parseInt(id) }
+    })
+
     await db.banner.delete({
       where: { id: parseInt(id) }
     })
+
+    // تسجيل النشاط
+    if (banner) {
+      try {
+        await ActivityTracker.bannerDeleted(
+          `${banner.salesPageId} - ${banner.deviceType}`,
+          banner.id.toString()
+        )
+      } catch (activityError) {
+        console.error('خطأ في تسجيل النشاط:', activityError)
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -232,6 +261,30 @@ export async function PATCH(request: NextRequest) {
       where: { id: parseInt(id) },
       data: updateData
     })
+
+    // تسجيل النشاط
+    try {
+      if (isActive !== undefined) {
+        if (isActive) {
+          await ActivityTracker.bannerActivated(
+            `${banner.salesPageId} - ${banner.deviceType}`,
+            banner.id.toString()
+          )
+        } else {
+          await ActivityTracker.bannerDeactivated(
+            `${banner.salesPageId} - ${banner.deviceType}`,
+            banner.id.toString()
+          )
+        }
+      } else {
+        await ActivityTracker.bannerUpdated(
+          `${banner.salesPageId} - ${banner.deviceType}`,
+          banner.id.toString()
+        )
+      }
+    } catch (activityError) {
+      console.error('خطأ في تسجيل النشاط:', activityError)
+    }
 
     return NextResponse.json(banner)
   } catch (error) {

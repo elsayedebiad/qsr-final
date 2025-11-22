@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import ActivityTracker from '@/lib/activity-tracker'
 
 const prisma = new PrismaClient()
 
@@ -63,6 +64,17 @@ export async function POST(request: NextRequest) {
     })
 
     console.log(`✅ تم إنشاء البنر الإضافي بنجاح: ${banner.id}`)
+
+    // تسجيل النشاط
+    try {
+      await ActivityTracker.bannerCreated(
+        `${salesPageId} - ${deviceType}`,
+        banner.id.toString(),
+        'ثانوي'
+      )
+    } catch (activityError) {
+      console.error('خطأ في تسجيل النشاط:', activityError)
+    }
 
     return NextResponse.json({
       message: 'تم إضافة البنر الإضافي بنجاح',

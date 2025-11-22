@@ -36,6 +36,7 @@ import {
   Clock,
   Briefcase,
   Search,
+  MousePointerClick,
 } from "lucide-react"
 
 import {
@@ -436,6 +437,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       label: 'تحليلات البحث والفلاتر',
       icon: Search,
       href: '/dashboard/search-analytics',
+      adminOnly: true
+    },
+    {
+      id: 'booking-clicks',
+      label: 'تتبع نقرات الحجز والاستفسار',
+      icon: MousePointerClick,
+      href: '/dashboard/booking-clicks',
       adminOnly: true
     },
     {

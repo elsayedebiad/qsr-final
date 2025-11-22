@@ -608,3 +608,22 @@ model SearchAnalytics {
   @@index([position])
   @@map("search_analytics")
 }
+
+// تتبع نقرات زر الحجز والاستفسار
+model BookingClick {
+  id          Int      @id @default(autoincrement())
+  salesPageId String // sales1, sales2, ... sales11
+  cvId        String? // معرف السيرة الذاتية
+  cvName      String? // اسم السيرة الذاتية
+  action      String   @default("BOOKING_CLICK") // BOOKING_CLICK, WHATSAPP_SENT, PHONE_CALL
+  userAgent   String? // معلومات المتصفح
+  ipAddress   String? // عنوان IP
+  deviceType  String? // MOBILE or DESKTOP
+  messageSent Boolean  @default(false) // هل تم إرسال الرسالة أم لا
+  createdAt   DateTime @default(now())
+
+  @@index([salesPageId])
+  @@index([createdAt])
+  @@index([messageSent])
+  @@map("booking_clicks")
+}
