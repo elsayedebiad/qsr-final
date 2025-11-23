@@ -1504,7 +1504,7 @@ export default function Sales1Page() {
       <ClarityScript />
       <SalesRedirectCheck />
       <AutoScrollIndicatorEnhanced />      
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 overflow-x-hidden" dir="rtl">
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">
           {/* شريط علوي بمعلومات التواصل */}

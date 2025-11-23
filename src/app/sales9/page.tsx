@@ -26,18 +26,17 @@ import {
   Mail,
   RefreshCw,
   AlertTriangle,
-  Camera,
-  Users
+  Camera
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
 import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 import VideoPlayer from '@/components/VideoPlayer'
-import FlyingLantern from '@/components/FlyingLantern'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
+import FlyingLantern from '@/components/FlyingLantern'
 import { logSearchAnalytics, logPageView } from '@/lib/search-analytics'
 
 // إضافة أنيميشن CSS محسّن للأداء
@@ -108,6 +107,7 @@ const customStyles = `
   img {
     content-visibility: auto;
   }
+
 `
 
 interface CV {
@@ -157,7 +157,7 @@ interface CV {
   cvImageUrl?: string
 }
 
-export default function Sales4Page() {
+export default function Sales9Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -752,9 +752,15 @@ export default function Sales4Page() {
       // إذا كانت القيمة غير فارغة ولكن لا تحتوي على معلومات واضحة
       // نعتبرها خبرة (لأنها ليست "بدون خبرة" صريحة)
       const hasExperience = !isExactNoExperience && experienceValue !== ''
+      
+      if (experienceFilter === 'WITH_EXPERIENCE') {
+        return hasExperience
+      }
 
-      if (experienceFilter === 'WITH_EXPERIENCE') return hasExperience
-      if (experienceFilter === 'NO_EXPERIENCE') return !hasExperience
+      if (experienceFilter === 'NO_EXPERIENCE') {
+        return !hasExperience
+      }
+
       return true
     })()
 
@@ -915,7 +921,7 @@ export default function Sales4Page() {
     return Array.from(new Set(positions)).sort()
   }, [cvs])
 
-  // استخراج الجنسيات الفريدة من البيانات المرفوعة
+  // استخراج الجنسيات الفريقة من البيانات المرفوعة
   const uniqueNationalities = useMemo(() => {
     const nationalities = cvs
       .map(cv => cv.nationality)
@@ -1034,7 +1040,6 @@ export default function Sales4Page() {
           
         case 'education':
           const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
-          
           // البيانات الفعلية تحتوي على "نعم" أو "لا"
           if (filterValue === 'متعلم') {
             return educationLevel === 'نعم' || educationLevel === 'yes' || 
@@ -1214,10 +1219,44 @@ export default function Sales4Page() {
     }
   }, [nationalityFilter, statusFilter, positionFilter, searchTerm])
 
+  // تسجيل عمليات البحث والفلاتر
   useEffect(() => {
+    // تسجيل فقط إذا تم تحميل البيانات
     if (cvs.length === 0) return
-    logSearchAnalytics({salesPageId, searchTerm: searchTerm || undefined, nationality: nationalityFilter !== 'ALL' ? nationalityFilter : undefined, position: positionFilter !== 'ALL' ? positionFilter : undefined, ageFilter: ageFilterEnabled ? `${minAge}-${maxAge}` : undefined, experience: experienceFilter !== 'ALL' ? experienceFilter : undefined, arabicLevel: arabicLevelFilter !== 'ALL' ? arabicLevelFilter : undefined, englishLevel: englishLevelFilter !== 'ALL' ? englishLevelFilter : undefined, maritalStatus: maritalStatusFilter !== 'ALL' ? maritalStatusFilter : undefined, skills: skillFilters.length > 0 ? skillFilters : undefined, religion: religionFilter !== 'ALL' ? religionFilter : undefined, education: educationFilter !== 'ALL' ? educationFilter : undefined, resultsCount: allFilteredCvs.length})
-  }, [salesPageId, searchTerm, nationalityFilter, positionFilter, minAge, maxAge, ageFilterEnabled, experienceFilter, arabicLevelFilter, englishLevelFilter, maritalStatusFilter, skillFilters, religionFilter, educationFilter, allFilteredCvs.length, cvs.length])
+
+    logSearchAnalytics({
+      salesPageId,
+      searchTerm: searchTerm || undefined,
+      nationality: nationalityFilter !== 'ALL' ? nationalityFilter : undefined,
+      position: positionFilter !== 'ALL' ? positionFilter : undefined,
+      ageFilter: ageFilterEnabled ? `${minAge}-${maxAge}` : undefined,
+      experience: experienceFilter !== 'ALL' ? experienceFilter : undefined,
+      arabicLevel: arabicLevelFilter !== 'ALL' ? arabicLevelFilter : undefined,
+      englishLevel: englishLevelFilter !== 'ALL' ? englishLevelFilter : undefined,
+      maritalStatus: maritalStatusFilter !== 'ALL' ? maritalStatusFilter : undefined,
+      skills: skillFilters.length > 0 ? skillFilters : undefined,
+      religion: religionFilter !== 'ALL' ? religionFilter : undefined,
+      education: educationFilter !== 'ALL' ? educationFilter : undefined,
+      resultsCount: allFilteredCvs.length
+    })
+  }, [
+    salesPageId,
+    searchTerm,
+    nationalityFilter,
+    positionFilter,
+    minAge,
+    maxAge,
+    ageFilterEnabled,
+    experienceFilter,
+    arabicLevelFilter,
+    englishLevelFilter,
+    maritalStatusFilter,
+    skillFilters,
+    religionFilter,
+    educationFilter,
+    allFilteredCvs.length,
+    cvs.length
+  ])
 
   // دالة للتعامل مع تبديل المهارات
   const toggleSkillFilter = (skill: string) => {
@@ -1246,7 +1285,7 @@ export default function Sales4Page() {
       // تنظيف رقم الهاتف (إزالة أي أحرف غير رقمية)
       const cleanPhone = whatsappNumber.replace(/\D/g, '');
       
-      // إنشاء رابط تتبع مخفي
+      // إنشاء رابط تتبع مخفي - عندما يفتحه العميل من الواتساب نعرف أنه أرسل الرسالة!
       const trackingUrl = clickId 
         ? `${window.location.origin}/cv/${cv.id}?from=${salesPageId}&track=${clickId}`
         : `${window.location.origin}/cv/${cv.id}?from=${salesPageId}`;
@@ -1465,7 +1504,7 @@ export default function Sales4Page() {
       <ClarityScript />
       <SalesRedirectCheck />
       <AutoScrollIndicatorEnhanced />      
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 overflow-x-hidden" dir="rtl">
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">
           {/* شريط علوي بمعلومات التواصل */}
@@ -1492,9 +1531,9 @@ export default function Sales4Page() {
                 {/* الشعار */}
                 <a 
                   href="https://qsr.sa/offers1-2" 
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-300"
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
                 >
                   <img 
                     src="/logo-2.png" 
@@ -1515,7 +1554,7 @@ export default function Sales4Page() {
                       className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-all text-sm"
                     >
                       <ArrowLeft className="h-4 w-4" />
-                      <span className="hidden sm:inline">العودة للداشبورد</span>
+                      <span className="hidden sm:inline">الداشبورد</span>
                     </button>
                   )}
                   {whatsappNumber && (
@@ -1545,7 +1584,7 @@ export default function Sales4Page() {
                 <div className="bg-gradient-to-br from-orange-400 to-yellow-500 rounded-xl p-2 sm:p-3 flex-shrink-0 shadow-md">
                   <RefreshCw className="h-5 w-5 text-white" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-base sm:text-lg font-bold text-orange-900">سير ذاتية معادة من العقود</h3>
                     <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
@@ -1610,7 +1649,7 @@ export default function Sales4Page() {
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl text-xs sm:text-sm flex-1 sm:flex-initial justify-center"
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 shadow-lg hover:shadow-xl text-xs sm:text-sm flex-1 sm:flex-initial justify-center"
                 >
                   <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">العودة للداشبورد</span>
@@ -1903,7 +1942,7 @@ export default function Sales4Page() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الخبرة</label>
+                  <label className="text-xs font-semibold text-purple-600">الخبرة</label>
                   <select
                     className="w-full px-3 py-2.5 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
                     value={experienceFilter}
@@ -1916,7 +1955,7 @@ export default function Sales4Page() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الوظيفة</label>
+                  <label className="text-xs font-semibold text-purple-600">الوظيفة</label>
                   <select
                     className="w-full px-3 py-2.5 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                     value={positionFilter}
@@ -1932,7 +1971,7 @@ export default function Sales4Page() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الحالة الاجتماعية</label>
+                  <label className="text-xs font-semibold text-pink-600">الحالة الاجتماعية</label>
                   <select
                     className="w-full px-3 py-2.5 bg-pink-50 border border-pink-200 rounded-lg text-sm font-medium text-pink-700 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-pink-400 transition-all"
                     value={maritalStatusFilter}
@@ -2099,7 +2138,7 @@ export default function Sales4Page() {
                                   type="checkbox"
                                   checked={skillFilters.includes(skill.id)}
                                   onChange={() => toggleSkillFilter(skill.id)}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
                                 <span className="text-lg">{skill.icon}</span>
                                 <span className="text-sm flex-1">{skill.label}</span>
@@ -2155,7 +2194,7 @@ export default function Sales4Page() {
                     <Globe className="h-4 w-4 ml-2" /> مستوى العربية
                   </label>
                   <select
-                    className="w-full rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-gray-500 border border-gray-300"
+                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-gray-500 border border-gray-300"
                     value={arabicLevelFilter}
                     onChange={(e) => setArabicLevelFilter(e.target.value)}
                   >
@@ -2172,7 +2211,7 @@ export default function Sales4Page() {
                     <Globe className="h-4 w-4 ml-2" /> مستوى الإنجليزية
                   </label>
                   <select
-                    className="w-full rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 border border-gray-300"
+                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 border border-gray-300"
                     value={englishLevelFilter}
                     onChange={(e) => setEnglishLevelFilter(e.target.value)}
                   >
@@ -2414,7 +2453,7 @@ export default function Sales4Page() {
                       <div className="mb-2 sm:mb-3">
                         <button
                           onClick={() => sendWhatsAppMessage(cv)}
-                          className="w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white py-3 sm:py-3.5 px-2 sm:px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                          className="w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white py-3 sm:py-3.5 px-2 sm:px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 group relative overflow-hidden"
                         >
                           {/* تأثير النبض المتوهج في الخلفية */}
                           <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
@@ -2436,7 +2475,7 @@ export default function Sales4Page() {
                         </button>
                       </div>
                       
-                      {/* زر فيديو العاملة - يخفى عندما يكون فلتر نقل خدمات مفعل */}
+                      {/* زر الفيديو - بتصميم احترافي - يخفى عندما يكون فلتر نقل خدمات مفعل */}
                       {positionFilter !== 'نقل خدمات' && (
                         <div className="mb-2 sm:mb-3">
                           <button
@@ -2461,7 +2500,7 @@ export default function Sales4Page() {
                               <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
                             </div>
                             
-                            <span className="font-bold relative z-10 text-[9px] sm:text-xs leading-tight">شاهد طريقة استخراج التأشيرة</span>
+                            <span className="font-bold relative z-10 text-[9px] sm:text-sm leading-tight">شاهد طريقة استخراج التأشيرة</span>
                             
                             {/* أيقونة سهم */}
                             <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 relative z-10 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2484,7 +2523,7 @@ export default function Sales4Page() {
                                 toast.error('لا يوجد رابط فيديو لهذه السيرة');
                               }
                             }}
-                            className="bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-xl hover:shadow-pink-500/50 active:scale-95 hover:scale-[1.02] group relative overflow-hidden"
+                            className="bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-xl hover:shadow-pink-500/50 hover:scale-105 group relative overflow-hidden"
                             title="فيديو العاملة المطلوبة"
                           >
                             {/* تأثير متوهج */}
@@ -2501,7 +2540,7 @@ export default function Sales4Page() {
                           className="bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
                           title="مشاركة السيرة الذاتية"
                         >
-                          <Share2 className="h-5 w-5 sm:h-6 sm:w-6" />
+                          <Share2 className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
                           <span className="font-bold leading-tight">مشاركة</span>
                         </button>
                         <button
@@ -2509,7 +2548,7 @@ export default function Sales4Page() {
                           className="bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
                           title="عرض السيرة الكاملة"
                         >
-                          <Eye className="h-5 w-5 sm:h-6 sm:w-6" />
+                          <Eye className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
                           <span className="font-bold leading-tight">عرض</span>
                         </button>
                       </div>
@@ -2603,21 +2642,21 @@ export default function Sales4Page() {
             href="https://qsr.sa/offers1-2" 
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-3 mb-4 hover:opacity-80 transition-opacity duration-300"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4 hover:opacity-80 transition-opacity cursor-pointer"
           >
-            <Users className="h-8 sm:h-10 w-8 sm:w-10 text-yellow-400" />
+            <img src="/logo-2.png" alt="الاسناد السريع" className="h-10 sm:h-12 w-auto object-contain bg-white rounded-lg p-2" />
             <div>
               <h2 className="text-xl sm:text-2xl font-bold">الاسناد السريع للاستقدام</h2>
               <p className="text-xs sm:text-sm text-blue-200">خدمات استقدام العمالة المنزلية</p>
             </div>
           </a>
           
-          <div className="flex items-center justify-center gap-2 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-6">
             <MapPin className="h-4 sm:h-5 w-4 sm:w-5 text-yellow-400" />
             <span className="text-sm sm:text-lg">الرياض - المملكة العربية السعودية</span>
           </div>
           
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-6">
             {whatsappNumber && (
               <>
                 <a href={`tel:${whatsappNumber}`} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center">
@@ -2625,7 +2664,7 @@ export default function Sales4Page() {
                   <span className="font-semibold text-sm sm:text-base" dir="ltr">{whatsappNumber}</span>
                 </a>
                 <a 
-                  href={`https://wa.me/${whatsappNumber}`} 
+                  href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`} 
                   className="flex items-center gap-2 bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -2637,10 +2676,10 @@ export default function Sales4Page() {
                 </a>
               </>
             )}
-              <a href="mailto:info@qsr.sa" className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center">
-                <Mail className="h-4 sm:h-5 w-4 sm:w-5" />
-                <span className="font-semibold text-sm sm:text-base" dir="ltr">info@qsr.sa</span>
-              </a>
+            <a href="mailto:info@qsr.sa" className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center">
+              <Mail className="h-4 sm:h-5 w-4 sm:w-5" />
+              <span className="font-semibold text-sm sm:text-base" dir="ltr">info@qsr.sa</span>
+            </a>
           </div>
           
           <div className="pt-4 border-t border-blue-700">
@@ -2793,9 +2832,10 @@ export default function Sales4Page() {
           </div>
         </div>
       )}
-    </div>
-      {/* الفوانيس والشريط الرمضاني */}
+
+      {/* شخصية فنانيس الكرتونية المتحركة */}
       <FlyingLantern />
+    </div>
     </>
   )
 }

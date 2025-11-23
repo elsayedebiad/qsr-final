@@ -26,18 +26,17 @@ import {
   Mail,
   RefreshCw,
   AlertTriangle,
-  Camera,
-  Users
+  Camera
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
 import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 import VideoPlayer from '@/components/VideoPlayer'
-import FlyingLantern from '@/components/FlyingLantern'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
+import FlyingLantern from '@/components/FlyingLantern'
 import { logSearchAnalytics, logPageView } from '@/lib/search-analytics'
 
 // إضافة أنيميشن CSS محسّن للأداء
@@ -108,6 +107,7 @@ const customStyles = `
   img {
     content-visibility: auto;
   }
+
 `
 
 interface CV {
@@ -157,7 +157,7 @@ interface CV {
   cvImageUrl?: string
 }
 
-export default function Sales4Page() {
+export default function Sales7Page() {
   const router = useRouter()
   const [cvs, setCvs] = useState<CV[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -752,9 +752,15 @@ export default function Sales4Page() {
       // إذا كانت القيمة غير فارغة ولكن لا تحتوي على معلومات واضحة
       // نعتبرها خبرة (لأنها ليست "بدون خبرة" صريحة)
       const hasExperience = !isExactNoExperience && experienceValue !== ''
+      
+      if (experienceFilter === 'WITH_EXPERIENCE') {
+        return hasExperience
+      }
 
-      if (experienceFilter === 'WITH_EXPERIENCE') return hasExperience
-      if (experienceFilter === 'NO_EXPERIENCE') return !hasExperience
+      if (experienceFilter === 'NO_EXPERIENCE') {
+        return !hasExperience
+      }
+
       return true
     })()
 
@@ -915,7 +921,7 @@ export default function Sales4Page() {
     return Array.from(new Set(positions)).sort()
   }, [cvs])
 
-  // استخراج الجنسيات الفريدة من البيانات المرفوعة
+  // استخراج الجنسيات الفريقة من البيانات المرفوعة
   const uniqueNationalities = useMemo(() => {
     const nationalities = cvs
       .map(cv => cv.nationality)
@@ -1213,10 +1219,44 @@ export default function Sales4Page() {
     }
   }, [nationalityFilter, statusFilter, positionFilter, searchTerm])
 
+  // تسجيل عمليات البحث والفلاتر
   useEffect(() => {
+    // تسجيل فقط إذا تم تحميل البيانات
     if (cvs.length === 0) return
-    logSearchAnalytics({salesPageId, searchTerm: searchTerm || undefined, nationality: nationalityFilter !== 'ALL' ? nationalityFilter : undefined, position: positionFilter !== 'ALL' ? positionFilter : undefined, ageFilter: ageFilterEnabled ? `${minAge}-${maxAge}` : undefined, experience: experienceFilter !== 'ALL' ? experienceFilter : undefined, arabicLevel: arabicLevelFilter !== 'ALL' ? arabicLevelFilter : undefined, englishLevel: englishLevelFilter !== 'ALL' ? englishLevelFilter : undefined, maritalStatus: maritalStatusFilter !== 'ALL' ? maritalStatusFilter : undefined, skills: skillFilters.length > 0 ? skillFilters : undefined, religion: religionFilter !== 'ALL' ? religionFilter : undefined, education: educationFilter !== 'ALL' ? educationFilter : undefined, resultsCount: allFilteredCvs.length})
-  }, [salesPageId, searchTerm, nationalityFilter, positionFilter, minAge, maxAge, ageFilterEnabled, experienceFilter, arabicLevelFilter, englishLevelFilter, maritalStatusFilter, skillFilters, religionFilter, educationFilter, allFilteredCvs.length, cvs.length])
+
+    logSearchAnalytics({
+      salesPageId,
+      searchTerm: searchTerm || undefined,
+      nationality: nationalityFilter !== 'ALL' ? nationalityFilter : undefined,
+      position: positionFilter !== 'ALL' ? positionFilter : undefined,
+      ageFilter: ageFilterEnabled ? `${minAge}-${maxAge}` : undefined,
+      experience: experienceFilter !== 'ALL' ? experienceFilter : undefined,
+      arabicLevel: arabicLevelFilter !== 'ALL' ? arabicLevelFilter : undefined,
+      englishLevel: englishLevelFilter !== 'ALL' ? englishLevelFilter : undefined,
+      maritalStatus: maritalStatusFilter !== 'ALL' ? maritalStatusFilter : undefined,
+      skills: skillFilters.length > 0 ? skillFilters : undefined,
+      religion: religionFilter !== 'ALL' ? religionFilter : undefined,
+      education: educationFilter !== 'ALL' ? educationFilter : undefined,
+      resultsCount: allFilteredCvs.length
+    })
+  }, [
+    salesPageId,
+    searchTerm,
+    nationalityFilter,
+    positionFilter,
+    minAge,
+    maxAge,
+    ageFilterEnabled,
+    experienceFilter,
+    arabicLevelFilter,
+    englishLevelFilter,
+    maritalStatusFilter,
+    skillFilters,
+    religionFilter,
+    educationFilter,
+    allFilteredCvs.length,
+    cvs.length
+  ])
 
   // دالة للتعامل مع تبديل المهارات
   const toggleSkillFilter = (skill: string) => {
@@ -1245,7 +1285,7 @@ export default function Sales4Page() {
       // تنظيف رقم الهاتف (إزالة أي أحرف غير رقمية)
       const cleanPhone = whatsappNumber.replace(/\D/g, '');
       
-      // إنشاء رابط تتبع مخفي
+      // إنشاء رابط تتبع مخفي - عندما يفتحه العميل من الواتساب نعرف أنه أرسل الرسالة!
       const trackingUrl = clickId 
         ? `${window.location.origin}/cv/${cv.id}?from=${salesPageId}&track=${clickId}`
         : `${window.location.origin}/cv/${cv.id}?from=${salesPageId}`;
@@ -1464,7 +1504,7 @@ export default function Sales4Page() {
       <ClarityScript />
       <SalesRedirectCheck />
       <AutoScrollIndicatorEnhanced />      
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 overflow-x-hidden" dir="rtl">
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">
           {/* شريط علوي بمعلومات التواصل */}
@@ -1491,9 +1531,9 @@ export default function Sales4Page() {
                 {/* الشعار */}
                 <a 
                   href="https://qsr.sa/offers1-2" 
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-300"
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
                 >
                   <img 
                     src="/logo-2.png" 
@@ -1514,7 +1554,7 @@ export default function Sales4Page() {
                       className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-all text-sm"
                     >
                       <ArrowLeft className="h-4 w-4" />
-                      <span className="hidden sm:inline">العودة للداشبورد</span>
+                      <span className="hidden sm:inline">الداشبورد</span>
                     </button>
                   )}
                   {whatsappNumber && (
@@ -1781,7 +1821,7 @@ export default function Sales4Page() {
                   setNationalityFilter('ALL'); // إلغاء فلتر الجنسية
                 }
               }}
-            className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
                 positionFilter === 'سائق'
                   ? 'shadow-2xl scale-105 ring-4 ring-amber-400 shadow-amber-400/60'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
@@ -1818,7 +1858,7 @@ export default function Sales4Page() {
                   setNationalityFilter('ALL'); // إلغاء فلتر الجنسية
                 }
               }}
-            className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
                 positionFilter === 'نقل خدمات'
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
@@ -2413,7 +2453,7 @@ export default function Sales4Page() {
                       <div className="mb-2 sm:mb-3">
                         <button
                           onClick={() => sendWhatsAppMessage(cv)}
-                          className="w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white py-3 sm:py-3.5 px-2 sm:px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                          className="w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white py-3 sm:py-3.5 px-2 sm:px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 group relative overflow-hidden"
                         >
                           {/* تأثير النبض المتوهج في الخلفية */}
                           <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
@@ -2483,7 +2523,7 @@ export default function Sales4Page() {
                                 toast.error('لا يوجد رابط فيديو لهذه السيرة');
                               }
                             }}
-                            className="bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-xl hover:shadow-pink-500/50 hover:scale-105 border-2 border-pink-300/40"
+                            className="bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-xl hover:shadow-pink-500/50 hover:scale-105 group relative overflow-hidden"
                             title="فيديو العاملة المطلوبة"
                           >
                             {/* تأثير متوهج */}
@@ -2585,7 +2625,7 @@ export default function Sales4Page() {
           <div className="flex justify-center mt-8 mb-4">
             <button
               onClick={loadMore}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
             >
               <ChevronDown className="h-6 w-6 animate-bounce" />
               عرض المزيد ({allFilteredCvs.length - displayLimit} سيرة متبقية)
@@ -2597,58 +2637,58 @@ export default function Sales4Page() {
 
         {/* Footer - بتصميم qsr.sa */}
         <footer className="bg-[#1e3a8a] text-white py-8 w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
           <a 
             href="https://qsr.sa/offers1-2" 
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-3 mb-4 hover:opacity-80 transition-opacity duration-300"
-            >
-            <Users className="h-8 sm:h-10 w-8 sm:w-10 text-yellow-400" />
-              <div>
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4 hover:opacity-80 transition-opacity cursor-pointer"
+          >
+            <img src="/logo-2.png" alt="الاسناد السريع" className="h-10 sm:h-12 w-auto object-contain bg-white rounded-lg p-2" />
+            <div>
               <h2 className="text-xl sm:text-2xl font-bold">الاسناد السريع للاستقدام</h2>
-                <p className="text-xs sm:text-sm text-blue-200">خدمات استقدام العمالة المنزلية</p>
-              </div>
-            </a>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-6">
+              <p className="text-xs sm:text-sm text-blue-200">خدمات استقدام العمالة المنزلية</p>
+            </div>
+          </a>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-6">
             <MapPin className="h-4 sm:h-5 w-4 sm:w-5 text-yellow-400" />
             <span className="text-sm sm:text-lg">الرياض - المملكة العربية السعودية</span>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-6">
-              {whatsappNumber && (
-                <> 
-                  <a href={`tel:${whatsappNumber}`} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center">
-                    <Phone className="h-4 sm:h-5 w-4 sm:w-5" />
-                    <span className="font-semibold text-sm sm:text-base" dir="ltr">{whatsappNumber}</span>
-                  </a>
-                  <a 
-                    href={`https://wa.me/${whatsappNumber}`} 
-                    className="flex items-center gap-2 bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <svg className="h-4 sm:h-5 w-4 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
-                    </svg>
-                    <span className="font-semibold text-sm sm:text-base">واتساب</span>
-                  </a>
-                </>
-              )}
-              <a href="mailto:info@qsr.sa" className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center">
-                <Mail className="h-4 sm:h-5 w-4 sm:w-5" />
-                <span className="font-semibold text-sm sm:text-base" dir="ltr">info@qsr.sa</span>
-              </a>
-            </div>
-            
-            <div className="pt-4 border-t border-blue-700">
-              <p className="text-sm text-blue-200"> 2025 الاسناد السريع للاستقدام - جميع الحقوق محفوظة</p>
-            </div>
           </div>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-6">
+            {whatsappNumber && (
+              <>
+                <a href={`tel:${whatsappNumber}`} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center">
+                  <Phone className="h-4 sm:h-5 w-4 sm:w-5" />
+                  <span className="font-semibold text-sm sm:text-base" dir="ltr">{whatsappNumber}</span>
+                </a>
+                <a 
+                  href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`} 
+                  className="flex items-center gap-2 bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <svg className="h-4 sm:h-5 w-4 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
+                  </svg>
+                  <span className="font-semibold text-sm sm:text-base">واتساب</span>
+                </a>
+              </>
+            )}
+            <a href="mailto:info@qsr.sa" className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center">
+              <Mail className="h-4 sm:h-5 w-4 sm:w-5" />
+              <span className="font-semibold text-sm sm:text-base" dir="ltr">info@qsr.sa</span>
+            </a>
+          </div>
+          
+          <div className="pt-4 border-t border-blue-700">
+            <p className="text-sm text-blue-200"> 2025 الاسناد السريع للاستقدام - جميع الحقوق محفوظة</p>
+          </div>
+        </div>
         </footer>
       </div>
-
+      
       {/* Video Modal - محسن للهواتف */}
       <VideoPlayer 
         videoUrl={selectedVideo} 
@@ -2792,8 +2832,8 @@ export default function Sales4Page() {
           </div>
         </div>
       )}
-      
-      {/* الفوانيس والشريط الرمضاني */}
+
+      {/* شخصية فنانيس الكرتونية المتحركة */}
       <FlyingLantern />
     </div>
     </>
