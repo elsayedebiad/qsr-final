@@ -1903,27 +1903,27 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
 
           {/* بطاقة إعدادات صفحات المبيعات - للمدراء فقط */}
           {user?.role === 'ADMIN' && (
-            <div className="card p-6 mb-6 bg-gradient-to-r from-success/10 to-info/10 border-success/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="bg-success/20 p-3 rounded-lg">
-                    <SlidersHorizontal className="h-6 w-6 text-success" />
+            <div className="card p-4 sm:p-6 mb-6 bg-gradient-to-r from-success/10 to-info/10 border-success/20">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                  <div className="bg-success/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                    <SlidersHorizontal className="h-5 w-5 sm:h-6 sm:w-6 text-success" />
                   </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-foreground">إعدادات صفحات المبيعات</h3>
-                    <p className="text-muted-foreground text-sm mt-1">إدارة أرقام الواتساب لصفحات Sales 1-5</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base sm:text-xl font-semibold text-foreground">إعدادات صفحات المبيعات</h3>
+                    <p className="text-muted-foreground text-xs sm:text-sm mt-1">إدارة أرقام الواتساب لصفحات Sales 1-5</p>
                   </div>
                 </div>
                 <button
                   onClick={() => router.push('/dashboard/sales-config')}
-                  className="btn btn-success px-6 py-3 font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl"
+                  className="btn btn-success w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 font-semibold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl text-sm sm:text-base flex-shrink-0"
                 >
-                  <SlidersHorizontal className="h-5 w-5" />
+                  <SlidersHorizontal className="h-4 w-4 sm:h-5 sm:w-5" />
                   إدارة الإعدادات
                 </button>
               </div>
               
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
                 {['sales1', 'sales2', 'sales3', 'sales4', 'sales5'].map((salesId, index) => (
                   <button
                     key={salesId}
@@ -2144,10 +2144,10 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                     {showSkillsDropdown && (
                       <>
                         <div 
-                          className="fixed inset-0 z-10" 
+                          className="fixed inset-0 z-[100] bg-black/20" 
                           onClick={() => setShowSkillsDropdown(false)}
                         />
-                        <div className="absolute z-20 w-full mt-1 bg-card border border-border rounded-lg shadow-card max-h-64 overflow-y-auto">
+                        <div className="absolute z-[101] w-full mt-1 bg-card border-2 border-border rounded-lg shadow-xl max-h-64 overflow-y-auto">
                           <div className="p-2">
                             {skillFilters.length > 0 && (
                               <button
@@ -2855,26 +2855,26 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
           </div>
 
           {/* عرض البطاقات للموبايل */}
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden space-y-4">
             {paginatedCvs.map((cv) => (
               <div
                 key={cv.id}
-                className={`card p-3 ${
+                className={`card p-4 overflow-hidden ${
                   selectedCvs.includes(cv.id) ? 'ring-2 ring-primary bg-primary/5' : ''
                 } ${cv.status === 'RETURNED' ? 'border-r-4 border-warning bg-warning/5' : ''}`}
                 style={{ borderRightColor: cv.nationality ? getCountryInfo(cv.nationality).colors.primary : 'var(--border)' }}
               >
                 {/* Header */}
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                     <input 
                       type="checkbox"
-                      className="w-4 h-4 text-primary border-2 rounded"
+                      className="w-5 h-5 text-primary border-2 rounded flex-shrink-0"
                       checked={selectedCvs.includes(cv.id)}
                       onChange={() => toggleCvSelection(cv.id)}
                     />
                     <img 
-                      className="h-8 w-8 rounded-full object-cover flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600" 
+                      className="h-10 w-10 rounded-full object-cover flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600" 
                       src={processImageUrl(cv.profileImage)} 
                       alt={cv.fullName}
                       onError={(e) => {
@@ -2885,9 +2885,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                       }}
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-sm text-foreground truncate">{cv.fullName}</div>
+                      <div className="font-bold text-base text-foreground truncate">{cv.fullName}</div>
                       {cv.fullNameArabic && (
-                        <div className="text-xs text-muted-foreground truncate">{cv.fullNameArabic}</div>
+                        <div className="text-sm text-muted-foreground truncate">{cv.fullNameArabic}</div>
                       )}
                     </div>
                   </div>
@@ -2895,20 +2895,20 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 </div>
 
                 {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                  <div className="bg-muted/50 px-2 py-1 rounded">
-                    <span className="text-muted-foreground">الكود:</span>
-                    <span className="font-mono font-semibold text-foreground mr-1">{cv.referenceCode}</span>
+                <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                  <div className="bg-muted/50 px-3 py-2 rounded-lg">
+                    <div className="text-muted-foreground text-xs mb-0.5">الكود</div>
+                    <div className="font-mono font-bold text-foreground">{cv.referenceCode}</div>
                   </div>
-                  <div className="bg-muted/50 px-2 py-1 rounded">
-                    <span className="text-muted-foreground">العمر:</span>
-                    <span className="font-semibold text-foreground mr-1">{cv.age || '-'}</span>
+                  <div className="bg-muted/50 px-3 py-2 rounded-lg">
+                    <div className="text-muted-foreground text-xs mb-0.5">العمر</div>
+                    <div className="font-bold text-foreground">{cv.age || '-'}</div>
                   </div>
-                  <div className="bg-muted/50 px-2 py-1 rounded">
-                    <span className="text-muted-foreground">الوظيفة:</span>
-                    <span className="font-semibold text-foreground mr-1 truncate">{cv.position || '-'}</span>
+                  <div className="bg-muted/50 px-3 py-2 rounded-lg col-span-2">
+                    <div className="text-muted-foreground text-xs mb-0.5">الوظيفة</div>
+                    <div className="font-bold text-foreground truncate">{cv.position || '-'}</div>
                   </div>
-                  <div className="bg-muted/50 px-2 py-1 rounded">
+                  <div className="col-span-2 flex justify-center">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
                       cv.status === CVStatus.NEW ? 'bg-info/20 text-info' :
                       cv.status === CVStatus.BOOKED ? 'bg-warning/20 text-warning' :
@@ -2927,23 +2927,23 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border">
+                <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border">
                   <button
                     onClick={() => {
                       setViewingCv(cv)
                       setShowImageModal(true)
                     }}
-                    className="flex-1 p-2 text-info hover:bg-info/10 rounded-lg text-xs flex items-center justify-center gap-1"
+                    className="p-2.5 text-info hover:bg-info/10 rounded-lg text-sm font-medium flex items-center justify-center gap-2 border border-info/20"
                   >
-                    <Eye className="h-3.5 w-3.5" />
+                    <Eye className="h-4 w-4" />
                     عرض
                   </button>
                   
                   <button
                     onClick={() => downloadSingleImage(cv.id)}
-                    className="flex-1 p-2 text-success hover:bg-success/10 rounded-lg text-xs flex items-center justify-center gap-1"
+                    className="p-2.5 text-success hover:bg-success/10 rounded-lg text-sm font-medium flex items-center justify-center gap-2 border border-success/20"
                   >
-                    <Download className="h-3.5 w-3.5" />
+                    <Download className="h-4 w-4" />
                     تحميل
                   </button>
 
@@ -2951,9 +2951,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   {(user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN') && (
                     <button
                       onClick={() => router.push(`/dashboard/cv/${cv.id}`)}
-                      className="flex-1 p-2 text-primary hover:bg-primary/10 rounded-lg text-xs flex items-center justify-center gap-1"
+                      className="p-2.5 text-primary hover:bg-primary/10 rounded-lg text-sm font-medium flex items-center justify-center gap-2 border border-primary/20"
                     >
-                      <Edit className="h-3.5 w-3.5" />
+                      <Edit className="h-4 w-4" />
                       تعديل
                     </button>
                   )}
@@ -2962,9 +2962,9 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                   {cv.status === CVStatus.NEW && (user?.role === 'ADMIN' || user?.role === 'SUB_ADMIN' || user?.role === 'CUSTOMER_SERVICE') && (
                     <button
                       onClick={() => openBookingModal(cv)}
-                      className="flex-1 p-2 text-warning hover:bg-warning/10 rounded-lg text-xs flex items-center justify-center gap-1"
+                      className="p-2.5 text-warning hover:bg-warning/10 rounded-lg text-sm font-medium flex items-center justify-center gap-2 border border-warning/20"
                     >
-                      <CalendarCheck className="h-3.5 w-3.5" />
+                      <CalendarCheck className="h-4 w-4" />
                       حجز
                     </button>
                   )}

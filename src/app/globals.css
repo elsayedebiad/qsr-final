@@ -71,6 +71,43 @@
   --font-mono: var(--font-cairo);
 }
 
+/* منع Overflow الأفقي على الموبايل */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  position: relative;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* تحسين عرض الصور على الموبايل */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* منع العناصر من الخروج عن الحدود */
+.card {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* تحسين عرض dropdown menus على الموبايل */
+@media (max-width: 640px) {
+  select, input, button {
+    max-width: 100%;
+  }
+  
+  /* تحسين عرض الجداول */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* خلفيات متحركة بسيطة */
 .animated-bg-theme {
   position: relative;
