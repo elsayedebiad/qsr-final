@@ -1489,7 +1489,12 @@ export default function Sales4Page() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
               <div className="flex items-center justify-between">
                 {/* الشعار */}
-                <div className="flex items-center gap-3">
+                <a 
+                  href="https://qsr.sa/offers1-2" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-300"
+                >
                   <img 
                     src="/logo-2.png" 
                     alt="الاسناد السريع" 
@@ -1499,7 +1504,7 @@ export default function Sales4Page() {
                     <h1 className="text-xl font-bold text-[#1e3a8a]">الاسناد السريع</h1>
                     <p className="text-sm text-gray-600">للاستقدام</p>
                   </div>
-                </div>
+                </a>
                 
                 {/* أزرار التواصل */}
                 <div className="flex items-center gap-3">
@@ -1509,7 +1514,7 @@ export default function Sales4Page() {
                       className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-all text-sm"
                     >
                       <ArrowLeft className="h-4 w-4" />
-                      <span className="hidden sm:inline">الداشبورد</span>
+                      <span className="hidden sm:inline">العودة للداشبورد</span>
                     </button>
                   )}
                   {whatsappNumber && (
@@ -1537,7 +1542,7 @@ export default function Sales4Page() {
             <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-2xl p-4 sm:p-6 mb-6 shadow-lg mt-6 animate-slideUp">
               <div className="flex items-start gap-3 sm:gap-4">
                 <div className="bg-gradient-to-br from-orange-400 to-yellow-500 rounded-xl p-2 sm:p-3 flex-shrink-0 shadow-md">
-                  <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  <RefreshCw className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
@@ -1776,7 +1781,7 @@ export default function Sales4Page() {
                   setNationalityFilter('ALL'); // إلغاء فلتر الجنسية
                 }
               }}
-              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+            className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
                 positionFilter === 'سائق'
                   ? 'shadow-2xl scale-105 ring-4 ring-amber-400 shadow-amber-400/60'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
@@ -1813,7 +1818,7 @@ export default function Sales4Page() {
                   setNationalityFilter('ALL'); // إلغاء فلتر الجنسية
                 }
               }}
-              className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
+            className={`group relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${
                 positionFilter === 'نقل خدمات'
                   ? 'shadow-2xl scale-105 ring-4 ring-[#1e3a8a]/30'
                   : 'shadow-lg hover:shadow-xl hover:scale-102'
@@ -1897,7 +1902,7 @@ export default function Sales4Page() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الخبرة</label>
+                  <label className="text-xs font-semibold text-purple-600">الخبرة</label>
                   <select
                     className="w-full px-3 py-2.5 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
                     value={experienceFilter}
@@ -1910,7 +1915,7 @@ export default function Sales4Page() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الوظيفة</label>
+                  <label className="text-xs font-semibold text-purple-600">الوظيفة</label>
                   <select
                     className="w-full px-3 py-2.5 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                     value={positionFilter}
@@ -1926,7 +1931,7 @@ export default function Sales4Page() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-700">الحالة الاجتماعية</label>
+                  <label className="text-xs font-semibold text-pink-600">الحالة الاجتماعية</label>
                   <select
                     className="w-full px-3 py-2.5 bg-pink-50 border border-pink-200 rounded-lg text-sm font-medium text-pink-700 hover:bg-pink-100 focus:outline-none focus:ring-2 focus:ring-pink-400 transition-all"
                     value={maritalStatusFilter}
@@ -2408,7 +2413,7 @@ export default function Sales4Page() {
                       <div className="mb-2 sm:mb-3">
                         <button
                           onClick={() => sendWhatsAppMessage(cv)}
-                          className="w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white py-3 sm:py-3.5 px-2 sm:px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-green-500/50 hover:scale-105 group relative overflow-hidden"
+                          className="w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white py-3 sm:py-3.5 px-2 sm:px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
                         >
                           {/* تأثير النبض المتوهج في الخلفية */}
                           <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
@@ -2478,7 +2483,7 @@ export default function Sales4Page() {
                                 toast.error('لا يوجد رابط فيديو لهذه السيرة');
                               }
                             }}
-                            className="bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-xl hover:shadow-pink-500/50 active:scale-95 hover:scale-[1.02] group relative overflow-hidden"
+                            className="bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-xl hover:shadow-pink-500/50 hover:scale-105 border-2 border-pink-300/40"
                             title="فيديو العاملة المطلوبة"
                           >
                             {/* تأثير متوهج */}
@@ -2580,7 +2585,7 @@ export default function Sales4Page() {
           <div className="flex justify-center mt-8 mb-4">
             <button
               onClick={loadMore}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
             >
               <ChevronDown className="h-6 w-6 animate-bounce" />
               عرض المزيد ({allFilteredCvs.length - displayLimit} سيرة متبقية)
@@ -2590,25 +2595,25 @@ export default function Sales4Page() {
         )}
         </div>
 
-        {/* Footer - بتصميم qsr.sa */
+        {/* Footer - بتصميم qsr.sa */}
         <footer className="bg-[#1e3a8a] text-white py-8 w-full">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-            <a 
-              href="https://qsr.sa/offers1-2" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-3 mb-4 hover:opacity-80 transition-opacity duration-300"
+          <a 
+            href="https://qsr.sa/offers1-2" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-3 mb-4 hover:opacity-80 transition-opacity duration-300"
             >
-              <Users className="h-8 sm:h-10 w-8 sm:w-10 text-yellow-400" />
+            <Users className="h-8 sm:h-10 w-8 sm:w-10 text-yellow-400" />
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold">الاسناد السريع للاستقدام</h2>
+              <h2 className="text-xl sm:text-2xl font-bold">الاسناد السريع للاستقدام</h2>
                 <p className="text-xs sm:text-sm text-blue-200">خدمات استقدام العمالة المنزلية</p>
               </div>
             </a>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-6">
-              <MapPin className="h-4 sm:h-5 w-4 sm:w-5 text-yellow-400" />
-              <span className="text-sm sm:text-lg">الرياض - المملكة العربية السعودية</span>
+            <MapPin className="h-4 sm:h-5 w-4 sm:w-5 text-yellow-400" />
+            <span className="text-sm sm:text-lg">الرياض - المملكة العربية السعودية</span>
             </div>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-6">
@@ -2619,7 +2624,7 @@ export default function Sales4Page() {
                     <span className="font-semibold text-sm sm:text-base" dir="ltr">{whatsappNumber}</span>
                   </a>
                   <a 
-                    href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`} 
+                    href={`https://wa.me/${whatsappNumber}`} 
                     className="flex items-center gap-2 bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -2642,11 +2647,8 @@ export default function Sales4Page() {
             </div>
           </div>
         </footer>
-
-        {/* الفوانيس والشريط الرمضاني */}
-        <FlyingLantern />
       </div>
-      
+
       {/* Video Modal - محسن للهواتف */}
       <VideoPlayer 
         videoUrl={selectedVideo} 
@@ -2790,6 +2792,9 @@ export default function Sales4Page() {
           </div>
         </div>
       )}
+      
+      {/* الفوانيس والشريط الرمضاني */}
+      <FlyingLantern />
     </div>
     </>
   )
