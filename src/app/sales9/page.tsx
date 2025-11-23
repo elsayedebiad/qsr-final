@@ -26,7 +26,8 @@ import {
   Mail,
   RefreshCw,
   AlertTriangle,
-  Camera
+  Camera,
+  Users
 } from 'lucide-react'
 import CountryFlag from '../../components/CountryFlag'
 import { processImageUrl } from '@/lib/url-utils'
@@ -1033,6 +1034,7 @@ export default function Sales4Page() {
           
         case 'education':
           const educationLevel = (cv.educationLevel || cv.education || '').toLowerCase().trim()
+          
           // البيانات الفعلية تحتوي على "نعم" أو "لا"
           if (filterValue === 'متعلم') {
             return educationLevel === 'نعم' || educationLevel === 'yes' || 
@@ -1488,7 +1490,12 @@ export default function Sales4Page() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
               <div className="flex items-center justify-between">
                 {/* الشعار */}
-                <div className="flex items-center gap-3">
+                <a 
+                  href="https://qsr.sa/offers1-2" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-300"
+                >
                   <img 
                     src="/logo-2.png" 
                     alt="الاسناد السريع" 
@@ -1498,7 +1505,7 @@ export default function Sales4Page() {
                     <h1 className="text-xl font-bold text-[#1e3a8a]">الاسناد السريع</h1>
                     <p className="text-sm text-gray-600">للاستقدام</p>
                   </div>
-                </div>
+                </a>
                 
                 {/* أزرار التواصل */}
                 <div className="flex items-center gap-3">
@@ -1508,7 +1515,7 @@ export default function Sales4Page() {
                       className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-all text-sm"
                     >
                       <ArrowLeft className="h-4 w-4" />
-                      <span className="hidden sm:inline">الداشبورد</span>
+                      <span className="hidden sm:inline">العودة للداشبورد</span>
                     </button>
                   )}
                   {whatsappNumber && (
@@ -1536,9 +1543,9 @@ export default function Sales4Page() {
             <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-2xl p-4 sm:p-6 mb-6 shadow-lg mt-6 animate-slideUp">
               <div className="flex items-start gap-3 sm:gap-4">
                 <div className="bg-gradient-to-br from-orange-400 to-yellow-500 rounded-xl p-2 sm:p-3 flex-shrink-0 shadow-md">
-                  <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  <RefreshCw className="h-5 w-5 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-base sm:text-lg font-bold text-orange-900">سير ذاتية معادة من العقود</h3>
                     <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
@@ -1603,7 +1610,7 @@ export default function Sales4Page() {
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-1.5 sm:gap-2 shadow-lg hover:shadow-xl text-xs sm:text-sm flex-1 sm:flex-initial justify-center"
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl text-xs sm:text-sm flex-1 sm:flex-initial justify-center"
                 >
                   <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">العودة للداشبورد</span>
@@ -2092,7 +2099,7 @@ export default function Sales4Page() {
                                   type="checkbox"
                                   checked={skillFilters.includes(skill.id)}
                                   onChange={() => toggleSkillFilter(skill.id)}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                                 />
                                 <span className="text-lg">{skill.icon}</span>
                                 <span className="text-sm flex-1">{skill.label}</span>
@@ -2148,7 +2155,7 @@ export default function Sales4Page() {
                     <Globe className="h-4 w-4 ml-2" /> مستوى العربية
                   </label>
                   <select
-                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-gray-500 border border-gray-300"
+                    className="w-full rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-gray-500 border border-gray-300"
                     value={arabicLevelFilter}
                     onChange={(e) => setArabicLevelFilter(e.target.value)}
                   >
@@ -2165,7 +2172,7 @@ export default function Sales4Page() {
                     <Globe className="h-4 w-4 ml-2" /> مستوى الإنجليزية
                   </label>
                   <select
-                    className="w-full rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500 border border-gray-300"
+                    className="w-full rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500 border border-gray-300"
                     value={englishLevelFilter}
                     onChange={(e) => setEnglishLevelFilter(e.target.value)}
                   >
@@ -2407,7 +2414,7 @@ export default function Sales4Page() {
                       <div className="mb-2 sm:mb-3">
                         <button
                           onClick={() => sendWhatsAppMessage(cv)}
-                          className="w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white py-3 sm:py-3.5 px-2 sm:px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-green-500/50 hover:scale-105 group relative overflow-hidden"
+                          className="w-full bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white py-3 sm:py-3.5 px-2 sm:px-4 rounded-xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
                         >
                           {/* تأثير النبض المتوهج في الخلفية */}
                           <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
@@ -2429,7 +2436,7 @@ export default function Sales4Page() {
                         </button>
                       </div>
                       
-                      {/* زر الفيديو - بتصميم احترافي - يخفى عندما يكون فلتر نقل خدمات مفعل */}
+                      {/* زر فيديو العاملة - يخفى عندما يكون فلتر نقل خدمات مفعل */}
                       {positionFilter !== 'نقل خدمات' && (
                         <div className="mb-2 sm:mb-3">
                           <button
@@ -2454,7 +2461,7 @@ export default function Sales4Page() {
                               <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
                             </div>
                             
-                            <span className="font-bold relative z-10 text-[9px] sm:text-sm leading-tight">شاهد طريقة استخراج التأشيرة</span>
+                            <span className="font-bold relative z-10 text-[9px] sm:text-xs leading-tight">شاهد طريقة استخراج التأشيرة</span>
                             
                             {/* أيقونة سهم */}
                             <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 relative z-10 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2494,7 +2501,7 @@ export default function Sales4Page() {
                           className="bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
                           title="مشاركة السيرة الذاتية"
                         >
-                          <Share2 className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
+                          <Share2 className="h-5 w-5 sm:h-6 sm:w-6" />
                           <span className="font-bold leading-tight">مشاركة</span>
                         </button>
                         <button
@@ -2502,7 +2509,7 @@ export default function Sales4Page() {
                           className="bg-gradient-to-br from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white py-3 sm:py-3.5 px-1 rounded-lg text-xs sm:text-sm flex flex-col items-center justify-center transition-all duration-300 min-h-[60px] sm:min-h-[70px] shadow-md hover:shadow-lg active:scale-95 hover:scale-[1.02]"
                           title="عرض السيرة الكاملة"
                         >
-                          <Eye className="h-5 w-5 sm:h-6 sm:w-6 mb-1" />
+                          <Eye className="h-5 w-5 sm:h-6 sm:w-6" />
                           <span className="font-bold leading-tight">عرض</span>
                         </button>
                       </div>
@@ -2592,42 +2599,52 @@ export default function Sales4Page() {
         {/* Footer - بتصميم qsr.sa */}
         <footer className="bg-[#1e3a8a] text-white py-8 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <img src="/logo-2.png" alt="الاسناد السريع" className="h-12 w-auto object-contain bg-white rounded-lg p-2" />
+          <a 
+            href="https://qsr.sa/offers1-2" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-3 mb-4 hover:opacity-80 transition-opacity duration-300"
+          >
+            <Users className="h-8 sm:h-10 w-8 sm:w-10 text-yellow-400" />
             <div>
-              <h2 className="text-2xl font-bold">الاسناد السريع للاستقدام</h2>
-              <p className="text-sm text-blue-200">خدمات استقدام العمالة المنزلية</p>
+              <h2 className="text-xl sm:text-2xl font-bold">الاسناد السريع للاستقدام</h2>
+              <p className="text-xs sm:text-sm text-blue-200">خدمات استقدام العمالة المنزلية</p>
             </div>
-          </div>
+          </a>
           
           <div className="flex items-center justify-center gap-2 mb-6">
-            <MapPin className="h-5 w-5 text-yellow-400" />
-            <span className="text-lg">الرياض - المملكة العربية السعودية</span>
+            <MapPin className="h-4 sm:h-5 w-4 sm:w-5 text-yellow-400" />
+            <span className="text-sm sm:text-lg">الرياض - المملكة العربية السعودية</span>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mb-6">
             {whatsappNumber && (
               <>
-                <a href={`tel:${whatsappNumber}`} className="flex items-center gap-2 hover:text-yellow-300 transition-colors">
-                  <Phone className="h-5 w-5" />
-                  <span className="font-semibold" dir="ltr">{whatsappNumber}</span>
+                <a href={`tel:${whatsappNumber}`} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center">
+                  <Phone className="h-4 sm:h-5 w-4 sm:w-5" />
+                  <span className="font-semibold text-sm sm:text-base" dir="ltr">{whatsappNumber}</span>
                 </a>
-                <a href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`} className="flex items-center gap-2 hover:text-green-300 transition-colors">
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                <a 
+                  href={`https://wa.me/${whatsappNumber}`} 
+                  className="flex items-center gap-2 bg-gradient-to-r from-[#25d366] to-[#128c7e] hover:from-[#1fb855] hover:to-[#0e6f5c] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <svg className="h-4 sm:h-5 w-4 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.106"/>
                   </svg>
-                  <span className="font-semibold">واتساب</span>
+                  <span className="font-semibold text-sm sm:text-base">واتساب</span>
                 </a>
               </>
             )}
-            <a href="mailto:info@qsr.sa" className="flex items-center gap-2 hover:text-yellow-300 transition-colors">
-              <Mail className="h-5 w-5" />
-              <span className="font-semibold" dir="ltr">info@qsr.sa</span>
-            </a>
+              <a href="mailto:info@qsr.sa" className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center">
+                <Mail className="h-4 sm:h-5 w-4 sm:w-5" />
+                <span className="font-semibold text-sm sm:text-base" dir="ltr">info@qsr.sa</span>
+              </a>
           </div>
           
           <div className="pt-4 border-t border-blue-700">
-            <p className="text-sm text-blue-200">© 2025 الاسناد السريع للاستقدام - جميع الحقوق محفوظة</p>
+            <p className="text-sm text-blue-200"> 2025 الاسناد السريع للاستقدام - جميع الحقوق محفوظة</p>
           </div>
         </div>
         </footer>
