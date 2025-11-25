@@ -221,8 +221,8 @@ export default function CVsPage() {
 
   // استخراج الوظائف الفريدة من البيانات
   const uniquePositions = useMemo(() => {
-    // استثناء السير المتعاقدة والمؤرشفة
-    const visibleCvs = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED)
+    // استثناء السير المتعاقدة والمؤرشفة والمحجوزة
+    const visibleCvs = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED && cv.status !== CVStatus.BOOKED)
     
     const positions = visibleCvs
       .map(cv => cv.position)
@@ -235,8 +235,8 @@ export default function CVsPage() {
 
   // استخراج الجنسيات الفريدة من البيانات (مثل صفحات السلز)
   const uniqueNationalities = useMemo(() => {
-    // استثناء السير المتعاقدة والمؤرشفة
-    const visibleCvs = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED)
+    // استثناء السير المتعاقدة والمؤرشفة والمحجوزة
+    const visibleCvs = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED && cv.status !== CVStatus.BOOKED)
     
     // استخراج الجنسيات وتوحيدها (تحويل للإنجليزي uppercase)
     const nationalitiesSet = new Set<string>()
@@ -393,8 +393,8 @@ export default function CVsPage() {
       return []
     }
     
-    // إخفاء السير المتعاقدة والمؤرشفة، وإظهار السير المعادة
-    return cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED).filter(cv => {
+    // إخفاء السير المتعاقدة والمؤرشفة والمحجوزة، وإظهار السير المعادة
+    return cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED && cv.status !== CVStatus.BOOKED).filter(cv => {
       // البحث الشامل في جميع البيانات
       const term = searchTerm.toLowerCase()
       const matchesSearch = searchTerm === '' || 
@@ -710,8 +710,8 @@ export default function CVsPage() {
   const getCountForFilter = useCallback((filterType: string, filterValue: string): number => {
     if (!cvs || cvs.length === 0) return 0
     
-    // استثناء السير المتعاقدة والمؤرشفة من الحساب
-    const visibleCvs = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED)
+    // استثناء السير المتعاقدة والمؤرشفة والمحجوزة من الحساب
+    const visibleCvs = cvs.filter(cv => cv.status !== CVStatus.HIRED && cv.status !== CVStatus.ARCHIVED && cv.status !== CVStatus.BOOKED)
     
     // معالجة خاصة لقيمة ALL - استثناء السائقين من فلاتر اللغة
     if (filterValue === 'ALL') {
