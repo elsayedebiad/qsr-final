@@ -37,6 +37,7 @@ import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
 import FlyingLantern from '@/components/FlyingLantern'
+import PhoneNumberPopup from '@/components/PhoneNumberPopup'
 import { logSearchAnalytics, logPageView } from '@/lib/search-analytics'
 
 // إضافة أنيميشن CSS محسّن للأداء
@@ -2835,6 +2836,9 @@ export default function Sales1Page() {
 
       {/* شخصية فنانيس الكرتونية المتحركة */}
       <FlyingLantern />
+
+      {/* نافذة منبثقة لجمع أرقام الهواتف */}
+      <PhoneNumberPopup salesPageId="sales1" delaySeconds={8} expiryDays={7} />
     </div>
     </>
   )

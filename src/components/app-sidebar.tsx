@@ -37,6 +37,7 @@ import {
   Briefcase,
   Search,
   MousePointerClick,
+  Phone,
 } from "lucide-react"
 
 import {
@@ -444,6 +445,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       label: 'تتبع نقرات الحجز والاستفسار',
       icon: MousePointerClick,
       href: '/dashboard/booking-clicks',
+      adminOnly: true
+    },
+    {
+      id: 'phone-numbers',
+      label: 'أرقام الهواتف المجمعة',
+      icon: Phone,
+      href: '/dashboard/phone-numbers',
       adminOnly: true
     },
     {
