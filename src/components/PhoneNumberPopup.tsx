@@ -168,7 +168,7 @@ export default function PhoneNumberPopup({
             <div className="text-center mb-5 sm:mb-6">
               <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 flex items-center justify-center gap-1.5 sm:gap-2">
                 <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400 animate-pulse" />
-                عرض خاص لك
+              خليك VIP
                 <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400 animate-pulse" />
               </h3>
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed px-2">
@@ -209,7 +209,7 @@ export default function PhoneNumberPopup({
                 ) : (
                   <>
                     <Send className="w-5 h-5" />
-                    <span>احصل على العرض</span>
+                    <span>ارسال</span>
                   </>
                 )}
               </button>
