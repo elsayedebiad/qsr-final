@@ -137,7 +137,7 @@ export default function PhoneNumbersPage() {
       'الدولة': item.country || '-',
       'المدينة': item.city || '-',
       'نوع الجهاز': item.deviceType || '-',
-      'التاريخ': new Date(item.createdAt).toLocaleString('ar-SA')
+      'التاريخ': new Date(item.createdAt).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })
     }))
 
     const ws = XLSX.utils.json_to_sheet(exportData)
@@ -151,34 +151,37 @@ export default function PhoneNumbersPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ar-SA', {
+    return new Date(dateString).toLocaleDateString('en-GB', {
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: true
     })
   }
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 animated-bg-theme relative">
+        <div className="bg-aurora"></div>
+        <div className="bg-grid"></div>
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+        <div className="card-gradient-primary rounded-xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-3 rounded-lg">
+              <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
                 <Phone className="w-8 h-8" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">أرقام الهواتف المجمعة</h1>
-                <p className="text-blue-100 text-sm">إدارة أرقام الهواتف من صفحات المبيعات</p>
+                <h1 className="text-2xl font-bold">سجل أرقام الهواتف</h1>
+                <p className="text-white/80 text-sm">إدارة أرقام الهواتف من صفحات المبيعات</p>
               </div>
             </div>
             <button
               onClick={exportToExcel}
               disabled={phoneNumbers.length === 0}
-              className="bg-white/20 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200"
+              className="btn-gradient-success disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 hover-lift"
             >
               <Download className="w-5 h-5" />
               <span className="hidden sm:inline">تصدير Excel</span>
@@ -189,18 +192,18 @@ export default function PhoneNumbersPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {salesPages.slice(1).map(page => (
-            <div key={page.id} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-              <div className="text-sm text-gray-600 mb-1">{page.name}</div>
-              <div className="text-2xl font-bold text-blue-600">{stats[page.id] || 0}</div>
+            <div key={page.id} className="card hover-lift rounded-lg p-4 shadow-sm border border-border animate-fade-in">
+              <div className="text-sm text-muted-foreground mb-1">{page.name}</div>
+              <div className="text-2xl font-bold text-primary">{stats[page.id] || 0}</div>
             </div>
           ))}
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+        <div className="card rounded-xl p-4 shadow-sm border border-border">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="form-label">
                 <Filter className="w-4 h-4 inline-block mr-2" />
                 تصفية حسب الصفحة
               </label>
@@ -210,7 +213,7 @@ export default function PhoneNumbersPage() {
                   setSelectedSalesPage(e.target.value)
                   setPage(1)
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="form-input"
               >
                 {salesPages.map(page => (
                   <option key={page.id} value={page.id}>{page.name}</option>
@@ -221,10 +224,10 @@ export default function PhoneNumbersPage() {
             <div className="flex items-end gap-2">
               <button
                 onClick={() => setShowArchived(!showArchived)}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 ${
+                className={`btn px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 hover-lift ${
                   showArchived 
-                    ? 'bg-gray-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'btn-secondary' 
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
                 }`}
               >
                 <Archive className="w-5 h-5" />
@@ -233,7 +236,7 @@ export default function PhoneNumbersPage() {
 
               <button
                 onClick={() => fetchPhoneNumbers()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition-all duration-200"
+                className="btn btn-primary hover-lift"
               >
                 <RefreshCw className="w-5 h-5" />
                 تحديث
@@ -243,64 +246,64 @@ export default function PhoneNumbersPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="card rounded-xl shadow-sm border border-border overflow-hidden animate-fade-in">
           {isLoading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-gray-600 mt-4">جاري التحميل...</p>
+              <div className="spinner w-12 h-12 mx-auto mb-4"></div>
+              <p className="text-muted-foreground">جاري التحميل...</p>
             </div>
           ) : phoneNumbers.length === 0 ? (
             <div className="text-center py-12">
-              <Phone className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">لا توجد أرقام هواتف</p>
+              <Phone className="w-16 h-16 text-muted-foreground mx-auto mb-4 animate-float" />
+              <p className="text-foreground text-lg">لا توجد أرقام هواتف</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+              <table className="table">
+                <thead className="bg-muted border-b border-border">
                   <tr>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       رقم الهاتف
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       الصفحة
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       الموقع
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       الجهاز
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       التاريخ
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       الإجراءات
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-border">
                   {phoneNumbers.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
+                    <tr key={item.id} className="hover:bg-muted/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-gray-400" />
-                          <span className="font-medium text-gray-900" dir="ltr">{item.phoneNumber}</span>
+                          <Phone className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium text-foreground" dir="ltr">{item.phoneNumber}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                        <span className="badge badge-primary">
                           {item.salesPageId}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <MapPin className="w-4 h-4" />
                           <span>{item.city || item.country || '-'}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           {item.deviceType === 'MOBILE' ? (
                             <Smartphone className="w-4 h-4" />
                           ) : (
@@ -310,7 +313,7 @@ export default function PhoneNumbersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Calendar className="w-4 h-4" />
                           <span className="text-xs">{formatDate(item.createdAt)}</span>
                         </div>
@@ -319,14 +322,14 @@ export default function PhoneNumbersPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleArchive(item.id, !item.isArchived)}
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-all duration-200 hover-lift"
                             title={item.isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}
                           >
                             <Archive className="w-5 h-5" />
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-all duration-200 hover-lift"
                             title="حذف"
                           >
                             <Trash2 className="w-5 h-5" />
@@ -342,21 +345,21 @@ export default function PhoneNumbersPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <div className="bg-muted/50 px-6 py-4 border-t border-border flex items-center justify-between">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed hover-lift"
               >
                 السابق
               </button>
-              <span className="text-gray-700">
+              <span className="text-foreground font-medium">
                 صفحة {page} من {totalPages}
               </span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed hover-lift"
               >
                 التالي
               </button>

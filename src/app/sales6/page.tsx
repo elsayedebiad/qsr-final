@@ -34,6 +34,7 @@ import SimpleImageCarousel from '@/components/SimpleImageCarousel'
 import ClarityScript from '@/components/ClarityScript'
 import VideoPlayer from '@/components/VideoPlayer'
 import FlyingLantern from '@/components/FlyingLantern'
+import PhoneNumberPopup from '@/components/PhoneNumberPopup'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
@@ -1497,7 +1498,7 @@ export default function Sales4Page() {
                   <img 
                     src="/logo-2.png" 
                     alt="الاسناد السريع" 
-                    className="h-16 w-auto object-contain"
+                    className="h-12 w-auto object-contain"
                   />
                   <div className="hidden md:block">
                     <h1 className="text-xl font-bold text-[#1e3a8a]">الاسناد السريع</h1>
@@ -2794,6 +2795,7 @@ export default function Sales4Page() {
     </div>
       {/* الفوانيس والشريط الرمضاني */}
       <FlyingLantern />
+      <PhoneNumberPopup salesPageId="sales6" delaySeconds={8} expiryDays={7} />
     </>
   )
 }

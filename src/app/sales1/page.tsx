@@ -1539,7 +1539,7 @@ export default function Sales1Page() {
                   <img 
                     src="/logo-2.png" 
                     alt="الاسناد السريع" 
-                    className="h-16 w-auto object-contain"
+                    className="h-6 sm:h-8 w-auto object-contain"
                   />
                   <div className="hidden md:block">
                     <h1 className="text-xl font-bold text-[#1e3a8a]">الاسناد السريع</h1>

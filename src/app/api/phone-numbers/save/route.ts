@@ -1,6 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+// تحويل كود الدولة إلى اسم الدولة بالعربية
+function getCountryNameFromCode(code: string): string {
+  const countries: { [key: string]: string } = {
+    'SA': 'السعودية',
+    'AE': 'الإمارات',
+    'EG': 'مصر',
+    'KW': 'الكويت',
+    'QA': 'قطر',
+    'BH': 'البحرين',
+    'OM': 'عمان',
+    'JO': 'الأردن',
+    'LB': 'لبنان',
+    'SY': 'سوريا',
+    'IQ': 'العراق',
+    'YE': 'اليمن',
+    'PS': 'فلسطين',
+    'SD': 'السودان',
+    'LY': 'ليبيا',
+    'TN': 'تونس',
+    'DZ': 'الجزائر',
+    'MA': 'المغرب',
+    'US': 'أمريكا',
+    'GB': 'بريطانيا',
+    'DE': 'ألمانيا',
+    'FR': 'فرنسا',
+    'IN': 'الهند',
+    'PK': 'باكستان',
+    'BD': 'بنغلاديش',
+    'PH': 'الفلبين',
+    'ID': 'إندونيسيا',
+    'TR': 'تركيا',
+    'ET': 'إثيوبيا',
+    'KE': 'كينيا',
+    'UG': 'أوغندا',
+    'NG': 'نيجيريا',
+    'GH': 'غانا',
+    'NP': 'نيبال',
+    'LK': 'سريلانكا'
+  }
+  return countries[code.toUpperCase()] || code
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -19,18 +61,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // الحصول على IP من headers
-    const forwarded = request.headers.get('x-forwarded-for')
-    const realIp = request.headers.get('x-real-ip')
+    // الحصول على IP من headers (مرتبة حسب الأولوية)
     const cfConnectingIp = request.headers.get('cf-connecting-ip')
+    const xRealIp = request.headers.get('x-real-ip')
+    const forwarded = request.headers.get('x-forwarded-for')
+    const vercelForwarded = request.headers.get('x-vercel-forwarded-for')
     
-    let ipAddress = cfConnectingIp || realIp || (forwarded ? forwarded.split(',')[0].trim() : null) || 'unknown'
+    let ipAddress = cfConnectingIp || 
+                    xRealIp || 
+                    (vercelForwarded ? vercelForwarded.split(',')[0].trim() : null) ||
+                    (forwarded ? forwarded.split(',')[0].trim() : null) || 
+                    'unknown'
     
+    // تنظيف عنوان IP
     if (ipAddress.includes('::') && ipAddress.length < 10 && ipAddress !== '::1') {
       ipAddress = 'unknown'
     }
-    
-    if (ipAddress === '::1') {
+    if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1') {
       ipAddress = '127.0.0.1 (localhost)'
     }
 
@@ -40,39 +87,56 @@ export async function POST(request: NextRequest) {
     // تحديد نوع الجهاز
     const deviceType = userAgent.toLowerCase().includes('mobile') ? 'MOBILE' : 'DESKTOP'
 
-    // IP للبحث الجغرافي
-    let geoLookupIp = ipAddress
-    const isLocalhost = ipAddress.includes('127.0.0.1') || ipAddress === 'localhost' || ipAddress.includes('::ffff:127')
+    // الحصول على معلومات الموقع من Cloudflare/Vercel مباشرة (أكثر دقة)
+    const cfCountry = request.headers.get('cf-ipcountry') // كود الدولة من Cloudflare
+    const cfCity = request.headers.get('cf-ipcity') // المدينة من Cloudflare
+    const vercelCountry = request.headers.get('x-vercel-ip-country')
+    const vercelCity = request.headers.get('x-vercel-ip-city')
     
-    if (isLocalhost) {
-      geoLookupIp = '41.233.0.1' // IP مصري للاختبار في التطوير
-    }
-
     // جلب معلومات الموقع الجغرافي
-    let country = null
-    let city = null
+    let country: string | null = null
+    let city: string | null = null
     
-    if (geoLookupIp !== 'unknown' && !geoLookupIp.includes('localhost')) {
-      try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 3000)
-        
-        const geoResponse = await fetch(`http://ip-api.com/json/${geoLookupIp}?fields=status,country,city,query`, {
-          signal: controller.signal
-        })
-        
-        clearTimeout(timeoutId)
-        
-        if (geoResponse.ok) {
-          const geoData = await geoResponse.json()
+    // استخدام headers Cloudflare/Vercel أولاً (أكثر دقة)
+    if (cfCountry && cfCountry !== 'XX') {
+      country = getCountryNameFromCode(cfCountry)
+      city = cfCity ? decodeURIComponent(cfCity) : null
+    } else if (vercelCountry) {
+      country = getCountryNameFromCode(vercelCountry)
+      city = vercelCity ? decodeURIComponent(vercelCity) : null
+    }
+    
+    // إذا لم نحصل على الموقع من headers، استخدم IP API
+    if (!country) {
+      let geoLookupIp = ipAddress
+      const isLocalhost = ipAddress.includes('127.0.0.1') || ipAddress === 'localhost' || ipAddress.includes('::ffff:127')
+      
+      if (isLocalhost) {
+        geoLookupIp = '' // تخطي البحث للـ localhost
+      }
+
+      if (geoLookupIp && geoLookupIp !== 'unknown' && !geoLookupIp.includes('localhost')) {
+        try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 3000)
           
-          if (geoData.status === 'success') {
-            country = geoData.country || null
-            city = geoData.city || null
+          const geoResponse = await fetch(`http://ip-api.com/json/${geoLookupIp}?fields=status,country,city,query&lang=ar`, {
+            signal: controller.signal
+          })
+          
+          clearTimeout(timeoutId)
+          
+          if (geoResponse.ok) {
+            const geoData = await geoResponse.json()
+            
+            if (geoData.status === 'success') {
+              country = geoData.country || null
+              city = geoData.city || null
+            }
           }
+        } catch (error) {
+          console.log('⚠️ Geo lookup failed:', error)
         }
-      } catch (error) {
-        console.log('⚠️ Geo lookup failed:', error)
       }
     }
 

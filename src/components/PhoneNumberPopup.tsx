@@ -10,6 +10,20 @@ interface PhoneNumberPopupProps {
   expiryDays?: number // عدد الأيام قبل إعادة العرض
 }
 
+// مصفوفة الرسائل العشوائية
+const randomMessages = [
+  "لا تفوت أفضل الكفاءات: أدخل رقم هاتفك لتلقي تنبيه فوري عبر الواتساب بمجرد إضافة سير ذاتية جديدة ومميزة ومطابقة لمعايير بحثك.",
+  "لا تفوّت أفضل الكفاءات! أدخل رقم هاتفك لتصلك تنبيهات واتساب فور نزول سير جديدة مطابقة لطلبك.",
+  "أفضل السير تنخطف بسرعة! أدخل رقم جوالك وخلك أول من يوصله تحديثات السير المناسبة لك على الواتساب",
+  "علشان ما يروح عليك الأفضل، دخّل رقم جوالك وتوصلك سير جديدة ومناسبة أول بأول على الواتساب",
+  "خلك أول من يلقّط أفضل السير! أدخل رقم جوالك وتجيك السير المناسبة لك قبل الكل",
+  "السير المناسبة تختفي بسرعه ... أدخل رقم جوالك وخلك أوّل من توصله أفضل الخيارات",
+  "اشترك برقم جوالك وخذ وصول خاص لأفضل السير قبل ما تنعرض للجميع",
+  "لا تضيع وقتك في البحث ... أدخل رقم جوالك ونرسل لك الأنسب فور إضافتها",
+  "بعض السير تُطلب خلال دقائق! أدخل جوالك وخلك تلحقها قبل غيرك",
+  "أفضل السير تنزل ... وتروح! أدخل رقم جوالك ونعلمك أول بأول"
+]
+
 export default function PhoneNumberPopup({
   salesPageId,
   delaySeconds = 5,
@@ -19,18 +33,25 @@ export default function PhoneNumberPopup({
   const [phoneNumber, setPhoneNumber] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const [randomMessage, setRandomMessage] = useState('')
 
   const STORAGE_KEY = `phone_popup_submitted_${salesPageId}`
+
+  // اختيار رسالة عشوائية عند تحميل المكون
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * randomMessages.length)
+    setRandomMessage(randomMessages[randomIndex])
+  }, [])
 
   useEffect(() => {
     // التحقق إذا كان المستخدم قد أرسل رقمه من قبل
     const hasSubmitted = localStorage.getItem(STORAGE_KEY)
-    
+
     if (hasSubmitted) {
       const submittedDate = new Date(hasSubmitted)
       const now = new Date()
       const daysDiff = Math.floor((now.getTime() - submittedDate.getTime()) / (1000 * 60 * 60 * 24))
-      
+
       // إذا مر أكثر من expiryDays يوم، أعد العرض
       if (daysDiff < expiryDays) {
         return
@@ -82,10 +103,10 @@ export default function PhoneNumberPopup({
 
       if (data.success) {
         toast.success('شكراً لك! تم حفظ رقمك بنجاح 🎉')
-        
+
         // حفظ تاريخ الإرسال في localStorage
         localStorage.setItem(STORAGE_KEY, new Date().toISOString())
-        
+
         // إغلاق النافذة بعد ثانية
         setTimeout(() => {
           handleClose()
@@ -106,18 +127,16 @@ export default function PhoneNumberPopup({
   return (
     <>
       {/* Backdrop */}
-      <div 
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300 ${
-          isClosing ? 'opacity-0' : 'opacity-100'
-        }`}
+      <div
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'
+          }`}
         onClick={handleClose}
       />
 
       {/* Popup */}
-      <div 
-        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] w-[92%] sm:w-[90%] max-w-md transition-all duration-300 ${
-          isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-        }`}
+      <div
+        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] w-[92%] sm:w-[90%] max-w-md transition-all duration-300 ${isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+          }`}
       >
         <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-700/50 overflow-hidden">
           {/* Close Button */}
@@ -153,7 +172,7 @@ export default function PhoneNumberPopup({
                 <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400 animate-pulse" />
               </h3>
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed px-2">
-                اترك رقم هاتفك للحصول على عروض حصرية وخصومات خاصة
+                {randomMessage}
               </p>
             </div>
 

@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const checkAuth = async () => {
     if (typeof window === 'undefined') return // Skip on server-side
-    
+
     try {
       const token = localStorage.getItem('token')
       if (!token) {
@@ -76,7 +76,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           'Authorization': `Bearer ${token}`
         }
       })
-      
+
       if (response.ok) {
         const data = await response.json()
         setUser(data.user)
@@ -110,9 +110,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     if (typeof window === 'undefined') return // Skip on server-side
-    
+
     const sessionId = localStorage.getItem('sessionId')
-    
+
     // Notify server about logout
     if (sessionId) {
       try {
@@ -129,7 +129,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         console.error('Logout notification failed:', error)
       }
     }
-    
+
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     localStorage.removeItem('sessionId')

@@ -37,6 +37,7 @@ import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
 import FlyingLantern from '@/components/FlyingLantern'
+import PhoneNumberPopup from '@/components/PhoneNumberPopup'
 import { logSearchAnalytics, logPageView } from '@/lib/search-analytics'
 
 // إضافة أنيميشن CSS محسّن للأداء
@@ -1538,7 +1539,7 @@ export default function Sales9Page() {
                   <img 
                     src="/logo-2.png" 
                     alt="الاسناد السريع" 
-                    className="h-16 w-auto object-contain"
+                    className="h-6 sm:h-8 w-auto object-contain"
                   />
                   <div className="hidden md:block">
                     <h1 className="text-xl font-bold text-[#1e3a8a]">الاسناد السريع</h1>
@@ -2835,6 +2836,7 @@ export default function Sales9Page() {
 
       {/* شخصية فنانيس الكرتونية المتحركة */}
       <FlyingLantern />
+      <PhoneNumberPopup salesPageId="sales9" delaySeconds={8} expiryDays={7} />
     </div>
     </>
   )

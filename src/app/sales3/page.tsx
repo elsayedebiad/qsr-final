@@ -39,6 +39,7 @@ import SalesRedirectCheck from '@/components/SalesRedirectCheck'
 import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
 import VideoPlayer from '@/components/VideoPlayer'
 import FlyingLantern from '@/components/FlyingLantern'
+import PhoneNumberPopup from '@/components/PhoneNumberPopup'
 import { logSearchAnalytics, logPageView } from '@/lib/search-analytics'
 
 // إضافة أنيميشن CSS محسّن للأداء
@@ -1426,7 +1427,7 @@ export default function Sales3Page() {
                   <img 
                     src="/logo-2.png" 
                     alt="الاسناد السريع" 
-                    className="h-16 w-auto object-contain"
+                    className="h-6 sm:h-8 w-auto object-contain"
                   />
                   <div className="hidden md:block">
                     <h1 className="text-xl font-bold text-[#1e3a8a]">الاسناد السريع</h1>
@@ -2646,6 +2647,9 @@ export default function Sales3Page() {
     </div>
       {/* الفوانيس والشريط الرمضاني */}
       <FlyingLantern />
+
+      {/* نافذة منبثقة لجمع أرقام الهواتف */}
+      <PhoneNumberPopup salesPageId="sales3" delaySeconds={8} expiryDays={7} />
     </>
   )
 }

@@ -6,56 +6,91 @@ export default function FlyingLantern() {
       <style jsx>{`
         @keyframes float1 {
           0% {
-            left: -10%;
-            top: 10%;
-            transform: translateY(0px);
+            left: -15%;
+            top: 8%;
+            transform: translateY(0px) scale(1);
+          }
+          50% {
+            transform: translateY(-20px) scale(1.1);
           }
           100% {
-            left: 110%;
-            top: 10%;
-            transform: translateY(0px);
+            left: 115%;
+            top: 8%;
+            transform: translateY(0px) scale(1);
           }
         }
 
         @keyframes float2 {
           0% {
-            left: -12%;
-            top: 25%;
-            transform: translateY(0px);
+            left: -18%;
+            top: 30%;
+            transform: translateY(0px) scale(1);
+          }
+          50% {
+            transform: translateY(-15px) scale(1.08);
           }
           100% {
-            left: 112%;
-            top: 25%;
-            transform: translateY(0px);
+            left: 118%;
+            top: 30%;
+            transform: translateY(0px) scale(1);
           }
         }
 
         @keyframes float3 {
           0% {
-            left: -14%;
-            top: 40%;
-            transform: translateY(0px);
+            left: -20%;
+            top: 50%;
+            transform: translateY(0px) scale(1);
+          }
+          50% {
+            transform: translateY(-25px) scale(1.12);
           }
           100% {
-            left: 114%;
-            top: 40%;
-            transform: translateY(0px);
+            left: 120%;
+            top: 50%;
+            transform: translateY(0px) scale(1);
           }
         }
 
         @keyframes swing {
-          0%, 100% { transform: rotate(-2deg); }
-          50% { transform: rotate(2deg); }
+          0%, 100% { 
+            transform: rotate(-5deg);
+          }
+          50% { 
+            transform: rotate(5deg);
+          }
         }
 
         @keyframes glow {
           0%, 100% { 
-            filter: drop-shadow(0 0 8px rgba(255, 200, 50, 0.6)) 
-                    drop-shadow(0 0 15px rgba(255, 150, 0, 0.4));
+            filter: drop-shadow(0 0 8px rgba(255, 200, 50, 0.7)) 
+                    drop-shadow(0 0 15px rgba(255, 150, 0, 0.5));
           }
           50% { 
-            filter: drop-shadow(0 0 12px rgba(255, 200, 50, 0.8)) 
-                    drop-shadow(0 0 20px rgba(255, 150, 0, 0.5));
+            filter: drop-shadow(0 0 12px rgba(255, 220, 80, 0.9)) 
+                    drop-shadow(0 0 20px rgba(255, 180, 0, 0.6));
+          }
+        }
+
+        @keyframes glowRed {
+          0%, 100% { 
+            filter: drop-shadow(0 0 8px rgba(255, 50, 80, 0.7)) 
+                    drop-shadow(0 0 15px rgba(255, 0, 100, 0.5));
+          }
+          50% { 
+            filter: drop-shadow(0 0 12px rgba(255, 80, 120, 0.9)) 
+                    drop-shadow(0 0 20px rgba(255, 50, 120, 0.6));
+          }
+        }
+
+        @keyframes glowGreen {
+          0%, 100% { 
+            filter: drop-shadow(0 0 8px rgba(50, 255, 150, 0.7)) 
+                    drop-shadow(0 0 15px rgba(0, 255, 100, 0.5));
+          }
+          50% { 
+            filter: drop-shadow(0 0 12px rgba(80, 255, 180, 0.9)) 
+                    drop-shadow(0 0 20px rgba(50, 255, 150, 0.6));
           }
         }
 
@@ -64,36 +99,61 @@ export default function FlyingLantern() {
           50% { opacity: 0.9; }
         }
 
-        .lantern1 { animation: float1 50s linear infinite; }
-        .lantern2 { animation: float2 60s linear infinite 10s; }
-        .lantern3 { animation: float3 55s linear infinite 20s; }
+        @keyframes sparkle {
+          0%, 100% { 
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+          }
+          50% { 
+            transform: scale(1.3) rotate(180deg);
+            opacity: 0.7;
+          }
+        }
+
+        .lantern1 { 
+          animation: float1 45s linear infinite; 
+        }
+        .lantern2 { 
+          animation: float2 55s linear infinite 8s; 
+        }
+        .lantern3 { 
+          animation: float3 50s linear infinite 16s; 
+        }
         
-        .swing { animation: swing 2s ease-in-out infinite; }
-        .glow-effect { animation: glow 2s ease-in-out infinite; }
+        .swing { 
+          animation: swing 3s ease-in-out infinite; 
+        }
+        .glow-effect { 
+          animation: glow 3s ease-in-out infinite; 
+        }
+        .glow-red { 
+          animation: glowRed 3.5s ease-in-out infinite; 
+        }
+        .glow-green { 
+          animation: glowGreen 3.2s ease-in-out infinite; 
+        }
 
         @media (max-width: 768px) {
-          /* تصغير الفوانيس على الموبايل */
           .lantern1, .lantern2, .lantern3 {
-            transform: scale(0.5);
+            transform: scale(0.6);
           }
           
           .lantern1 {
-            top: 8% !important;
+            top: 5% !important;
           }
           
           .lantern2 {
-            top: 20% !important;
+            top: 25% !important;
           }
           
           .lantern3 {
-            top: 32% !important;
+            top: 45% !important;
           }
-          
-          /* إظهار النصوص تحت الفوانيس بحجم مناسب */
-          .lantern1 .text-xs,
-          .lantern2 .text-xs,
-          .lantern3 .text-xs {
-            font-size: 0.5rem !important;
+        }
+
+        @media (max-width: 480px) {
+          .lantern1, .lantern2, .lantern3 {
+            transform: scale(0.4);
           }
         }
       `}</style>
@@ -101,45 +161,37 @@ export default function FlyingLantern() {
       {/* فانوس 1 - ذهبي */}
       <div className="lantern1 fixed z-50 pointer-events-none">
         <div className="swing relative">
-          {/* حبل التعليق */}
-          <div className="absolute left-1/2 -translate-x-1/2 -top-8 w-0.5 h-8 bg-gradient-to-b from-amber-800 to-amber-700"></div>
-          
-          <div className="glow-effect relative">
-            {/* القمة */}
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-6 h-3 bg-gradient-to-b from-amber-600 to-amber-700 rounded-t-full border border-amber-900"></div>
-            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gradient-to-b from-yellow-400 to-amber-500 rounded-full"></div>
+          <div className="absolute left-1/2 -translate-x-1/2 -top-6 w-0.5 h-6 bg-gradient-to-b from-amber-900 via-amber-800 to-amber-700 rounded-full shadow-md"></div>
 
-            {/* الجسم */}
-            <div className="relative w-12 h-16">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 rounded-2xl border-2 border-amber-900 shadow-xl overflow-hidden">
-                <div className="absolute inset-1 bg-gradient-to-br from-yellow-200 via-yellow-300 to-orange-400 rounded-xl opacity-90" style={{ animation: 'flicker 2s ease-in-out infinite' }}></div>
-                <div className="absolute inset-2 bg-gradient-to-br from-yellow-100 via-yellow-200 to-transparent rounded-lg animate-pulse"></div>
-                
-                {/* الزخارف */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-amber-900 rounded-full"></div>
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-7 h-0.5 bg-amber-900 rounded-full"></div>
-                <div className="absolute left-2 top-1/2 -translate-y-1/2 w-0.5 h-7 bg-amber-900 rounded-full"></div>
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 w-0.5 h-7 bg-amber-900 rounded-full"></div>
-                
-                {/* الهلال */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm opacity-70">🌙</div>
+          <div className="glow-effect relative">
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-5 h-2.5 bg-gradient-to-b from-amber-500 via-amber-600 to-amber-800 rounded-t-full border border-amber-900 shadow-md"></div>
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gradient-to-b from-yellow-300 via-yellow-400 to-amber-500 rounded-full shadow-sm animate-pulse"></div>
+
+            <div className="relative w-10 h-14">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-800 rounded-2xl border-2 border-amber-900 shadow-xl overflow-hidden">
+                <div className="absolute inset-1 bg-gradient-to-br from-yellow-100 via-yellow-300 to-orange-400 rounded-xl opacity-95" style={{ animation: 'flicker 2.5s ease-in-out infinite' }}></div>
+                <div className="absolute inset-1.5 bg-gradient-to-br from-yellow-50 via-yellow-200 to-transparent rounded-lg animate-pulse"></div>
+
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-amber-900 rounded-full"></div>
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-amber-900 rounded-full"></div>
+                <div className="absolute left-2 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-amber-900 rounded-full"></div>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-amber-900 rounded-full"></div>
+
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm opacity-80 drop-shadow-md">🌙</div>
               </div>
             </div>
 
-            {/* القاعدة */}
-            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-3 bg-gradient-to-t from-amber-800 to-amber-700 rounded-b-full border border-amber-900"></div>
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-xs" style={{ animation: 'flicker 1.5s ease-in-out infinite' }}>🔥</div>
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-2.5 bg-gradient-to-t from-amber-900 via-amber-800 to-amber-700 rounded-b-full border border-amber-900 shadow-md"></div>
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-sm" style={{ animation: 'flicker 2s ease-in-out infinite' }}>🔥</div>
           </div>
 
-          {/* النجوم */}
-          <div className="absolute top-0 -left-4 text-yellow-400 text-xs animate-ping" style={{ animationDuration: '1.5s' }}>✨</div>
-          <div className="absolute top-2 -right-4 text-amber-300 text-xs animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }}>⭐</div>
+          <div className="absolute -top-1 -left-4 text-yellow-300 text-xs" style={{ animation: 'sparkle 2s ease-in-out infinite' }}>✨</div>
+          <div className="absolute top-2 -right-4 text-amber-400 text-xs" style={{ animation: 'sparkle 2.5s ease-in-out infinite 0.5s' }}>⭐</div>
 
-          {/* النص */}
           <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap">
-            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-400 rounded-lg px-3 py-1.5 shadow-lg">
-              <div className="text-xs font-bold bg-gradient-to-r from-amber-700 to-orange-600 bg-clip-text text-transparent flex items-center gap-1">
-                <span>🌙</span>
+            <div className="bg-gradient-to-r from-amber-50 via-yellow-100 to-orange-50 border border-amber-400 rounded-lg px-2 py-1 shadow-lg backdrop-blur-sm">
+              <div className="text-xs font-bold bg-gradient-to-r from-amber-700 via-orange-600 to-amber-800 bg-clip-text text-transparent flex items-center gap-1">
+                <span className="text-sm">🌙</span>
                 <span>رمضان يجمعنا</span>
               </div>
             </div>
@@ -149,38 +201,38 @@ export default function FlyingLantern() {
 
       {/* فانوس 2 - أحمر */}
       <div className="lantern2 fixed z-50 pointer-events-none">
-        <div className="swing relative" style={{ animationDelay: '0.7s' }}>
-          <div className="absolute left-1/2 -translate-x-1/2 -top-7 w-0.5 h-7 bg-gradient-to-b from-red-800 to-red-700"></div>
-          
-          <div className="glow-effect relative" style={{ animationDelay: '0.8s' }}>
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-5 h-2.5 bg-gradient-to-b from-red-600 to-red-700 rounded-t-full border border-red-900"></div>
-            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gradient-to-b from-pink-400 to-red-500 rounded-full"></div>
+        <div className="swing relative" style={{ animationDelay: '1s' }}>
+          <div className="absolute left-1/2 -translate-x-1/2 -top-5.5 w-0.5 h-5.5 bg-gradient-to-b from-red-900 via-red-800 to-red-700 rounded-full shadow-md"></div>
 
-            <div className="relative w-10 h-14">
-              <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-red-700 to-red-800 rounded-xl border-2 border-red-900 shadow-xl overflow-hidden">
-                <div className="absolute inset-1 bg-gradient-to-br from-pink-200 via-red-300 to-red-400 rounded-lg opacity-90" style={{ animation: 'flicker 2.2s ease-in-out infinite' }}></div>
-                <div className="absolute inset-1.5 bg-gradient-to-br from-pink-100 via-pink-200 to-transparent rounded-lg animate-pulse"></div>
-                
-                <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-red-900 rounded-full"></div>
-                <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-red-900 rounded-full"></div>
-                <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-red-900 rounded-full"></div>
-                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-red-900 rounded-full"></div>
-                
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs opacity-70">⭐</div>
+          <div className="glow-red relative" style={{ animationDelay: '1.2s' }}>
+            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4.5 h-2 bg-gradient-to-b from-red-500 via-red-600 to-red-800 rounded-t-full border border-red-900 shadow-md"></div>
+            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gradient-to-b from-pink-300 via-pink-400 to-red-500 rounded-full shadow-sm animate-pulse"></div>
+
+            <div className="relative w-9 h-13">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500 via-red-600 to-red-800 rounded-2xl border-2 border-red-900 shadow-xl overflow-hidden">
+                <div className="absolute inset-1 bg-gradient-to-br from-pink-100 via-pink-300 to-red-400 rounded-xl opacity-95" style={{ animation: 'flicker 2.8s ease-in-out infinite' }}></div>
+                <div className="absolute inset-1.5 bg-gradient-to-br from-pink-50 via-pink-200 to-transparent rounded-lg animate-pulse"></div>
+
+                <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-5.5 h-0.5 bg-red-900 rounded-full"></div>
+                <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-5.5 h-0.5 bg-red-900 rounded-full"></div>
+                <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-0.5 h-5.5 bg-red-900 rounded-full"></div>
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 w-0.5 h-5.5 bg-red-900 rounded-full"></div>
+
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-sm opacity-80 drop-shadow-md">⭐</div>
               </div>
             </div>
 
-            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-8 h-2.5 bg-gradient-to-t from-red-800 to-red-700 rounded-b-full border border-red-900"></div>
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-xs" style={{ animation: 'flicker 1.7s ease-in-out infinite' }}>🔥</div>
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-7 h-2 bg-gradient-to-t from-red-900 via-red-800 to-red-700 rounded-b-full border border-red-900 shadow-md"></div>
+            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-sm" style={{ animation: 'flicker 2.3s ease-in-out infinite' }}>🔥</div>
           </div>
 
-          <div className="absolute top-1 -left-3 text-red-400 text-xs animate-ping" style={{ animationDuration: '1.7s' }}>⭐</div>
-          <div className="absolute top-3 -right-3 text-pink-300 text-xs animate-ping" style={{ animationDuration: '2.1s', animationDelay: '0.4s' }}>✨</div>
+          <div className="absolute -top-0.5 -left-3.5 text-pink-300 text-xs" style={{ animation: 'sparkle 2.2s ease-in-out infinite' }}>⭐</div>
+          <div className="absolute top-2.5 -right-3.5 text-red-300 text-xs" style={{ animation: 'sparkle 2.6s ease-in-out infinite 0.6s' }}>✨</div>
 
           <div className="absolute -bottom-9 left-1/2 -translate-x-1/2 whitespace-nowrap">
-            <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-300 rounded-lg px-3 py-1 shadow-lg">
-              <div className="text-xs font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-1">
-                <span>🌙</span>
+            <div className="bg-gradient-to-r from-red-50 via-pink-100 to-rose-50 border border-red-400 rounded-lg px-2 py-1 shadow-lg backdrop-blur-sm">
+              <div className="text-xs font-bold bg-gradient-to-r from-red-600 via-pink-600 to-red-800 bg-clip-text text-transparent flex items-center gap-1">
+                <span className="text-sm">🌙</span>
                 <span>كل عام وأنتم بخير</span>
               </div>
             </div>
@@ -190,35 +242,35 @@ export default function FlyingLantern() {
 
       {/* فانوس 3 - أخضر */}
       <div className="lantern3 fixed z-50 pointer-events-none">
-        <div className="swing relative" style={{ animationDelay: '1.3s' }}>
-          <div className="absolute left-1/2 -translate-x-1/2 -top-6 w-0.5 h-6 bg-gradient-to-b from-emerald-800 to-emerald-700"></div>
-          
-          <div className="glow-effect relative" style={{ animationDelay: '1.5s' }}>
-            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-5 h-2 bg-gradient-to-b from-emerald-600 to-emerald-700 rounded-t-full border border-emerald-900"></div>
-            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gradient-to-b from-green-400 to-emerald-500 rounded-full"></div>
+        <div className="swing relative" style={{ animationDelay: '2s' }}>
+          <div className="absolute left-1/2 -translate-x-1/2 -top-5 w-0.5 h-5 bg-gradient-to-b from-emerald-900 via-emerald-800 to-emerald-700 rounded-full shadow-md"></div>
 
-            <div className="relative w-9 h-12">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 rounded-xl border-2 border-emerald-900 shadow-xl overflow-hidden">
-                <div className="absolute inset-1 bg-gradient-to-br from-green-200 via-emerald-300 to-green-400 rounded-lg opacity-90" style={{ animation: 'flicker 2.4s ease-in-out infinite' }}></div>
-                <div className="absolute inset-1.5 bg-gradient-to-br from-green-100 via-emerald-200 to-transparent rounded-lg animate-pulse"></div>
-                
+          <div className="glow-green relative" style={{ animationDelay: '2.2s' }}>
+            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-800 rounded-t-full border border-emerald-900 shadow-md"></div>
+            <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gradient-to-b from-green-300 via-green-400 to-emerald-500 rounded-full shadow-sm animate-pulse"></div>
+
+            <div className="relative w-8 h-12">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-800 rounded-2xl border-2 border-emerald-900 shadow-xl overflow-hidden">
+                <div className="absolute inset-1 bg-gradient-to-br from-green-100 via-emerald-300 to-green-400 rounded-xl opacity-95" style={{ animation: 'flicker 3s ease-in-out infinite' }}></div>
+                <div className="absolute inset-1.5 bg-gradient-to-br from-green-50 via-emerald-200 to-transparent rounded-lg animate-pulse"></div>
+
                 <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-emerald-900 rounded-full"></div>
                 <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-emerald-900 rounded-full"></div>
-                
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs opacity-70">✨</div>
+
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs opacity-80 drop-shadow-md">✨</div>
               </div>
             </div>
 
-            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-7 h-2 bg-gradient-to-t from-emerald-800 to-emerald-700 rounded-b-full border border-emerald-900"></div>
-            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-xs" style={{ animation: 'flicker 1.9s ease-in-out infinite' }}>🔥</div>
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-2 bg-gradient-to-t from-emerald-900 via-emerald-800 to-emerald-700 rounded-b-full border border-emerald-900 shadow-md"></div>
+            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-sm" style={{ animation: 'flicker 2.6s ease-in-out infinite' }}>🔥</div>
           </div>
 
-          <div className="absolute top-0.5 -left-3 text-green-400 text-xs animate-ping" style={{ animationDuration: '1.6s' }}>✨</div>
-          <div className="absolute top-2 -right-3 text-emerald-300 text-xs animate-ping" style={{ animationDuration: '2.3s', animationDelay: '0.5s' }}>⭐</div>
+          <div className="absolute top-0 -left-3 text-green-300 text-xs" style={{ animation: 'sparkle 2.4s ease-in-out infinite' }}>✨</div>
+          <div className="absolute top-1.5 -right-3 text-emerald-400 text-xs" style={{ animation: 'sparkle 2.8s ease-in-out infinite 0.7s' }}>⭐</div>
 
           <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-md px-2.5 py-1 shadow-md">
-              <div className="text-xs font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent flex items-center gap-1">
+            <div className="bg-gradient-to-r from-green-50 via-emerald-100 to-teal-50 border border-green-400 rounded-lg px-2 py-0.5 shadow-lg backdrop-blur-sm">
+              <div className="text-xs font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-700 bg-clip-text text-transparent flex items-center gap-1">
                 <span>رمضان كريم</span>
               </div>
             </div>
