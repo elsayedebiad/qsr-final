@@ -8,6 +8,7 @@ interface User {
   name: string
   role: string
   isActive: boolean
+  salesPages?: string[] // صفحات السيلز المخصصة للمستخدم (للمستخدمين العاديين)
 }
 
 interface AuthContextType {

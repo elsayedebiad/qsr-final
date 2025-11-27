@@ -13,6 +13,16 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // ADMIN له وصول كامل دائماً، غيره يحتاج صلاحية SALES
+    if (user.role !== 'ADMIN') {
+      if (user.role !== 'USER' && user.role !== 'SALES') {
+        return NextResponse.json(
+          { success: false, message: 'ليس لديك صلاحية الوصول لهذه البيانات' },
+          { status: 403 }
+        )
+      }
+    }
+
     // جلب معاملات البحث
     const { searchParams } = new URL(request.url)
     const salesPageId = searchParams.get('salesPageId')
@@ -26,7 +36,14 @@ export async function GET(request: NextRequest) {
       isArchived
     }
 
-    if (salesPageId && salesPageId !== 'ALL') {
+    // فلترة حسب صلاحيات المستخدم
+    if (user.role !== 'ADMIN' && user.salesPages && user.salesPages.length > 0) {
+      // المستخدم العادي يرى فقط صفحاته
+      where.salesPageId = {
+        in: user.salesPages
+      }
+    } else if (salesPageId && salesPageId !== 'ALL') {
+      // المدير يمكنه فلترة بصفحة محددة
       where.salesPageId = salesPageId
     }
 
@@ -44,9 +61,18 @@ export async function GET(request: NextRequest) {
     })
 
     // إحصائيات إضافية
+    const statsWhere: any = { isArchived: false }
+    
+    // فلترة الإحصائيات حسب صلاحيات المستخدم
+    if (user.role !== 'ADMIN' && user.salesPages && user.salesPages.length > 0) {
+      statsWhere.salesPageId = {
+        in: user.salesPages
+      }
+    }
+    
     const stats = await db.phoneNumber.groupBy({
       by: ['salesPageId'],
-      where: { isArchived: false },
+      where: statsWhere,
       _count: {
         id: true
       }
@@ -90,8 +116,18 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    // ADMIN له صلاحية كاملة، غيره يحتاج صلاحية SALES
+    if (user.role !== 'ADMIN') {
+      if (user.role !== 'USER' && user.role !== 'SALES') {
+        return NextResponse.json(
+          { success: false, message: 'ليس لديك صلاحية تعديل هذه البيانات' },
+          { status: 403 }
+        )
+      }
+    }
+
     const body = await request.json()
-    const { id, isArchived } = body
+    const { id, isArchived, isContacted } = body
 
     if (!id) {
       return NextResponse.json(
@@ -100,14 +136,53 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    // التحقق من صلاحية المستخدم لتعديل هذا الرقم
+    const phoneNumber = await db.phoneNumber.findUnique({
+      where: { id },
+      select: { salesPageId: true }
+    })
+
+    if (!phoneNumber) {
+      return NextResponse.json(
+        { success: false, message: 'الرقم غير موجود' },
+        { status: 404 }
+      )
+    }
+
+    // ADMIN له صلاحية كاملة على كل الأرقام
+    // المستخدم العادي يمكنه فقط تعديل أرقام صفحاته
+    if (user.role !== 'ADMIN') {
+      if (user.salesPages && !user.salesPages.includes(phoneNumber.salesPageId)) {
+        return NextResponse.json(
+          { success: false, message: 'غير مسموح بتعديل هذا الرقم' },
+          { status: 403 }
+        )
+      }
+    }
+
+    // بناء بيانات التحديث
+    const updateData: any = {}
+    if (typeof isArchived !== 'undefined') {
+      updateData.isArchived = isArchived
+    }
+    if (typeof isContacted !== 'undefined') {
+      updateData.isContacted = isContacted
+      // إذا تم التواصل، نضيف التاريخ
+      if (isContacted) {
+        updateData.contactedAt = new Date()
+      }
+    }
+
     const updated = await db.phoneNumber.update({
       where: { id },
-      data: { isArchived }
+      data: updateData
     })
 
     return NextResponse.json({
       success: true,
-      message: isArchived ? 'تم الأرشفة بنجاح' : 'تم الاستعادة بنجاح',
+      message: isArchived !== undefined 
+        ? (isArchived ? 'تم الأرشفة بنجاح' : 'تم الاستعادة بنجاح')
+        : 'تم التحديث بنجاح',
       data: updated
     })
 
@@ -129,6 +204,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { success: false, message: 'غير مصرح' },
         { status: 401 }
+      )
+    }
+
+    // فقط ADMIN يمكنه الحذف (ليس SUB_ADMIN أو CUSTOMER_SERVICE)
+    if (user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { success: false, message: 'غير مسموح بالحذف' },
+        { status: 403 }
       )
     }
 

@@ -136,6 +136,11 @@ export class AuthService {
               name: true,
               role: true,
               isActive: true,
+              assignedSalesPages: {
+                select: {
+                  salesPageId: true
+                }
+              }
             }
           }
         }
@@ -145,7 +150,13 @@ export class AuthService {
         throw new Error('Invalid or expired session')
       }
 
-      return session.user
+      // تنسيق salesPages كـ array من strings
+      const salesPages = session.user.assignedSalesPages.map((sp: { salesPageId: string }) => sp.salesPageId)
+
+      return {
+        ...session.user,
+        salesPages
+      }
     } catch (error) {
       throw new Error('Invalid token')
     }

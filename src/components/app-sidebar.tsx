@@ -452,7 +452,7 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       label: 'أرقام الهواتف المجمعة',
       icon: Phone,
       href: '/dashboard/phone-numbers',
-      adminOnly: true
+      adminOnly: false // متاح لجميع المستخدمين
     },
     {
       id: 'users',
@@ -489,20 +489,26 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
   }
 
   const renderNavItem = (item: NavItem) => {
-    // Hide admin-only items for non-admin users
-    if (item.adminOnly) {
-      // DEVELOPER has full access to everything
-      if (user?.role === 'DEVELOPER' || user?.email === 'developer@system.local') {
-        // Developer sees everything - no restrictions
+    // ADMIN و DEVELOPER لديهم وصول كامل لكل شيء - بدون قيود
+    if (user?.role === 'ADMIN' || user?.role === 'DEVELOPER' || user?.email === 'developer@system.local') {
+      // عرض كل العناصر بدون أي قيود
+    }
+    // حماية خاصة لصفحة phone-numbers: فقط ADMIN و SALES
+    else if (item.id === 'phone-numbers') {
+      if (user?.role !== 'USER' && user?.role !== 'SALES') {
+        return null
       }
-      // Allow SUB_ADMIN to see CV-related items, contracts, and banners
-      else if (user?.role === 'SUB_ADMIN') {
+    }
+    // Hide admin-only items for non-admin users
+    else if (item.adminOnly) {
+      // Allow SUB_ADMIN to see CV-related items, contracts, and banners (NOT phone-numbers)
+      if (user?.role === 'SUB_ADMIN') {
         const subAdminAllowedItems = ['add-cv', 'import-cv', 'smart-import', 'google-sheets', 'contracts', 'banners', 'secondary-banners']
         if (!subAdminAllowedItems.includes(item.id)) {
           return null
         }
       }
-      // Allow CUSTOMER_SERVICE to see contracts only
+      // Allow CUSTOMER_SERVICE to see contracts only (NOT phone-numbers)
       else if (user?.role === 'CUSTOMER_SERVICE') {
         const customerServiceAllowedItems = ['contracts']
         if (!customerServiceAllowedItems.includes(item.id)) {
@@ -510,7 +516,7 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
         }
       }
       // Hide from regular users
-      else if (user?.role !== 'ADMIN') {
+      else {
         return null
       }
     }

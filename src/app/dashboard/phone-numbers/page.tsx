@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
+import { useAuth } from '@/contexts/AuthContext'
 import { Phone, Download, Archive, Trash2, RefreshCw, Filter, Calendar, MapPin, Smartphone, Monitor, MessageCircle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import * as XLSX from 'xlsx'
@@ -18,6 +19,8 @@ interface PhoneNumberData {
   city?: string
   notes?: string
   isArchived: boolean
+  isContacted: boolean
+  contactedAt?: string
   createdAt: string
 }
 
@@ -26,6 +29,7 @@ interface Stats {
 }
 
 export default function PhoneNumbersPage() {
+  const { user } = useAuth()
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumberData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedSalesPage, setSelectedSalesPage] = useState<string>('ALL')
@@ -33,6 +37,27 @@ export default function PhoneNumbersPage() {
   const [stats, setStats] = useState<Stats>({})
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  
+  // حماية الصفحة: ADMIN له وصول كامل، SALES يصل لصفحاته فقط
+  if (user && user.role !== 'ADMIN') {
+    // السماح للمستخدمين العاديين (SALES/USER) فقط
+    if (user.role !== 'USER' && user.role !== 'SALES') {
+      return (
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-destructive mb-4">غير مصرح</h1>
+              <p className="text-muted-foreground">ليس لديك صلاحية الوصول لهذه الصفحة</p>
+            </div>
+          </div>
+        </DashboardLayout>
+      )
+    }
+  }
+  
+  // تحديد صفحات السيلز المتاحة حسب صلاحيات المستخدم
+  const userSalesPages = user?.role === 'ADMIN' ? null : (user?.salesPages || [])
+  const isAdmin = user?.role === 'ADMIN'
 
   const salesPages = [
     { id: 'ALL', name: 'جميع الصفحات' },
@@ -182,13 +207,39 @@ export default function PhoneNumbersPage() {
     return cleanNumber
   }
 
-  // فتح محادثة واتساب مع الرقم
-  const openWhatsApp = (phoneNumber: string) => {
+  // فتح محادثة واتساب مع الرقم وتسجيل التواصل
+  const openWhatsApp = async (phoneNumber: string, id: number) => {
     const formattedNumber = formatPhoneNumber(phoneNumber)
     // إزالة + و أي رموز أخرى للرقم النظيف
     const cleanNumber = formattedNumber.replace(/[^0-9]/g, '')
     const whatsappUrl = `https://wa.me/${cleanNumber}`
     window.open(whatsappUrl, '_blank')
+    
+    // تحديث حالة التواصل
+    try {
+      const response = await fetch('/api/phone-numbers/list', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id, isContacted: true })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // تحديث البيانات المحلية
+        setPhoneNumbers(prev => 
+          prev.map(item => 
+            item.id === id 
+              ? { ...item, isContacted: true, contactedAt: new Date().toISOString() } 
+              : item
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error updating contact status:', error)
+    }
   }
 
   return (
@@ -229,12 +280,15 @@ export default function PhoneNumbersPage() {
             </div>
           </div>
           
-          {salesPages.slice(1).map(page => (
-            <div key={page.id} className="card hover-lift rounded-lg p-4 shadow-sm border border-border animate-fade-in">
-              <div className="text-sm text-muted-foreground mb-1">{page.name}</div>
-              <div className="text-2xl font-bold text-primary">{stats[page.id] || 0}</div>
-            </div>
-          ))}
+          {salesPages.slice(1)
+            .filter(page => !userSalesPages || userSalesPages.includes(page.id))
+            .map(page => (
+              <div key={page.id} className="card hover-lift rounded-lg p-4 shadow-sm border border-border animate-fade-in">
+                <div className="text-sm text-muted-foreground mb-1">{page.name}</div>
+                <div className="text-2xl font-bold text-primary">{stats[page.id] || 0}</div>
+              </div>
+            ))
+          }
         </div>
 
         {/* Filters */}
@@ -253,9 +307,12 @@ export default function PhoneNumbersPage() {
                 }}
                 className="form-input"
               >
-                {salesPages.map(page => (
-                  <option key={page.id} value={page.id}>{page.name}</option>
-                ))}
+                {salesPages
+                  .filter(page => page.id === 'ALL' || !userSalesPages || userSalesPages.includes(page.id))
+                  .map(page => (
+                    <option key={page.id} value={page.id}>{page.name}</option>
+                  ))
+                }
               </select>
             </div>
 
@@ -307,6 +364,9 @@ export default function PhoneNumbersPage() {
                       الصفحة
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      حالة التواصل
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       الموقع
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -335,6 +395,23 @@ export default function PhoneNumbersPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        {item.isContacted ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            تم التواصل
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            لم يتم التواصل
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <MapPin className="w-4 h-4" />
                           <span>{item.city || item.country || '-'}</span>
@@ -359,7 +436,7 @@ export default function PhoneNumbersPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => openWhatsApp(item.phoneNumber)}
+                            onClick={() => openWhatsApp(item.phoneNumber, item.id)}
                             className="p-2 text-muted-foreground hover:text-[#25d366] hover:bg-[#25d366]/10 rounded transition-all duration-200 hover-lift"
                             title="فتح واتساب"
                           >
@@ -374,13 +451,15 @@ export default function PhoneNumbersPage() {
                           >
                             <Archive className="w-5 h-5" />
                           </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-all duration-200 hover-lift"
-                            title="حذف"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-all duration-200 hover-lift"
+                              title="حذف"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

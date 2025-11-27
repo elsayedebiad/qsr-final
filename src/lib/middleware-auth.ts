@@ -23,6 +23,7 @@ type AuthenticatedUser = {
   name: string;
   role: Role;
   isActive: boolean;
+  salesPages?: string[]; // صفحات السيلز المخصصة للمستخدم
 }
 
 // وظيفة للتحقق من صلاحيات المستخدم
