@@ -2838,7 +2838,7 @@ export default function Sales6Page() {
       <FlyingLantern />
 
       {/* نافذة منبثقة لجمع أرقام الهواتف */}
-      <PhoneNumberPopup salesPageId="sales1" delaySeconds={8} expiryDays={7} />
+      <PhoneNumberPopup salesPageId="sales6" delaySeconds={8} expiryDays={7} />
     </div>
     </>
   )
