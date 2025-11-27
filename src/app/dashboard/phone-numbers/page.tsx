@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Phone, Download, Archive, Trash2, RefreshCw, Filter, Calendar, MapPin, Smartphone, Monitor, MessageCircle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import * as XLSX from 'xlsx'
+import { useActivityLogger } from '@/hooks/useActivityLogger'
 
 interface PhoneNumberData {
   id: number
@@ -30,6 +31,10 @@ interface Stats {
 
 export default function PhoneNumbersPage() {
   const { user } = useAuth()
+  const { logAction, logFileDownload } = useActivityLogger({
+    pageName: 'أرقام الهواتف المجمعة',
+    autoLogPageView: true
+  })
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumberData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedSalesPage, setSelectedSalesPage] = useState<string>('ALL')
@@ -119,14 +124,27 @@ export default function PhoneNumbersPage() {
       const data = await response.json()
 
       if (data.success) {
-        toast.success(data.message)
+        setPhoneNumbers(prev => 
+          prev.map(item => 
+            item.id === id ? { ...item, isArchived } : item
+          )
+        )
+        toast.success(isArchived ? 'تم الأرشفة بنجاح' : 'تم الاستعادة بنجاح')
+        
+        // تسجيل النشاط
+        logAction(
+          isArchived ? 'PHONE_ARCHIVE' : 'PHONE_RESTORE',
+          `${isArchived ? 'أرشفة' : 'استعادة'} رقم هاتف #${id}`,
+          { phoneNumberId: id, isArchived }
+        )
+        
         fetchPhoneNumbers()
       } else {
-        toast.error(data.message)
+        toast.error(data.message || 'حدث خطأ')
       }
     } catch (error) {
-      console.error('Error archiving phone number:', error)
-      toast.error('حدث خطأ أثناء التحديث')
+      console.error('Error:', error)
+      toast.error('حدث خطأ أثناء العملية')
     }
   }
 
@@ -159,10 +177,9 @@ export default function PhoneNumbersPage() {
       'رقم الهاتف': formatPhoneNumber(item.phoneNumber),
       'الصفحة': item.salesPageId,
       'المصدر': item.source || '-',
-      'الدولة': item.country || '-',
-      'المدينة': item.city || '-',
-      'نوع الجهاز': item.deviceType || '-',
-      'التاريخ': new Date(item.createdAt).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })
+      'الموقع': item.city || item.country || '-',
+      'الجهاز': item.deviceType || '-',
+      'التاريخ': formatDate(item.createdAt)
     }))
 
     const ws = XLSX.utils.json_to_sheet(exportData)
@@ -173,6 +190,18 @@ export default function PhoneNumbersPage() {
     XLSX.writeFile(wb, fileName)
     
     toast.success('تم تصدير البيانات بنجاح')
+    
+    // تسجيل النشاط
+    logFileDownload(fileName, 'excel')
+    logAction(
+      'PHONE_EXPORT',
+      `تصدير ${exportData.length} رقم هاتف إلى Excel`,
+      { 
+        count: exportData.length, 
+        salesPage: selectedSalesPage,
+        fileName 
+      }
+    )
   }
 
   const formatDate = (dateString: string) => {
@@ -214,6 +243,13 @@ export default function PhoneNumbersPage() {
     const cleanNumber = formattedNumber.replace(/[^0-9]/g, '')
     const whatsappUrl = `https://wa.me/${cleanNumber}`
     window.open(whatsappUrl, '_blank')
+    
+    // تسجيل النشاط
+    logAction(
+      'WHATSAPP_OPEN',
+      `فتح واتساب للرقم: ${formattedNumber}`,
+      { phoneNumberId: id, phoneNumber: formattedNumber }
+    )
     
     // تحديث حالة التواصل
     try {
