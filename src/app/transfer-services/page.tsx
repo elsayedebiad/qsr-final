@@ -31,7 +31,8 @@ import ClarityScript from '@/components/ClarityScript'
 import VideoPlayer from '@/components/VideoPlayer'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import SalesRedirectCheck from '@/components/SalesRedirectCheck'
-import ScrollDownIndicator from '@/components/ScrollDownIndicator'
+import AutoScrollIndicatorEnhanced from '@/components/AutoScrollIndicatorEnhanced'
+import FlyingLantern from '@/components/FlyingLantern'
 
 // إضافة أنيميشن CSS محسّن للأداء
 const customStyles = `
@@ -1271,12 +1272,12 @@ export default function TransferServicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col" dir="rtl">
-      {/* Microsoft Clarity Analytics */}
-      <ClarityScript />
-      {/* التحقق من نظام التوزيع */}
-      <SalesRedirectCheck />
+    <>
       <style>{customStyles}</style>
+      <ClarityScript />
+      <SalesRedirectCheck />
+      <AutoScrollIndicatorEnhanced />
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 overflow-x-hidden" dir="rtl">
         {/* Header بنفس تصميم qsr.sa */}
         <header className="bg-white shadow-md sticky top-0 z-50">
           {/* شريط علوي بمعلومات التواصل */}
@@ -1290,7 +1291,7 @@ export default function TransferServicesPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs bg-white/10 px-3 py-1 rounded-full">
-                  {filteredCvs.length} سيرة متاحة
+                  {allFilteredCvs.length} سيرة متاحة
                 </span>
               </div>
             </div>
@@ -1301,17 +1302,22 @@ export default function TransferServicesPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
               <div className="flex items-center justify-between">
                 {/* الشعار */}
-                <div className="flex items-center gap-3">
+                <a 
+                  href="https://qsr.sa/offers1-2" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+                >
                   <img 
                     src="/logo-2.png" 
                     alt="الاسناد السريع" 
-                    className="h-16 w-auto object-contain"
+                    className="h-6 sm:h-8 w-auto object-contain"
                   />
                   <div className="hidden md:block">
                     <h1 className="text-xl font-bold text-[#1e3a8a]">الاسناد السريع</h1>
                     <p className="text-sm text-gray-600">للاستقدام</p>
                   </div>
-                </div>
+                </a>
                 
                 {/* أزرار التواصل */}
                 <div className="flex items-center gap-3">
@@ -2352,8 +2358,11 @@ export default function TransferServicesPage() {
           </div>
         </div>
       )}
-      <ScrollDownIndicator />
-    </div>
+      
+      {/* شخصية فنانيس الكرتونية المتحركة */}
+      <FlyingLantern />
+      </div>
+    </>
   )
 }
 
