@@ -1444,3 +1444,32 @@ input[type="checkbox"]:indeterminate {
 .sidebar-scroll-area::-webkit-scrollbar-thumb:hover {
   background: rgba(155, 155, 155, 0.4);
 }
+
+/* Global Notifications Animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes progressBar {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.animate-progress-bar {
+  animation: progressBar 10s linear forwards;
+}

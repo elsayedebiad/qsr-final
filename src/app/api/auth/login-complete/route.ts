@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { AuthService } from '@/lib/auth'
-import { UserActivityLogger } from '@/lib/activity-logger'
+import { logActivity } from '@/lib/activity-middleware'
 import { verifyActivationCode } from '@/lib/activation-auth'
 import { UserSessionTracker } from '@/lib/user-session-tracker'
 
@@ -69,9 +69,20 @@ export async function POST(request: NextRequest) {
     const ipAddress = cfConnectingIp || realIp || (forwarded ? forwarded.split(',')[0].trim() : null) || 'unknown'
     const userAgent = request.headers.get('user-agent') || 'Unknown Browser'
 
-    // Log login activity
+    // Log login activity (استثناء المطور)
     try {
-      await UserActivityLogger.login(user.id)
+      if (user.role !== 'DEVELOPER') {
+        await logActivity({
+          userId: user.id,
+          userRole: user.role,
+          action: 'USER_LOGIN',
+          description: 'تم تسجيل الدخول',
+          targetType: 'SYSTEM',
+          targetName: 'تسجيل الدخول',
+          ipAddress,
+          userAgent
+        })
+      }
       // Track user session with IP and user agent
       await UserSessionTracker.recordLogin(
         user.id, 

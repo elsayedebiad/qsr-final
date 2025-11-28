@@ -35,6 +35,8 @@ model User {
   createdNewContracts   NewContract[]          @relation("NewContractCreatedBy")
   followUpNotes         FollowUpNote[]         @relation("FollowUpNoteCreatedBy")
   assignedSalesPages    UserSalesPage[]        @relation("UserSalesPageAssignments")
+  transferredPhoneNumbers PhoneNumber[]        @relation("PhoneNumberTransferredTo")
+  transferredByPhoneNumbers PhoneNumber[]      @relation("PhoneNumberTransferredBy")
 
   @@map("users")
 }
@@ -630,25 +632,49 @@ model BookingClick {
 
 // جمع أرقام الهواتف من صفحات المبيعات
 model PhoneNumber {
-  id           Int       @id @default(autoincrement())
-  phoneNumber  String
-  salesPageId  String // الصفحة التي تم جمع الرقم منها
-  source       String? // مصدر الزائر (google, facebook, direct, etc.)
-  ipAddress    String? // عنوان IP للزائر
-  userAgent    String? // معلومات المتصفح
-  deviceType   String? // MOBILE or DESKTOP
-  country      String? // الدولة
-  city         String? // المدينة
-  notes        String? // ملاحظات إضافية
-  isArchived   Boolean   @default(false) // للأرشفة
-  isContacted  Boolean   @default(false) // هل تم التواصل عبر واتساب
-  contactedAt  DateTime? // تاريخ التواصل
-  createdAt    DateTime  @default(now())
+  id                   Int       @id @default(autoincrement())
+  phoneNumber          String
+  salesPageId          String // الصفحة التي تم جمع الرقم منها
+  source               String? // مصدر الزائر (google, facebook, direct, etc.)
+  ipAddress            String? // عنوان IP للزائر
+  userAgent            String? // معلومات المتصفح
+  deviceType           String? // MOBILE or DESKTOP
+  country              String? // الدولة
+  city                 String? // المدينة
+  notes                String? // ملاحظات إضافية
+  isArchived           Boolean   @default(false) // للأرشفة
+  isContacted          Boolean   @default(false) // هل تم التواصل عبر واتساب
+  contactedAt          DateTime? // تاريخ التواصل
+  
+  // حقول التحويل
+  isTransferred        Boolean   @default(false) // هل تم تحويل الرقم
+  originalSalesPageId  String? // الصفحة الأصلية قبل التحويل
+  transferredToUserId  Int? // المستخدم المحول له الرقم
+  transferredBy        Int? // المدير الذي قام بالتحويل
+  transferredAt        DateTime? // تاريخ التحويل
+  transferReason       String? // سبب التحويل (تأخير التواصل، إلخ)
+  
+  // حقول التوقيت والتذكير
+  deadlineHours        Int? // عدد الساعات المحددة
+  deadlineMinutes      Int? // عدد الدقائق المحددة
+  deadlineSeconds      Int? // عدد الثواني المحددة
+  deadlineAt           DateTime? // الوقت المحدد لانتهاء الصلاحية
+  isExpired            Boolean   @default(false) // هل انتهى الوقت المحدد
+  expiredAt            DateTime? // تاريخ انتهاء الصلاحية الفعلي
+  
+  createdAt            DateTime  @default(now())
+  
+  transferredToUser User? @relation("PhoneNumberTransferredTo", fields: [transferredToUserId], references: [id])
+  transferredByUser User? @relation("PhoneNumberTransferredBy", fields: [transferredBy], references: [id])
 
   @@index([salesPageId])
   @@index([createdAt])
   @@index([isArchived])
   @@index([phoneNumber])
   @@index([isContacted])
+  @@index([isTransferred])
+  @@index([transferredToUserId])
+  @@index([isExpired])
+  @@index([deadlineAt])
   @@map("phone_numbers")
 }

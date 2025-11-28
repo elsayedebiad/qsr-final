@@ -8,6 +8,8 @@ import { AppSidebar } from './app-sidebar'
 import { Menu } from 'lucide-react'
 import UserHeartbeat from './UserHeartbeat'
 import ContractAlertsNotification from './ContractAlertsNotification'
+import GlobalNotifications from './GlobalNotifications'
+import { useActivityLogger } from '@/hooks/useActivityLogger'
 
 interface User {
   id: string
@@ -26,6 +28,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isMounted, setIsMounted] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+  
+  // تسجيل زيارات الصفحات تلقائياً لجميع المستخدمين ما عدا المطور
+  useActivityLogger({
+    autoLogPageView: true
+  })
 
   useEffect(() => {
     setIsMounted(true)
@@ -156,6 +163,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <SidebarProvider>
       <UserHeartbeat />
       <ContractAlertsNotification />
+      <GlobalNotifications />
       <AppSidebar user={user} onLogout={handleLogout} />
       <main className="flex flex-1 flex-col min-h-screen">
         <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center gap-3 sm:gap-4 border-b border-border bg-background px-3 sm:px-6">

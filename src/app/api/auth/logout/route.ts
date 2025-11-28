@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AuthService } from '@/lib/auth'
 import { UserSessionTracker } from '@/lib/user-session-tracker'
 import { db } from '@/lib/db'
+import { logActivity } from '@/lib/activity-middleware'
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,9 +45,45 @@ export async function POST(request: NextRequest) {
 
     // Standard logout process
     const authHeader = request.headers.get('Authorization')
+    let userId: number | undefined
+    let userRole: string | undefined
+    
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7)
+      
+      // Get user info before logout for activity logging
+      try {
+        const session = await db.session.findFirst({
+          where: { token, expiresAt: { gt: new Date() } },
+          include: { user: true }
+        })
+        if (session?.user) {
+          userId = session.user.id
+          userRole = session.user.role
+        }
+      } catch (error) {
+        console.log('Could not get user info for logout logging:', error)
+      }
+      
       await AuthService.logout(token)
+    }
+
+    // Log logout activity (استثناء المطور)
+    if (userId && userRole !== 'DEVELOPER') {
+      try {
+        await logActivity({
+          userId,
+          userRole,
+          action: 'USER_LOGOUT',
+          description: 'تم تسجيل الخروج',
+          targetType: 'SYSTEM',
+          targetName: 'تسجيل الخروج',
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1',
+          userAgent: request.headers.get('user-agent') || 'Unknown'
+        })
+      } catch (error) {
+        console.error('Failed to log logout activity:', error)
+      }
     }
 
     // Track logout if we have session info

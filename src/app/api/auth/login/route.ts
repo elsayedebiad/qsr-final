@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { AuthService } from '@/lib/auth'
-import { UserActivityLogger } from '@/lib/activity-logger'
+import { logActivity } from '@/lib/activity-middleware'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,9 +16,20 @@ export async function POST(request: NextRequest) {
     // Login user
     const loginResult = await AuthService.login(email, password)
 
-    // Log login activity
+    // Log login activity (استثناء المطور)
     try {
-      await UserActivityLogger.login(loginResult.user.id)
+      if (loginResult.user.role !== 'DEVELOPER') {
+        await logActivity({
+          userId: loginResult.user.id,
+          userRole: loginResult.user.role,
+          action: 'USER_LOGIN',
+          description: 'تم تسجيل الدخول',
+          targetType: 'SYSTEM',
+          targetName: 'تسجيل الدخول',
+          ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1',
+          userAgent: request.headers.get('user-agent') || 'Unknown'
+        })
+      }
     } catch (error) {
       console.error('Failed to log login activity:', error)
       // Don't fail the login if activity logging fails

@@ -38,6 +38,7 @@ import {
   Search,
   MousePointerClick,
   Phone,
+  Link,
 } from "lucide-react"
 
 import {
@@ -449,7 +450,7 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
     },
     {
       id: 'phone-numbers',
-      label: 'أرقام الهواتف المجمعة',
+      label: 'أرقام هواتف العملاء',
       icon: Phone,
       href: '/dashboard/phone-numbers',
       adminOnly: false // متاح لجميع المستخدمين
@@ -459,6 +460,13 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
       label: 'إدارة المستخدمين',
       icon: Users,
       href: '/dashboard/users',
+      adminOnly: true
+    },
+    {
+      id: 'user-pages',
+      label: 'ربط المستخدمين بالصفحات',
+      icon: Link,
+      href: '/dashboard/user-pages',
       adminOnly: true
     },
     {

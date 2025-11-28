@@ -36,15 +36,52 @@ export async function GET(request: NextRequest) {
       isArchived
     }
 
+    // فلترة حسب الأرقام المحولة (المنتهية)
+    // الأدمن: 
+    //   - عند اختيار "جميع الأرقام" (ALL): يرى كل شيء (نشطة + محولة)
+    //   - عند الضغط على زر "عرض المحولة": يرى المحولة فقط
+    // المستخدم العادي: يراها دائماً (لكن محجوبة مع blur)
+
+    if (user.role === 'ADMIN' && searchParams.get('showExpired') === 'true') {
+      where.isExpired = true // الأدمن اختار زر "عرض المحولة" - يعرض المحولة فقط
+    }
+    // لا نضيف فلتر isExpired للأدمن عند اختيار "جميع الأرقام" (يرى الكل)
+    // المستخدمون العاديون: لا نضيف فلتر isExpired (يرون الكل)
+
+    // فلترة حسب حالة التواصل
+    const contactFilter = searchParams.get('contactFilter')
+    if (contactFilter === 'contacted') {
+      where.isContacted = true
+    } else if (contactFilter === 'not-contacted') {
+      where.isContacted = false
+    }
+    // إذا كانت 'all' لا نضيف فلتر
+
     // فلترة حسب صلاحيات المستخدم
     if (user.role !== 'ADMIN' && user.salesPages && user.salesPages.length > 0) {
-      // المستخدم العادي يرى فقط صفحاته
-      where.salesPageId = {
-        in: user.salesPages
-      }
+      // المستخدم العادي يرى:
+      // 1. أرقام صفحاته
+      // 2. الأرقام المحولة إليه
+      where.OR = [
+        // الشرط 1: أرقام صفحاته
+        {
+          salesPageId: {
+            in: user.salesPages
+          }
+        },
+        // الشرط 2: الأرقام المحولة إليه
+        {
+          isTransferred: true,
+          transferredToUserId: user.id
+        }
+      ]
     } else if (salesPageId && salesPageId !== 'ALL') {
       // المدير يمكنه فلترة بصفحة محددة
-      where.salesPageId = salesPageId
+      // يبحث في salesPageId الحالي أو originalSalesPageId (للأرقام المحولة)
+      where.OR = [
+        { salesPageId: salesPageId },
+        { originalSalesPageId: salesPageId }
+      ]
     }
 
     // جلب العدد الكلي
@@ -57,19 +94,102 @@ export async function GET(request: NextRequest) {
         createdAt: 'desc'
       },
       skip,
-      take: limit
+      take: limit,
+      include: {
+        transferredToUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    // إخفاء الأرقام المحجوبة من المصدر (Backend) لحماية البيانات
+    const processedPhoneNumbers = phoneNumbers.map(number => {
+      // الأدمن يرى كل شيء
+      if (user.role === 'ADMIN') {
+        return number
+      }
+
+      // إذا تم التواصل → غير محجوب
+      if (number.isContacted) {
+        return number
+      }
+
+      // إذا كان محولاً
+      if (number.isTransferred) {
+        const isCurrentRecipient = number.transferredToUserId === user.id
+        const isOriginalOwner = user.salesPages && user.salesPages.includes(number.originalSalesPageId || number.salesPageId)
+        
+        // إذا انتهى الوقت
+        if (number.isExpired) {
+          // المحول إليه الحالي → يرى الرقم واضحاً
+          if (isCurrentRecipient) {
+            return number
+          }
+          // أي شخص آخر (المالك الأصلي أو المحول السابق) → مخفي
+          return {
+            ...number,
+            phoneNumber: '****** (تم سحب الرقم)',
+            isBlocked: true
+          }
+        }
+
+        // إذا لم ينتهي الوقت بعد
+        if (number.deadlineAt && !number.isExpired) {
+          // المحول إليه الحالي → يرى واضحاً
+          if (isCurrentRecipient) {
+            return number
+          }
+          // المالك الأصلي → يرى واضحاً (لديه فرصة لاستعادته عند انتهاء الوقت)
+          if (isOriginalOwner) {
+            return number
+          }
+          // أي شخص آخر (محول سابق) → مخفي
+          return {
+            ...number,
+            phoneNumber: '****** (محول لشخص آخر)',
+            isBlocked: true
+          }
+        }
+
+        // تحويل بدون مؤقت (فوري)
+        if (!number.deadlineAt) {
+          // المحول إليه → يرى واضحاً
+          if (isCurrentRecipient) {
+            return number
+          }
+          // أي شخص آخر → مخفي
+          return {
+            ...number,
+            phoneNumber: '****** (محول)',
+            isBlocked: true
+          }
+        }
+      }
+
+      // غير محجوب
+      return number
     })
 
     // إحصائيات إضافية
-    const statsWhere: any = { isArchived: false }
-    
+    const statsWhere: any = {
+      isArchived: false,
+      // استثناء الأرقام المحولة (المنتهية) لتجنب الحساب المزدوج
+      NOT: {
+        isExpired: true
+      }
+    }
+
     // فلترة الإحصائيات حسب صلاحيات المستخدم
     if (user.role !== 'ADMIN' && user.salesPages && user.salesPages.length > 0) {
       statsWhere.salesPageId = {
         in: user.salesPages
       }
     }
-    
+
     const stats = await db.phoneNumber.groupBy({
       by: ['salesPageId'],
       where: statsWhere,
@@ -83,16 +203,29 @@ export async function GET(request: NextRequest) {
       return acc
     }, {})
 
+    // حساب عدد الأرقام المحولة (للأدمن فقط)
+    let transferredCount = 0
+    if (user.role === 'ADMIN') {
+      transferredCount = await db.phoneNumber.count({
+        where: {
+          isArchived: false,
+          isExpired: true,
+          isTransferred: true
+        }
+      })
+    }
+
     return NextResponse.json({
       success: true,
-      data: phoneNumbers,
+      data: processedPhoneNumbers,
       pagination: {
         page,
         limit,
         totalCount,
         totalPages: Math.ceil(totalCount / limit)
       },
-      stats: statsBySalesPage
+      stats: statsBySalesPage,
+      transferredCount: transferredCount
     })
 
   } catch (error) {
@@ -139,7 +272,11 @@ export async function PATCH(request: NextRequest) {
     // التحقق من صلاحية المستخدم لتعديل هذا الرقم
     const phoneNumber = await db.phoneNumber.findUnique({
       where: { id },
-      select: { salesPageId: true }
+      select: {
+        salesPageId: true,
+        isTransferred: true,
+        transferredToUserId: true
+      }
     })
 
     if (!phoneNumber) {
@@ -150,9 +287,14 @@ export async function PATCH(request: NextRequest) {
     }
 
     // ADMIN له صلاحية كاملة على كل الأرقام
-    // المستخدم العادي يمكنه فقط تعديل أرقام صفحاته
+    // المستخدم العادي يمكنه تعديل:
+    // 1. أرقام صفحاته
+    // 2. أرقام محولة إليه
     if (user.role !== 'ADMIN') {
-      if (user.salesPages && !user.salesPages.includes(phoneNumber.salesPageId)) {
+      const hasAccessToPage = user.salesPages && user.salesPages.includes(phoneNumber.salesPageId)
+      const isTransferredToUser = phoneNumber.isTransferred && phoneNumber.transferredToUserId === user.id
+
+      if (!hasAccessToPage && !isTransferredToUser) {
         return NextResponse.json(
           { success: false, message: 'غير مسموح بتعديل هذا الرقم' },
           { status: 403 }
@@ -170,6 +312,15 @@ export async function PATCH(request: NextRequest) {
       // إذا تم التواصل، نضيف التاريخ
       if (isContacted) {
         updateData.contactedAt = new Date()
+
+        // حذف المؤقت فقط - الرقم يبقى عند من تواصل
+        // لا نلغي التحويل - من يتواصل أولاً يحتفظ بالرقم
+        updateData.deadlineAt = null
+        updateData.deadlineHours = null
+        updateData.deadlineMinutes = null
+        updateData.deadlineSeconds = null
+        updateData.isExpired = false
+        updateData.expiredAt = null
       }
     }
 
@@ -180,7 +331,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: isArchived !== undefined 
+      message: isArchived !== undefined
         ? (isArchived ? 'تم الأرشفة بنجاح' : 'تم الاستعادة بنجاح')
         : 'تم التحديث بنجاح',
       data: updated
