@@ -1131,10 +1131,27 @@ export default function PhoneNumbersPage() {
                             className="hidden"
                           />
                           {item.conversationImage && (
-                            <a
-                              href={item.conversationImage}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={() => {
+                                const imageUrl = item.conversationImage || ''
+                                const win = window.open('')
+                                if (win) {
+                                  win.document.write(`
+                                    <html dir="rtl">
+                                      <head>
+                                        <title>صورة المحادثة</title>
+                                        <style>
+                                          body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #000; }
+                                          img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+                                        </style>
+                                      </head>
+                                      <body>
+                                        <img src="${imageUrl}" alt="صورة المحادثة" />
+                                      </body>
+                                    </html>
+                                  `)
+                                }
+                              }}
                               className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1142,7 +1159,7 @@ export default function PhoneNumbersPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                               </svg>
                               عرض
-                            </a>
+                            </button>
                           )}
                         </div>
                       </div>
@@ -1480,10 +1497,27 @@ export default function PhoneNumbersPage() {
                                 className="hidden"
                               />
                               {item.conversationImage && (
-                                <a
-                                  href={item.conversationImage}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <button
+                                  onClick={() => {
+                                    const imageUrl = item.conversationImage || ''
+                                    const win = window.open('')
+                                    if (win) {
+                                      win.document.write(`
+                                        <html dir="rtl">
+                                          <head>
+                                            <title>صورة المحادثة</title>
+                                            <style>
+                                              body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #000; }
+                                              img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+                                            </style>
+                                          </head>
+                                          <body>
+                                            <img src="${imageUrl}" alt="صورة المحادثة" />
+                                          </body>
+                                        </html>
+                                      `)
+                                    }
+                                  }}
                                   className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 transition-all"
                                   title="عرض الصورة"
                                 >
@@ -1492,7 +1526,7 @@ export default function PhoneNumbersPage() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                   </svg>
                                   عرض
-                                </a>
+                                </button>
                               )}
                             </div>
                           </div>

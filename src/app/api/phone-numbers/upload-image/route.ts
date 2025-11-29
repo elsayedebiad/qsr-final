@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
 import { db } from '@/lib/db'
 import { verifyAuth } from '@/lib/auth'
 
@@ -42,30 +39,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // تحويل الملف إلى buffer
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-
-    // إنشاء مجلد uploads/conversations إذا لم يكن موجوداً
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'conversations')
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
+    // التحقق من حجم الملف (أقل من 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json(
+        { success: false, message: 'حجم الصورة يجب أن يكون أقل من 5 ميجابايت' },
+        { status: 400 }
+      )
     }
 
-    // إنشاء اسم ملف فريد
-    const timestamp = Date.now()
-    const randomString = Math.random().toString(36).substring(2, 8)
-    const extension = file.name.split('.').pop()
-    const filename = `${timestamp}_${randomString}.${extension}`
+    // تحويل الملف إلى base64
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+    const base64 = buffer.toString('base64')
+    const mimeType = file.type
     
-    // حفظ الملف
-    const filePath = join(uploadsDir, filename)
-    await writeFile(filePath, buffer)
-    
-    // إرجاع رابط الصورة
-    const imageUrl = `/uploads/conversations/${filename}`
+    // إنشاء data URL للصورة
+    const imageUrl = `data:${mimeType};base64,${base64}`
 
-    // تحديث قاعدة البيانات
+    // تحديث قاعدة البيانات بالصورة base64
     await db.phoneNumber.update({
       where: { id: parseInt(phoneNumberId) },
       data: { conversationImage: imageUrl }
