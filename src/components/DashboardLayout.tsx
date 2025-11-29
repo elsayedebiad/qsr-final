@@ -143,7 +143,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       }
     }
 
-    localStorage.removeItem('token')
+    localStorage.removeItem('token'
+    )
     localStorage.removeItem('user')
     localStorage.removeItem('sessionId')
     toast.success('تم تسجيل الخروج بنجاح')
@@ -167,7 +168,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const root = document.documentElement
     root.classList.add('theme-transitioning')
 
-    // تطبيق الثيم الجديد بعد 150ms للسماح بالـ overlay
+    // تطبيق الثيم الجديد بعد 80ms للسماح بالـ overlay (مُحسّن)
     setTimeout(() => {
       setTheme(newTheme)
 
@@ -184,19 +185,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       }
 
       localStorage.setItem('theme', newTheme)
-    }, 150)
+    }, 80)
 
-    // إزالة الـ overlay والـ transitioning class بعد انتهاء الأنيميشن
+    // إزالة الـ overlay والـ transitioning class بعد انتهاء الأنيميشن (مُحسّن)
     setTimeout(() => {
       overlay.classList.remove('active')
       setTimeout(() => {
-        document.body.removeChild(overlay)
-      }, 500)
-    }, 300)
+        if (document.body.contains(overlay)) {
+          document.body.removeChild(overlay)
+        }
+      }, 250)
+    }, 150)
 
     setTimeout(() => {
       root.classList.remove('theme-transitioning')
-    }, 800)
+    }, 450)
   }
 
   if (!isMounted || isLoading) {
