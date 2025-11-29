@@ -77,6 +77,7 @@ export default function PhoneNumbersPage() {
   const [contactFilter, setContactFilter] = useState<'all' | 'contacted' | 'not-contacted'>('all')
   const [transferredCount, setTransferredCount] = useState(0)
   const [withdrawnCount, setWithdrawnCount] = useState(0)
+  const [archivedCount, setArchivedCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   
   // States للإضافة اليدوية وتعديل الاسم
@@ -439,6 +440,7 @@ export default function PhoneNumbersPage() {
         setTotalPages(data.pagination.totalPages)
         setTransferredCount(data.transferredCount || 0)
         setWithdrawnCount(data.withdrawnCount || 0)
+        setArchivedCount(data.archivedCount || 0)
       } else {
         toast.error(data.message || 'حدث خطأ أثناء جلب البيانات')
       }
@@ -754,6 +756,20 @@ export default function PhoneNumbersPage() {
             </div>
           )}
 
+          {/* المؤرشفة */}
+          <div
+            className="card hover-lift rounded-lg p-4 shadow-sm border-2 border-gray-500/50 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 animate-fade-in cursor-pointer"
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            <div className="text-sm text-gray-700 dark:text-gray-400 mb-1 flex items-center gap-1">
+              <Archive className="w-4 h-4" />
+              المؤرشفة
+            </div>
+            <div className="text-2xl font-bold text-gray-600 dark:text-gray-500">
+              {archivedCount}
+            </div>
+          </div>
+
           {salesPages.slice(1)
             .filter(page => !userSalesPages || userSalesPages.includes(page.id))
             .map(page => (
@@ -863,7 +879,7 @@ export default function PhoneNumbersPage() {
             <div className="flex flex-wrap items-end gap-2">
               <button
                 onClick={() => setShowArchived(!showArchived)}
-                className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift ${showArchived
+                className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift relative ${showArchived
                   ? 'btn-secondary'
                   : 'bg-muted text-muted-foreground hover:bg-accent'
                   }`}
@@ -871,6 +887,11 @@ export default function PhoneNumbersPage() {
                 <Archive className="w-4 md:w-5 h-4 md:h-5" />
                 <span className="hidden sm:inline">{showArchived ? 'إخفاء المؤرشفة' : 'عرض المؤرشفة'}</span>
                 <span className="sm:hidden">{showArchived ? 'مؤرشفة' : 'أرشيف'}</span>
+                {archivedCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-gray-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {archivedCount}
+                  </span>
+                )}
               </button>
 
               {isAdmin && (
@@ -882,7 +903,7 @@ export default function PhoneNumbersPage() {
                     }
                     setPage(1)
                   }}
-                  className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift ${showExpired
+                  className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift relative ${showExpired
                     ? 'bg-red-600 text-white'
                     : 'bg-muted text-muted-foreground hover:bg-accent'
                     }`}
@@ -890,6 +911,11 @@ export default function PhoneNumbersPage() {
                   <AlertCircle className="w-4 md:w-5 h-4 md:h-5" />
                   <span className="hidden sm:inline">{showExpired ? 'إخفاء المحولة' : 'عرض المحولة'}</span>
                   <span className="sm:hidden">{showExpired ? 'محولة' : 'محولة'}</span>
+                  {transferredCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {transferredCount}
+                    </span>
+                  )}
                 </button>
               )}
 

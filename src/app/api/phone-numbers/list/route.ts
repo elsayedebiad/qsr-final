@@ -326,6 +326,28 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // حساب عدد الأرقام المؤرشفة
+    let archivedCount = 0
+    const archivedWhere: any = {
+      isArchived: true
+    }
+    
+    // إضافة فلتر الصفحة إذا كان محدداً
+    if (salesPageId && salesPageId !== 'ALL') {
+      archivedWhere.AND = [
+        {
+          OR: [
+            { salesPageId: salesPageId },
+            { originalSalesPageId: salesPageId }
+          ]
+        }
+      ]
+    }
+    
+    archivedCount = await db.phoneNumber.count({
+      where: archivedWhere
+    })
+
     return NextResponse.json({
       success: true,
       data: processedPhoneNumbers,
@@ -337,7 +359,8 @@ export async function GET(request: NextRequest) {
       },
       stats: statsBySalesPage,
       transferredCount: transferredCount,
-      withdrawnCount: withdrawnCount
+      withdrawnCount: withdrawnCount,
+      archivedCount: archivedCount
     })
 
   } catch (error) {
