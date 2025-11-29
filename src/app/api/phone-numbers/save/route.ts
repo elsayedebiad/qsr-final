@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+// استيراد الإعدادات العامة من ملف الإعدادات
+let globalSettings = {
+  autoTimerEnabled: true
+}
+
+// دالة لتحديث الإعدادات (تستخدم من API settings)
+export function updateGlobalSettings(settings: any) {
+  globalSettings = { ...globalSettings, ...settings }
+}
+
+// دالة للحصول على الإعدادات
+export function getGlobalSettings() {
+  return globalSettings
+}
+
 // تحويل كود الدولة إلى اسم الدولة بالعربية
 function getCountryNameFromCode(code: string): string {
   const countries: { [key: string]: string } = {
@@ -140,29 +155,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // حساب موعد انتهاء المؤقت (6 ساعات من الآن)
-    const deadlineAt = new Date()
-    deadlineAt.setHours(deadlineAt.getHours() + 6)
+    // جلب الإعدادات لمعرفة حالة المؤقت التلقائي
+    const settings = getGlobalSettings()
+    const autoTimerEnabled = settings.autoTimerEnabled
+    
+    // إعداد بيانات الرقم
+    const phoneData: any = {
+      phoneNumber,
+      salesPageId,
+      source,
+      ipAddress,
+      userAgent,
+      deviceType,
+      country,
+      city,
+      notes
+    }
+    
+    // إضافة مؤقت تلقائي 6 ساعات إذا كان مفعلاً
+    if (autoTimerEnabled) {
+      const deadlineAt = new Date()
+      deadlineAt.setHours(deadlineAt.getHours() + 6)
+      
+      phoneData.deadlineHours = 6
+      phoneData.deadlineMinutes = 0
+      phoneData.deadlineSeconds = 0
+      phoneData.deadlineAt = deadlineAt
+      phoneData.isExpired = false
+    }
 
     // حفظ رقم الهاتف في قاعدة البيانات
     const phoneNumberRecord = await db.phoneNumber.create({
-      data: {
-        phoneNumber,
-        salesPageId,
-        source,
-        ipAddress,
-        userAgent,
-        deviceType,
-        country,
-        city,
-        notes,
-        // إضافة مؤقت تلقائي 6 ساعات
-        deadlineHours: 6,
-        deadlineMinutes: 0,
-        deadlineSeconds: 0,
-        deadlineAt: deadlineAt,
-        isExpired: false
-      }
+      data: phoneData
     })
 
     console.log('✅ Phone number saved:', {

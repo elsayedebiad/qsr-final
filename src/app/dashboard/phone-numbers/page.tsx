@@ -79,6 +79,7 @@ export default function PhoneNumbersPage() {
   const [withdrawnCount, setWithdrawnCount] = useState(0)
   const [archivedCount, setArchivedCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
+  const [autoTimerEnabled, setAutoTimerEnabled] = useState(true)
   
   // States للإضافة اليدوية وتعديل الاسم
   const [showAddManualModal, setShowAddManualModal] = useState(false)
@@ -146,8 +147,47 @@ export default function PhoneNumbersPage() {
   useEffect(() => {
     if (isAdmin) {
       fetchUsers()
+      fetchSettings()
     }
   }, [isAdmin])
+  
+  // جلب الإعدادات
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch('/api/settings')
+      const data = await response.json()
+      if (data.success) {
+        setAutoTimerEnabled(data.settings.autoTimerEnabled)
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error)
+    }
+  }
+  
+  // تحديث المؤقت التلقائي
+  const toggleAutoTimer = async () => {
+    try {
+      const newValue = !autoTimerEnabled
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ autoTimerEnabled: newValue })
+      })
+      
+      const data = await response.json()
+      if (data.success) {
+        setAutoTimerEnabled(newValue)
+        toast.success(newValue ? 'تم تفعيل المؤقت التلقائي 6 ساعات' : 'تم إيقاف المؤقت التلقائي')
+      } else {
+        toast.error(data.message || 'حدث خطأ')
+      }
+    } catch (error) {
+      console.error('Error toggling auto timer:', error)
+      toast.error('حدث خطأ أثناء تحديث الإعدادات')
+    }
+  }
 
   // Auto refresh every 30 seconds - لكن ليس أثناء البحث
   useEffect(() => {
@@ -951,6 +991,23 @@ export default function PhoneNumbersPage() {
                 <RefreshCw className="w-4 md:w-5 h-4 md:h-5" />
                 <span className="hidden sm:inline">تحديث</span>
               </button>
+              
+              {isAdmin && (
+                <button
+                  onClick={toggleAutoTimer}
+                  className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift ${autoTimerEnabled
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-600 text-white'
+                    }`}
+                  title={autoTimerEnabled ? 'المؤقت التلقائي 6 ساعات مفعل' : 'المؤقت التلقائي 6 ساعات معطل'}
+                >
+                  <svg className="w-4 md:w-5 h-4 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="hidden sm:inline">{autoTimerEnabled ? 'مؤقت 6 ساعات: مفعل' : 'مؤقت 6 ساعات: معطل'}</span>
+                  <span className="sm:hidden">{autoTimerEnabled ? '6س✓' : '6س✗'}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
