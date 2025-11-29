@@ -140,6 +140,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // حساب موعد انتهاء المؤقت (6 ساعات من الآن)
+    const deadlineAt = new Date()
+    deadlineAt.setHours(deadlineAt.getHours() + 6)
+
     // حفظ رقم الهاتف في قاعدة البيانات
     const phoneNumberRecord = await db.phoneNumber.create({
       data: {
@@ -151,7 +155,13 @@ export async function POST(request: NextRequest) {
         deviceType,
         country,
         city,
-        notes
+        notes,
+        // إضافة مؤقت تلقائي 6 ساعات
+        deadlineHours: 6,
+        deadlineMinutes: 0,
+        deadlineSeconds: 0,
+        deadlineAt: deadlineAt,
+        isExpired: false
       }
     })
 

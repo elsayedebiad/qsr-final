@@ -8,20 +8,34 @@ import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
-    // العثور على جميع الأرقام المحولة وغير المنتهية وعندها deadline
     const now = new Date()
 
-    const expiredNumbers = await db.phoneNumber.findMany({
+    // 1. العثور على الأرقام المحولة التي انتهى وقتها
+    const expiredTransferredNumbers = await db.phoneNumber.findMany({
       where: {
         isTransferred: true,
         isExpired: false,
         deadlineAt: {
-          lte: now // انتهى الوقت المحدد
+          lte: now
         }
       }
     })
 
-    if (expiredNumbers.length === 0) {
+    // 2. العثور على الأرقام غير المحولة (أرقام جديدة) التي انتهى وقتها ولم يتم التواصل معها
+    const expiredNewNumbers = await db.phoneNumber.findMany({
+      where: {
+        isTransferred: false,
+        isExpired: false,
+        isContacted: false,
+        deadlineAt: {
+          lte: now
+        }
+      }
+    })
+
+    const totalExpired = expiredTransferredNumbers.length + expiredNewNumbers.length
+
+    if (totalExpired === 0) {
       return NextResponse.json({
         success: true,
         message: 'لا توجد أرقام منتهية',
@@ -29,31 +43,46 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // تحديث الأرقام المنتهية
-    const updateResult = await db.phoneNumber.updateMany({
-      where: {
-        id: {
-          in: expiredNumbers.map(n => n.id)
+    // تحديث الأرقام المحولة المنتهية
+    if (expiredTransferredNumbers.length > 0) {
+      await db.phoneNumber.updateMany({
+        where: {
+          id: {
+            in: expiredTransferredNumbers.map(n => n.id)
+          }
+        },
+        data: {
+          isExpired: true,
+          expiredAt: now
         }
-      },
-      data: {
-        isExpired: true,
-        expiredAt: now
-      }
-    })
+      })
+    }
 
-    console.log(`✅ تم تحديث ${updateResult.count} رقم منتهي`)
+    // سحب الأرقام الجديدة المنتهية (إعادتها للأدمن)
+    if (expiredNewNumbers.length > 0) {
+      await db.phoneNumber.updateMany({
+        where: {
+          id: {
+            in: expiredNewNumbers.map(n => n.id)
+          }
+        },
+        data: {
+          isExpired: true,
+          expiredAt: now,
+          // سحب الرقم - الأدمن فقط يراه الآن
+          isArchived: false // التأكد من عدم أرشفته
+        }
+      })
+    }
+
+    console.log(`✅ تم تحديث ${totalExpired} رقم منتهي (${expiredTransferredNumbers.length} محول، ${expiredNewNumbers.length} جديد)`)
 
     return NextResponse.json({
       success: true,
-      message: `تم تحديث ${updateResult.count} رقم منتهي`,
-      count: updateResult.count,
-      expiredNumbers: expiredNumbers.map(n => ({
-        id: n.id,
-        phoneNumber: n.phoneNumber,
-        transferredToUserId: n.transferredToUserId,
-        deadlineAt: n.deadlineAt
-      }))
+      message: `تم تحديث ${totalExpired} رقم منتهي`,
+      count: totalExpired,
+      expiredTransferred: expiredTransferredNumbers.length,
+      expiredNew: expiredNewNumbers.length
     })
 
   } catch (error) {

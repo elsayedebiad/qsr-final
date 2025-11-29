@@ -10,6 +10,7 @@ import CountdownTimer from '@/components/CountdownTimer'
 
 interface PhoneNumberData {
   id: number
+  name: string
   phoneNumber: string
   salesPageId: string
   source?: string
@@ -19,6 +20,7 @@ interface PhoneNumberData {
   country?: string
   city?: string
   notes?: string
+  conversationImage?: string
   isArchived: boolean
   isContacted: boolean
   contactedAt?: string
@@ -71,8 +73,28 @@ export default function PhoneNumbersPage() {
   const [deadlineMinutes, setDeadlineMinutes] = useState('0')
   const [deadlineSeconds, setDeadlineSeconds] = useState('0')
   const [showExpired, setShowExpired] = useState(false)
+  const [showWithdrawn, setShowWithdrawn] = useState(false)
   const [contactFilter, setContactFilter] = useState<'all' | 'contacted' | 'not-contacted'>('all')
   const [transferredCount, setTransferredCount] = useState(0)
+  const [withdrawnCount, setWithdrawnCount] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
+  
+  // States للإضافة اليدوية وتعديل الاسم
+  const [showAddManualModal, setShowAddManualModal] = useState(false)
+  const [showEditNameModal, setShowEditNameModal] = useState(false)
+  const [editingNumberId, setEditingNumberId] = useState<number | null>(null)
+  const [editingName, setEditingName] = useState('')
+  const [manualPhoneData, setManualPhoneData] = useState({
+    name: 'عميل بوب اب',
+    phoneNumber: '',
+    salesPageId: 'sales1',
+    source: 'يدوي',
+    country: '',
+    city: '',
+    deviceType: 'MOBILE',
+    notes: '',
+    addTimer: true
+  })
 
   // حماية الصفحة: ADMIN له وصول كامل، SALES يصل لصفحاته فقط
   if (user && user.role !== 'ADMIN') {
@@ -111,15 +133,34 @@ export default function PhoneNumbersPage() {
     { id: 'transfer-services', name: 'نقل الخدمات' }
   ]
 
+  // Debounce للبحث - ينتظر 500ms بعد التوقف عن الكتابة
   useEffect(() => {
-    fetchPhoneNumbers()
-  }, [selectedSalesPage, showArchived, page, showExpired, contactFilter])
+    const timer = setTimeout(() => {
+      fetchPhoneNumbers()
+    }, searchQuery ? 500 : 0) // فوري إذا لم يكن هناك بحث، 500ms إذا يوجد بحث
+
+    return () => clearTimeout(timer)
+  }, [selectedSalesPage, showArchived, page, showExpired, showWithdrawn, contactFilter, searchQuery])
 
   useEffect(() => {
     if (isAdmin) {
       fetchUsers()
     }
   }, [isAdmin])
+
+  // Auto refresh every 30 seconds - لكن ليس أثناء البحث
+  useEffect(() => {
+    // تعطيل auto-refresh أثناء البحث النشط
+    if (searchQuery.trim()) {
+      return
+    }
+    
+    const interval = setInterval(() => {
+      fetchPhoneNumbers()
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [selectedSalesPage, showArchived, page, showExpired, showWithdrawn, contactFilter, searchQuery])
 
   // تم نقل فحص الأرقام المنتهية إلى GlobalNotifications component
 
@@ -258,6 +299,118 @@ export default function PhoneNumbersPage() {
     }
   }
 
+  const handleWithdrawNumber = async (id: number) => {
+    if (!confirm('هل تريد سحب هذا الرقم؟ سيظهر الرقم محجوب لممثل المبيعات مثل الأرقام المنتهية.')) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/phone-numbers/withdraw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast.success('تم سحب الرقم بنجاح')
+        fetchPhoneNumbers()
+      } else {
+        toast.error(data.message || 'حدث خطأ أثناء سحب الرقم')
+      }
+    } catch (error) {
+      console.error('Error withdrawing number:', error)
+      toast.error('حدث خطأ أثناء سحب الرقم')
+    }
+  }
+
+  const handleAddManualNumber = async () => {
+    if (!manualPhoneData.phoneNumber || !manualPhoneData.salesPageId) {
+      toast.error('الرجاء إدخال رقم الهاتف وصفحة المبيعات')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/phone-numbers/add-manual', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(manualPhoneData)
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast.success('تم إضافة الرقم بنجاح')
+        setShowAddManualModal(false)
+        setManualPhoneData({
+          name: 'عميل بوب اب',
+          phoneNumber: '',
+          salesPageId: 'sales1',
+          source: 'يدوي',
+          country: '',
+          city: '',
+          deviceType: 'MOBILE',
+          notes: '',
+          addTimer: true
+        })
+        fetchPhoneNumbers()
+      } else {
+        toast.error(data.message || 'حدث خطأ أثناء إضافة الرقم')
+      }
+    } catch (error) {
+      console.error('Error adding manual number:', error)
+      toast.error('حدث خطأ أثناء إضافة الرقم')
+    }
+  }
+
+  const handleEditName = (id: number, currentName: string) => {
+    setEditingNumberId(id)
+    setEditingName(currentName)
+    setShowEditNameModal(true)
+  }
+
+  const handleSaveName = async () => {
+    if (!editingNumberId || !editingName.trim()) {
+      toast.error('الرجاء إدخال اسم صحيح')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/phone-numbers/list`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: editingNumberId,
+          name: editingName
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast.success('تم تحديث الاسم بنجاح')
+        setShowEditNameModal(false)
+        setEditingNumberId(null)
+        setEditingName('')
+        fetchPhoneNumbers()
+      } else {
+        toast.error(data.message || 'حدث خطأ أثناء تحديث الاسم')
+      }
+    } catch (error) {
+      console.error('Error updating name:', error)
+      toast.error('حدث خطأ أثناء تحديث الاسم')
+    }
+  }
+
   const isNumberTransferredToMe = (item: PhoneNumberData): boolean => {
     // الرقم محول لي
     return item.isTransferred === true && item.transferredToUserId === user?.id
@@ -270,9 +423,11 @@ export default function PhoneNumbersPage() {
         salesPageId: selectedSalesPage,
         isArchived: showArchived.toString(),
         showExpired: showExpired.toString(),
+        showWithdrawn: showWithdrawn.toString(),
         contactFilter: contactFilter,
         page: page.toString(),
-        limit: '50'
+        limit: '50',
+        search: searchQuery.trim()
       })
 
       const response = await fetch(`/api/phone-numbers/list?${params}`)
@@ -283,6 +438,7 @@ export default function PhoneNumbersPage() {
         setStats(data.stats || {})
         setTotalPages(data.pagination.totalPages)
         setTransferredCount(data.transferredCount || 0)
+        setWithdrawnCount(data.withdrawnCount || 0)
       } else {
         toast.error(data.message || 'حدث خطأ أثناء جلب البيانات')
       }
@@ -347,24 +503,125 @@ export default function PhoneNumbersPage() {
     }
   }
 
-  const exportToExcel = () => {
-    const exportData = phoneNumbers.map(item => ({
-      'رقم الهاتف': formatPhoneNumber(item.phoneNumber),
-      'الصفحة': item.salesPageId,
-      'المصدر': item.source || '-',
-      'الموقع': item.city || item.country || '-',
-      'الجهاز': item.deviceType || '-',
-      'التاريخ': formatDate(item.createdAt)
-    }))
+  const handleNotesChange = (id: number, notes: string) => {
+    setPhoneNumbers(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, notes } : item
+      )
+    )
+  }
 
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'أرقام الهواتف')
+  const saveNotes = async (id: number) => {
+    const phoneNumber = phoneNumbers.find(item => item.id === id)
+    if (!phoneNumber) return
 
-    const fileName = `phone-numbers-${selectedSalesPage}-${new Date().toISOString().split('T')[0]}.xlsx`
-    XLSX.writeFile(wb, fileName)
+    try {
+      const response = await fetch('/api/phone-numbers/list', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id, notes: phoneNumber.notes })
+      })
 
-    toast.success('تم تصدير البيانات بنجاح')
+      const data = await response.json()
+
+      if (data.success) {
+        toast.success('تم حفظ الملاحظة بنجاح')
+      } else {
+        toast.error(data.message || 'حدث خطأ أثناء حفظ الملاحظة')
+      }
+    } catch (error) {
+      console.error('Error saving notes:', error)
+      toast.error('حدث خطأ أثناء حفظ الملاحظة')
+    }
+  }
+
+  const handleImageUpload = async (id: number, file: File) => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('phoneNumberId', id.toString())
+
+      toast.loading('جاري رفع الصورة...')
+
+      const response = await fetch('/api/phone-numbers/upload-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+
+      toast.dismiss()
+
+      if (data.success) {
+        setPhoneNumbers(prev =>
+          prev.map(item =>
+            item.id === id ? { ...item, conversationImage: data.imageUrl } : item
+          )
+        )
+        toast.success('تم رفع الصورة بنجاح')
+      } else {
+        toast.error(data.message || 'حدث خطأ أثناء رفع الصورة')
+      }
+    } catch (error) {
+      toast.dismiss()
+      console.error('Error uploading image:', error)
+      toast.error('حدث خطأ أثناء رفع الصورة')
+    }
+  }
+
+  const exportToExcel = async () => {
+    try {
+      toast.loading('جاري تحميل جميع البيانات...')
+      
+      // جلب جميع البيانات بدون pagination
+      const params = new URLSearchParams({
+        salesPageId: selectedSalesPage,
+        isArchived: showArchived.toString(),
+        showExpired: showExpired.toString(),
+        showWithdrawn: showWithdrawn.toString(),
+        contactFilter: contactFilter,
+        search: searchQuery,
+        page: '1',
+        limit: '999999' // رقم كبير لجلب جميع البيانات
+      })
+
+      const response = await fetch(`/api/phone-numbers/list?${params}`)
+      const data = await response.json()
+
+      if (!data.success) {
+        toast.error(data.message || 'حدث خطأ أثناء جلب البيانات')
+        return
+      }
+
+      const allPhoneNumbers = data.data
+
+      const exportData = allPhoneNumbers.map((item: PhoneNumberData) => ({
+        'الاسم': item.name || 'عميل بوب اب',
+        'رقم الهاتف': formatPhoneNumber(item.phoneNumber),
+        'الصفحة': item.salesPageId,
+        'المصدر': item.source || '-',
+        'الموقع': item.city || item.country || '-',
+        'الجهاز': item.deviceType || '-',
+        'التاريخ': formatDate(item.createdAt),
+        'الملاحظات': item.notes || '-'
+      }))
+
+      const ws = XLSX.utils.json_to_sheet(exportData)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'أرقام الهواتف')
+
+      const fileName = `phone-numbers-${selectedSalesPage}-${new Date().toISOString().split('T')[0]}.xlsx`
+      XLSX.writeFile(wb, fileName)
+
+      toast.dismiss()
+      toast.success(`تم تصدير ${exportData.length} رقم بنجاح`)
+    } catch (error) {
+      toast.dismiss()
+      console.error('Error exporting to Excel:', error)
+      toast.error('حدث خطأ أثناء التصدير')
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -481,6 +738,22 @@ export default function PhoneNumbersPage() {
             </div>
           )}
 
+          {/* المسحوبة - للأدمن فقط */}
+          {isAdmin && (
+            <div
+              className="card hover-lift rounded-lg p-4 shadow-sm border-2 border-orange-500/50 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 animate-fade-in cursor-pointer"
+              onClick={() => setShowWithdrawn(!showWithdrawn)}
+            >
+              <div className="text-sm text-orange-700 dark:text-orange-400 mb-1 flex items-center gap-1">
+                <Ban className="w-4 h-4" />
+                المسحوبة
+              </div>
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-500">
+                {withdrawnCount}
+              </div>
+            </div>
+          )}
+
           {salesPages.slice(1)
             .filter(page => !userSalesPages || userSalesPages.includes(page.id))
             .map(page => (
@@ -495,6 +768,57 @@ export default function PhoneNumbersPage() {
         {/* Filters */}
         <div className="card rounded-xl p-4 shadow-sm border border-border">
           <div className="flex flex-wrap gap-4">
+            {/* Search Field */}
+            <div className="flex-1 min-w-[200px]">
+              <label className="form-label">
+                <svg className="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                بحث
+              </label>
+              <div className="space-y-2">
+                <div className="relative">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    {isLoading && searchQuery ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                    ) : (
+                      <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      setPage(1)
+                    }}
+                    placeholder="ابحث برقم الهاتف أو الاسم..."
+                    className="form-input pr-10 pl-10"
+                    dir="auto"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('')
+                        setPage(1)
+                      }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-full transition-colors"
+                      title="مسح البحث"
+                    >
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+                {searchQuery && !isLoading && (
+                  <div className="text-xs text-muted-foreground">
+                    {phoneNumbers.length} نتيجة للبحث "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="flex-1 min-w-[200px]">
               <label className="form-label">
                 <Filter className="w-4 h-4 inline-block mr-2" />
@@ -536,37 +860,53 @@ export default function PhoneNumbersPage() {
               </select>
             </div>
 
-            <div className="flex items-end gap-2">
+            <div className="flex flex-wrap items-end gap-2">
               <button
                 onClick={() => setShowArchived(!showArchived)}
-                className={`btn px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 hover-lift ${showArchived
+                className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift ${showArchived
                   ? 'btn-secondary'
                   : 'bg-muted text-muted-foreground hover:bg-accent'
                   }`}
               >
-                <Archive className="w-5 h-5" />
-                {showArchived ? 'إخفاء المؤرشفة' : 'عرض المؤرشفة'}
+                <Archive className="w-4 md:w-5 h-4 md:h-5" />
+                <span className="hidden sm:inline">{showArchived ? 'إخفاء المؤرشفة' : 'عرض المؤرشفة'}</span>
+                <span className="sm:hidden">{showArchived ? 'مؤرشفة' : 'أرشيف'}</span>
               </button>
 
               {isAdmin && (
                 <button
                   onClick={() => setShowExpired(!showExpired)}
-                  className={`btn px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 hover-lift ${showExpired
+                  className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift ${showExpired
                     ? 'bg-red-600 text-white'
                     : 'bg-muted text-muted-foreground hover:bg-accent'
                     }`}
                 >
-                  <AlertCircle className="w-5 h-5" />
-                  {showExpired ? 'إخفاء المحولة' : 'عرض المحولة'}
+                  <AlertCircle className="w-4 md:w-5 h-4 md:h-5" />
+                  <span className="hidden sm:inline">{showExpired ? 'إخفاء المحولة' : 'عرض المحولة'}</span>
+                  <span className="sm:hidden">{showExpired ? 'محولة' : 'محولة'}</span>
+                </button>
+              )}
+
+              {isAdmin && (
+                <button
+                  onClick={() => setShowWithdrawn(!showWithdrawn)}
+                  className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift ${showWithdrawn
+                    ? 'bg-orange-600 text-white'
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                    }`}
+                >
+                  <Ban className="w-4 md:w-5 h-4 md:h-5" />
+                  <span className="hidden sm:inline">{showWithdrawn ? 'إخفاء المسحوبة' : 'عرض المسحوبة'}</span>
+                  <span className="sm:hidden">{showWithdrawn ? 'مسحوبة' : 'مسحوبة'}</span>
                 </button>
               )}
 
               <button
                 onClick={() => fetchPhoneNumbers()}
-                className="btn btn-primary hover-lift"
+                className="btn btn-primary hover-lift px-3 md:px-4 py-2 flex items-center gap-1 md:gap-2 text-sm md:text-base"
               >
-                <RefreshCw className="w-5 h-5" />
-                تحديث
+                <RefreshCw className="w-4 md:w-5 h-4 md:h-5" />
+                <span className="hidden sm:inline">تحديث</span>
               </button>
             </div>
           </div>
@@ -596,14 +936,27 @@ export default function PhoneNumbersPage() {
             )}
           </div>
 
-          <button
-            onClick={exportToExcel}
-            disabled={phoneNumbers.length === 0}
-            className="btn-gradient-success disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 hover-lift shadow-lg"
-          >
-            <Download className="w-5 h-5" />
-            <span>تصدير Excel</span>
-          </button>
+          <div className="flex gap-2">
+            {isAdmin && (
+              <button
+                onClick={() => setShowAddManualModal(true)}
+                className="btn-gradient-primary px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 hover-lift shadow-lg"
+              >
+                <Phone className="w-5 h-5" />
+                <span className="hidden sm:inline">إضافة رقم يدوياً</span>
+                <span className="sm:hidden">إضافة</span>
+              </button>
+            )}
+            <button
+              onClick={exportToExcel}
+              disabled={phoneNumbers.length === 0}
+              className="btn-gradient-success disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 hover-lift shadow-lg"
+            >
+              <Download className="w-5 h-5" />
+              <span className="hidden sm:inline">تصدير Excel</span>
+              <span className="sm:hidden">Excel</span>
+            </button>
+          </div>
         </div>
 
         {/* Table */}
@@ -616,11 +969,239 @@ export default function PhoneNumbersPage() {
           ) : phoneNumbers.length === 0 ? (
             <div className="text-center py-12">
               <Phone className="w-16 h-16 text-muted-foreground mx-auto mb-4 animate-float" />
-              <p className="text-foreground text-lg">لا توجد أرقام هواتف</p>
+              {searchQuery ? (
+                <>
+                  <p className="text-foreground text-lg mb-2">لا توجد نتائج للبحث</p>
+                  <p className="text-muted-foreground text-sm">جرب البحث بكلمات مختلفة</p>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="mt-4 btn-gradient-primary px-4 py-2 rounded-lg text-sm"
+                  >
+                    مسح البحث
+                  </button>
+                </>
+              ) : (
+                <p className="text-foreground text-lg">لا توجد أرقام هواتف</p>
+              )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table">
+            <>
+              {/* Mobile Card View - يظهر على الشاشات الصغيرة فقط */}
+              <div className="lg:hidden space-y-4">
+                {phoneNumbers.map((item) => {
+                  const isBlocked = isNumberBlocked(item)
+                  const isTransferred = isNumberTransferredToMe(item)
+                  
+                  return (
+                    <div
+                      key={item.id}
+                      className={`card p-4 rounded-lg border-2 ${
+                        isTransferred 
+                          ? 'border-green-500 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20'
+                          : 'border-border'
+                      }`}
+                    >
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div 
+                            className="flex items-center gap-2 mb-1 cursor-pointer hover:text-primary transition-colors" 
+                            onClick={() => handleEditName(item.id, item.name)}
+                          >
+                            <span className="font-semibold text-base text-muted-foreground">
+                              {item.name}
+                            </span>
+                            <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Phone className="w-4 h-4 text-primary" />
+                            <span className="font-bold text-lg" dir="ltr">
+                              {formatPhoneNumber(item.phoneNumber)}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {isTransferred && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                <Check className="w-3 h-3" />
+                                محول إليك
+                              </span>
+                            )}
+                            {item.isContacted && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                <MessageCircle className="w-3 h-3" />
+                                تم التواصل
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {isAdmin && (
+                          <input
+                            type="checkbox"
+                            checked={selectedNumbers.includes(item.id)}
+                            onChange={() => handleSelectNumber(item.id)}
+                            className="w-5 h-5 text-primary rounded"
+                            disabled={isBlocked || item.isContacted}
+                          />
+                        )}
+                      </div>
+
+                      {/* Timer */}
+                      {item.deadlineAt && !item.isExpired && (
+                        <div className="mb-3">
+                          <CountdownTimer
+                            deadlineAt={item.deadlineAt}
+                            onExpired={() => handleExpiredNumber(item.id)}
+                          />
+                        </div>
+                      )}
+
+                      {/* Info Grid */}
+                      <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+                        <div>
+                          <div className="text-muted-foreground text-xs mb-1">الصفحة</div>
+                          <span className="badge badge-primary text-xs">
+                            {item.originalSalesPageId || item.salesPageId}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground text-xs mb-1">الحالة</div>
+                          {item.isContacted ? (
+                            <span className="text-green-600 dark:text-green-400 text-xs font-medium">تم التواصل</span>
+                          ) : (
+                            <span className="text-gray-600 dark:text-gray-400 text-xs">لم يتم التواصل</span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground text-xs mb-1">الموقع</div>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span className="text-xs">{item.city || item.country || '-'}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground text-xs mb-1">الجهاز</div>
+                          <div className="flex items-center gap-1">
+                            {item.deviceType === 'MOBILE' ? (
+                              <Smartphone className="w-3 h-3" />
+                            ) : (
+                              <Monitor className="w-3 h-3" />
+                            )}
+                            <span className="text-xs">{item.deviceType === 'MOBILE' ? 'موبايل' : 'حاسوب'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Notes */}
+                      <div className="mb-3">
+                        <div className="text-muted-foreground text-xs mb-1">الملاحظات</div>
+                        <input
+                          type="text"
+                          value={item.notes || ''}
+                          onChange={(e) => handleNotesChange(item.id, e.target.value)}
+                          onBlur={() => saveNotes(item.id)}
+                          disabled={isBlocked}
+                          placeholder="أضف ملاحظة..."
+                          className="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed bg-background"
+                        />
+                        <div className="flex items-center gap-2 mt-2">
+                          <label
+                            htmlFor={`image-upload-mobile-${item.id}`}
+                            className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-md cursor-pointer transition-all ${
+                              isBlocked
+                                ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
+                                : 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
+                            }`}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {item.conversationImage ? 'تغيير' : 'رفع صورة'}
+                          </label>
+                          <input
+                            id={`image-upload-mobile-${item.id}`}
+                            type="file"
+                            accept="image/*"
+                            disabled={isBlocked}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleImageUpload(item.id, file)
+                            }}
+                            className="hidden"
+                          />
+                          {item.conversationImage && (
+                            <a
+                              href={item.conversationImage}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              عرض
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 pt-3 border-t border-border">
+                        <button
+                          onClick={() => openWhatsApp(item.phoneNumber, item.id)}
+                          disabled={isBlocked}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#25d366] text-white rounded-lg hover:bg-[#20bd5a] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.14 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                          </svg>
+                          واتساب
+                        </button>
+                        <button
+                          onClick={() => handleArchive(item.id, !item.isArchived)}
+                          className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                          title={item.isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}
+                        >
+                          <Archive className="w-5 h-5" />
+                        </button>
+                        {isAdmin && !item.isExpired && !item.isContacted && (
+                          <button
+                            onClick={() => handleWithdrawNumber(item.id)}
+                            className="p-2 text-muted-foreground hover:text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-all"
+                            title="سحب الرقم"
+                          >
+                            <Ban className="w-5 h-5" />
+                          </button>
+                        )}
+                        {isAdmin && item.isExpired && (
+                          <button
+                            onClick={() => handleReactivateNumber(item.id)}
+                            className="p-2 text-muted-foreground hover:text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-all"
+                            title="إعادة تفعيل"
+                          >
+                            <RefreshCw className="w-5 h-5" />
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
+                            title="حذف"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Desktop Table View - يظهر على الشاشات الكبيرة فقط */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="table">
                 <thead className="bg-muted border-b border-border">
                   <tr>
                     {isAdmin && (
@@ -633,6 +1214,9 @@ export default function PhoneNumbersPage() {
                         />
                       </th>
                     )}
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      الاسم
+                    </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       رقم الهاتف
                     </th>
@@ -650,6 +1234,9 @@ export default function PhoneNumbersPage() {
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       التاريخ
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      الملاحظات
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       الإجراءات
@@ -680,6 +1267,18 @@ export default function PhoneNumbersPage() {
                           </td>
                         )}
                         <td className="px-6 py-4 whitespace-nowrap">
+                          <div 
+                            className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors" 
+                            onClick={() => handleEditName(item.id, item.name)}
+                            title="اضغط لتعديل الاسم"
+                          >
+                            <span className="font-medium text-foreground">{item.name}</span>
+                            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <Phone className="w-4 h-4 text-muted-foreground" />
                             {isBlocked ? (
@@ -693,7 +1292,9 @@ export default function PhoneNumbersPage() {
                                       {item.phoneNumber}
                                     </span>
                                     <span className="text-xs font-medium text-red-600 dark:text-red-400">
-                                      تم السحب بسبب التأخير في الرد
+                                      {item.transferReason === 'سحب يدوي من الأدمن' 
+                                        ? 'تم سحب الرقم من الأدمن' 
+                                        : 'تم السحب بسبب التأخير في الرد'}
                                     </span>
                                   </div>
                                 </div>
@@ -735,8 +1336,8 @@ export default function PhoneNumbersPage() {
                             )}
                             {item.isExpired && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                <AlertCircle className="w-3 h-3" />
-                                محول
+                                <Ban className="w-3 h-3" />
+                                مسحوب
                               </span>
                             )}
                           </div>
@@ -752,7 +1353,11 @@ export default function PhoneNumbersPage() {
                             <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                               <AlertCircle className="w-3 h-3" />
                               <span>
-                                {item.isExpired ? 'تم سحب الرقم' : `تم حجب الرقم بسبب: ${item.transferReason || 'تأخير التواصل'}`}
+                                {item.isExpired 
+                                  ? (item.transferReason === 'سحب يدوي من الأدمن' 
+                                      ? 'تم سحب الرقم من الأدمن' 
+                                      : 'تم سحب الرقم بسبب انتهاء الوقت')
+                                  : `تم حجب الرقم بسبب: ${item.transferReason || 'تأخير التواصل'}`}
                               </span>
                             </p>
                           )}
@@ -836,6 +1441,62 @@ export default function PhoneNumbersPage() {
                             <span className="text-xs">{formatDate(item.createdAt)}</span>
                           </div>
                         </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-2">
+                            <input
+                              type="text"
+                              value={item.notes || ''}
+                              onChange={(e) => handleNotesChange(item.id, e.target.value)}
+                              onBlur={() => saveNotes(item.id)}
+                              disabled={isBlocked}
+                              placeholder="أضف ملاحظة..."
+                              className="w-full px-3 py-2 text-sm border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed bg-background"
+                            />
+                            <div className="flex items-center gap-2">
+                              <label
+                                htmlFor={`image-upload-${item.id}`}
+                                className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-md cursor-pointer transition-all ${
+                                  isBlocked
+                                    ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
+                                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50'
+                                }`}
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                {item.conversationImage ? 'تغيير الصورة' : 'رفع صورة'}
+                              </label>
+                              <input
+                                id={`image-upload-${item.id}`}
+                                type="file"
+                                accept="image/*"
+                                disabled={isBlocked}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    handleImageUpload(item.id, file)
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                              {item.conversationImage && (
+                                <a
+                                  href={item.conversationImage}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 transition-all"
+                                  title="عرض الصورة"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  عرض
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <button
@@ -855,6 +1516,15 @@ export default function PhoneNumbersPage() {
                             >
                               <Archive className="w-5 h-5" />
                             </button>
+                            {isAdmin && !item.isExpired && !item.isContacted && (
+                              <button
+                                onClick={() => handleWithdrawNumber(item.id)}
+                                className="p-2 text-muted-foreground hover:text-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded transition-all duration-200 hover-lift"
+                                title="سحب الرقم"
+                              >
+                                <Ban className="w-5 h-5" />
+                              </button>
+                            )}
                             {isAdmin && item.isExpired && (
                               <button
                                 onClick={() => handleReactivateNumber(item.id)}
@@ -881,6 +1551,7 @@ export default function PhoneNumbersPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
 
           {/* Pagination */}
@@ -910,7 +1581,7 @@ export default function PhoneNumbersPage() {
         {/* Transfer Modal */}
         {showTransferModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-card rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in">
+            <div className="bg-card rounded-xl shadow-2xl w-full sm:w-[28rem] max-w-md p-6 animate-fade-in">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-foreground">تحويل الأرقام</h2>
                 <button
@@ -1011,6 +1682,209 @@ export default function PhoneNumbersPage() {
                     onClick={() => setShowTransferModal(false)}
                     disabled={isTransferring}
                     className="flex-1 btn btn-secondary"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal إضافة رقم يدوياً */}
+        {showAddManualModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="card w-full sm:w-[28rem] max-w-md max-h-[85vh] overflow-y-auto rounded-lg shadow-2xl border-2 border-primary/20">
+              <div className="sticky top-0 bg-gradient-to-r from-primary/10 to-accent/10 p-3 border-b border-border rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-primary" />
+                    إضافة رقم
+                  </h3>
+                  <button
+                    onClick={() => setShowAddManualModal(false)}
+                    className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-3 space-y-2">
+                <div className="grid grid-cols-1 gap-2">
+                  {/* الاسم */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1">الاسم</label>
+                    <input
+                      type="text"
+                      value={manualPhoneData.name}
+                      onChange={(e) => setManualPhoneData({ ...manualPhoneData, name: e.target.value })}
+                      placeholder="عميل بوب اب"
+                      className="input w-full text-sm py-2"
+                    />
+                  </div>
+
+                  {/* رقم الهاتف */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1">رقم الهاتف *</label>
+                    <input
+                      type="tel"
+                      value={manualPhoneData.phoneNumber}
+                      onChange={(e) => setManualPhoneData({ ...manualPhoneData, phoneNumber: e.target.value })}
+                      placeholder="05xxxxxxxx"
+                      className="input w-full text-sm py-2"
+                      dir="ltr"
+                    />
+                  </div>
+
+                  {/* صفحة المبيعات */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1">صفحة المبيعات *</label>
+                    <select
+                      value={manualPhoneData.salesPageId}
+                      onChange={(e) => setManualPhoneData({ ...manualPhoneData, salesPageId: e.target.value })}
+                      className="input w-full text-sm py-2"
+                    >
+                      {salesPages.filter(p => p.id !== 'ALL').map((page) => (
+                        <option key={page.id} value={page.id}>
+                          {page.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* المصدر */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1">المصدر</label>
+                    <input
+                      type="text"
+                      value={manualPhoneData.source}
+                      onChange={(e) => setManualPhoneData({ ...manualPhoneData, source: e.target.value })}
+                      placeholder="يدوي"
+                      className="input w-full text-sm py-2"
+                    />
+                  </div>
+
+                  {/* الدولة */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1">الدولة</label>
+                    <input
+                      type="text"
+                      value={manualPhoneData.country}
+                      onChange={(e) => setManualPhoneData({ ...manualPhoneData, country: e.target.value })}
+                      placeholder="السعودية"
+                      className="input w-full text-sm py-2"
+                    />
+                  </div>
+
+                  {/* المدينة */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1">المدينة</label>
+                    <input
+                      type="text"
+                      value={manualPhoneData.city}
+                      onChange={(e) => setManualPhoneData({ ...manualPhoneData, city: e.target.value })}
+                      placeholder="الرياض"
+                      className="input w-full text-sm py-2"
+                    />
+                  </div>
+
+                  {/* نوع الجهاز */}
+                  <div>
+                    <label className="block text-xs font-medium mb-1">نوع الجهاز</label>
+                    <select
+                      value={manualPhoneData.deviceType}
+                      onChange={(e) => setManualPhoneData({ ...manualPhoneData, deviceType: e.target.value })}
+                      className="input w-full text-sm py-2"
+                    >
+                      <option value="MOBILE">موبايل</option>
+                      <option value="DESKTOP">كمبيوتر</option>
+                    </select>
+                  </div>
+
+                  {/* مؤقت */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={manualPhoneData.addTimer}
+                      onChange={(e) => setManualPhoneData({ ...manualPhoneData, addTimer: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    <label className="text-xs font-medium">مؤقت 6 ساعات</label>
+                  </div>
+                </div>
+
+                {/* الملاحظات */}
+                <div>
+                  <label className="block text-xs font-medium mb-1">الملاحظات</label>
+                  <textarea
+                    value={manualPhoneData.notes}
+                    onChange={(e) => setManualPhoneData({ ...manualPhoneData, notes: e.target.value })}
+                    placeholder="ملاحظات..."
+                    rows={2}
+                    className="input w-full resize-none text-sm py-2"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={handleAddManualNumber}
+                    className="flex-1 btn-gradient-primary py-1.5 rounded-lg font-semibold text-sm"
+                  >
+                    إضافة
+                  </button>
+                  <button
+                    onClick={() => setShowAddManualModal(false)}
+                    className="flex-1 btn btn-secondary text-sm py-1.5"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal تعديل الاسم */}
+        {showEditNameModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="card w-full sm:w-96 max-w-sm rounded-lg shadow-2xl border-2 border-primary/20">
+              <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-2.5 border-b border-border rounded-t-lg">
+                <h3 className="text-sm font-bold text-foreground">تعديل الاسم</h3>
+              </div>
+
+              <div className="p-3 space-y-2.5">
+                <div>
+                  <label className="block text-xs font-medium mb-1">الاسم</label>
+                  <input
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    placeholder="عميل بوب اب"
+                    className="input w-full text-sm py-2"
+                    autoFocus
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSaveName()
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveName}
+                    className="flex-1 btn-gradient-primary py-1.5 rounded-lg font-semibold text-sm"
+                  >
+                    حفظ
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowEditNameModal(false)
+                      setEditingNumberId(null)
+                      setEditingName('')
+                    }}
+                    className="flex-1 btn btn-secondary text-sm py-1.5"
                   >
                     إلغاء
                   </button>

@@ -633,6 +633,7 @@ model BookingClick {
 // جمع أرقام الهواتف من صفحات المبيعات
 model PhoneNumber {
   id                   Int       @id @default(autoincrement())
+  name                 String    @default("عميل بوب اب") // اسم العميل
   phoneNumber          String
   salesPageId          String // الصفحة التي تم جمع الرقم منها
   source               String? // مصدر الزائر (google, facebook, direct, etc.)
@@ -642,6 +643,7 @@ model PhoneNumber {
   country              String? // الدولة
   city                 String? // المدينة
   notes                String? // ملاحظات إضافية
+  conversationImage    String? // صورة المحادثة
   isArchived           Boolean   @default(false) // للأرشفة
   isContacted          Boolean   @default(false) // هل تم التواصل عبر واتساب
   contactedAt          DateTime? // تاريخ التواصل

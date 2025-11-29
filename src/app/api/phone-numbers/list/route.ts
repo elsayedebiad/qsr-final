@@ -30,23 +30,69 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
+    const search = searchParams.get('search') || ''
 
     // بناء الفلتر
     const where: any = {
-      isArchived
+      isArchived,
+      AND: []
+    }
+
+    // إضافة البحث
+    if (search.trim()) {
+      // تنظيف رقم البحث من الرموز للبحث بالأرقام فقط
+      const cleanSearchNumber = search.replace(/[^0-9]/g, '')
+      
+      // إذا كان البحث يحتوي على أرقام، نبحث في رقم الهاتف بعدة طرق
+      if (cleanSearchNumber) {
+        const searchConditions: any[] = [
+          // البحث بالنص الأصلي (مع + والمسافات)
+          { phoneNumber: { contains: search, mode: 'insensitive' } },
+          // البحث بالأرقام فقط
+          { phoneNumber: { contains: cleanSearchNumber } },
+          // البحث في الاسم
+          { name: { contains: search, mode: 'insensitive' } }
+        ]
+        
+        // إذا كان البحث يبدأ بـ +966 أو 966، أضف بحث بـ 0
+        if (cleanSearchNumber.startsWith('966')) {
+          const numberWithoutCountryCode = '0' + cleanSearchNumber.substring(3)
+          searchConditions.push({ phoneNumber: { contains: numberWithoutCountryCode } })
+        }
+        // إذا كان البحث يبدأ بـ 0، أضف بحث بـ +966
+        else if (cleanSearchNumber.startsWith('0')) {
+          const numberWithCountryCode = '966' + cleanSearchNumber.substring(1)
+          searchConditions.push({ phoneNumber: { contains: numberWithCountryCode } })
+          searchConditions.push({ phoneNumber: { contains: '+966' + cleanSearchNumber.substring(1) } })
+        }
+        
+        where.AND.push({ OR: searchConditions })
+      } else {
+        // البحث في الاسم فقط إذا لم يكن هناك أرقام
+        where.AND.push({
+          name: { contains: search, mode: 'insensitive' }
+        })
+      }
     }
 
     // فلترة حسب الأرقام المحولة (المنتهية)
     // الأدمن: 
     //   - عند اختيار "جميع الأرقام" (ALL): يرى كل شيء (نشطة + محولة)
     //   - عند الضغط على زر "عرض المحولة": يرى المحولة فقط
-    // المستخدم العادي: يراها دائماً (لكن محجوبة مع blur)
+    // المستخدم العادي: لا يرى الأرقام المحولة إليه إلا بعد انتهاء الوقت أو إذا كان التحويل فوري
 
     if (user.role === 'ADMIN' && searchParams.get('showExpired') === 'true') {
       where.isExpired = true // الأدمن اختار زر "عرض المحولة" - يعرض المحولة فقط
     }
+    
+    // فلترة الأرقام المسحوبة (أرقام جديدة منتهية ولم يتم التواصل معها)
+    if (user.role === 'ADMIN' && searchParams.get('showWithdrawn') === 'true') {
+      where.isExpired = true
+      where.isTransferred = false // ليست محولة
+      where.isContacted = false   // لم يتم التواصل معها
+    }
     // لا نضيف فلتر isExpired للأدمن عند اختيار "جميع الأرقام" (يرى الكل)
-    // المستخدمون العاديون: لا نضيف فلتر isExpired (يرون الكل)
+    // المستخدمون العاديون: يتم فلترة الأرقام المحولة حسب حالة المؤقت في الشرط OR أدناه
 
     // فلترة حسب حالة التواصل
     const contactFilter = searchParams.get('contactFilter')
@@ -60,28 +106,50 @@ export async function GET(request: NextRequest) {
     // فلترة حسب صلاحيات المستخدم
     if (user.role !== 'ADMIN' && user.salesPages && user.salesPages.length > 0) {
       // المستخدم العادي يرى:
-      // 1. أرقام صفحاته
-      // 2. الأرقام المحولة إليه
-      where.OR = [
-        // الشرط 1: أرقام صفحاته
-        {
-          salesPageId: {
-            in: user.salesPages
+      // 1. أرقام صفحاته (غير المنتهية أو المتواصل معها)
+      // 2. الأرقام المحولة إليه (فقط المنتهية أو بدون مؤقت)
+      where.AND = where.AND || []
+      where.AND.push({
+        OR: [
+          // الشرط 1: أرقام صفحاته (غير المنتهية أو المتواصل معها)
+          {
+            salesPageId: {
+              in: user.salesPages
+            },
+            OR: [
+              { isExpired: false }, // الأرقام النشطة
+              { isContacted: true }  // الأرقام التي تم التواصل معها (حتى لو منتهية)
+            ]
+          },
+          // الشرط 2: الأرقام المحولة إليه المنتهية (isExpired = true)
+          {
+            isTransferred: true,
+            transferredToUserId: user.id,
+            isExpired: true
+          },
+          // الشرط 3: الأرقام المحولة إليه بدون مؤقت (deadlineAt = null)
+          {
+            isTransferred: true,
+            transferredToUserId: user.id,
+            deadlineAt: null
           }
-        },
-        // الشرط 2: الأرقام المحولة إليه
-        {
-          isTransferred: true,
-          transferredToUserId: user.id
-        }
-      ]
+        ]
+      })
     } else if (salesPageId && salesPageId !== 'ALL') {
       // المدير يمكنه فلترة بصفحة محددة
       // يبحث في salesPageId الحالي أو originalSalesPageId (للأرقام المحولة)
-      where.OR = [
-        { salesPageId: salesPageId },
-        { originalSalesPageId: salesPageId }
-      ]
+      where.AND = where.AND || []
+      where.AND.push({
+        OR: [
+          { salesPageId: salesPageId },
+          { originalSalesPageId: salesPageId }
+        ]
+      })
+    }
+    
+    // تنظيف: إذا لم يكن هناك شروط AND، نحذف المصفوفة
+    if (where.AND && where.AND.length === 0) {
+      delete where.AND
     }
 
     // جلب العدد الكلي
@@ -139,9 +207,13 @@ export async function GET(request: NextRequest) {
 
         // إذا لم ينتهي الوقت بعد
         if (number.deadlineAt && !number.isExpired) {
-          // المحول إليه الحالي → يرى واضحاً
+          // المحول إليه الحالي → مخفي حتى ينتهي الوقت
           if (isCurrentRecipient) {
-            return number
+            return {
+              ...number,
+              phoneNumber: '****** (في انتظار انتهاء المؤقت)',
+              isBlocked: true
+            }
           }
           // المالك الأصلي → يرى واضحاً (لديه فرصة لاستعادته عند انتهاء الوقت)
           if (isOriginalOwner) {
@@ -215,6 +287,19 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // حساب عدد الأرقام المسحوبة (للأدمن فقط)
+    let withdrawnCount = 0
+    if (user.role === 'ADMIN') {
+      withdrawnCount = await db.phoneNumber.count({
+        where: {
+          isArchived: false,
+          isExpired: true,
+          isTransferred: false, // ليست محولة
+          isContacted: false    // لم يتم التواصل معها
+        }
+      })
+    }
+
     return NextResponse.json({
       success: true,
       data: processedPhoneNumbers,
@@ -225,7 +310,8 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCount / limit)
       },
       stats: statsBySalesPage,
-      transferredCount: transferredCount
+      transferredCount: transferredCount,
+      withdrawnCount: withdrawnCount
     })
 
   } catch (error) {
@@ -260,7 +346,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, isArchived, isContacted } = body
+    const { id, isArchived, isContacted, notes, name } = body
 
     if (!id) {
       return NextResponse.json(
@@ -322,6 +408,12 @@ export async function PATCH(request: NextRequest) {
         updateData.isExpired = false
         updateData.expiredAt = null
       }
+    }
+    if (typeof notes !== 'undefined') {
+      updateData.notes = notes
+    }
+    if (typeof name !== 'undefined' && name.trim() !== '') {
+      updateData.name = name
     }
 
     const updated = await db.phoneNumber.update({
