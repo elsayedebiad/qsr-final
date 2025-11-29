@@ -119,7 +119,7 @@ export default function LoginPage() {
               تسجيل الدخول
             </h2>
             <p className="text-muted-foreground">
-              نظام إدارة السير الذاتية
+              نظام إدارة مكاتب الاستقدام
             </p>
           </div>
 

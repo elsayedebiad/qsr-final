@@ -19,7 +19,7 @@ class EmailService {
       console.log('='.repeat(50))
       console.log('📧 EMAIL TO ADMIN:')
       console.log('To:', EmailService.ADMIN_EMAIL)
-      console.log('Subject: كود تفعيل تسجيل الدخول - نظام إدارة السير الذاتية')
+      console.log('Subject: كود تفعيل تسجيل الدخول - نظام إدارة مكاتب الاستقدام')
       console.log('-'.repeat(30))
       console.log('👤 User Name:', userName)
       console.log('📧 User Email:', userEmail)

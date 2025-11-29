@@ -39,6 +39,8 @@ import {
   MousePointerClick,
   Phone,
   Link,
+  Sun,
+  Moon,
 } from "lucide-react"
 
 import {
@@ -105,6 +107,8 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
   const [systemActive, setSystemActive] = React.useState(true)
   const [togglingSystem, setTogglingSystem] = React.useState(false)
   const [salesPageNames, setSalesPageNames] = React.useState<Record<string, string>>({})
+  const [theme, setTheme] = React.useState<'light' | 'dark'>('dark')
+  const [mounted, setMounted] = React.useState(false)
 
   // تحميل أسماء صفحات المبيعات
   React.useEffect(() => {
@@ -122,6 +126,14 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
     const handleUpdate = () => loadSalesPageNames()
     window.addEventListener('salesPagesConfigUpdated', handleUpdate)
     return () => window.removeEventListener('salesPagesConfigUpdated', handleUpdate)
+  }, [])
+
+  // Load theme from localStorage on mount
+  React.useEffect(() => {
+    setMounted(true)
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+    const preferredTheme = savedTheme || 'dark'
+    setTheme(preferredTheme)
   }, [])
 
   // جلب حالة النظام للمطور
@@ -167,6 +179,26 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
     } finally {
       setTogglingSystem(false)
     }
+  }
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(newTheme)
+    
+    const root = document.documentElement
+    if (newTheme === 'light') {
+      root.setAttribute('data-theme', 'light')
+      root.classList.remove('dark')
+      root.classList.add('light-mode')
+      root.style.colorScheme = 'light'
+    } else {
+      root.setAttribute('data-theme', 'dark')
+      root.classList.add('dark')
+      root.classList.remove('light-mode')
+      root.style.colorScheme = 'dark'
+    }
+    
+    localStorage.setItem('theme', newTheme)
   }
 
   const navItems: NavItem[] = [
@@ -623,7 +655,7 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
                 <FileText className="size-4" />
               </div>
               <div className="grid flex-1 text-right text-sm leading-tight">
-                <span className="truncate font-semibold">نظام إدارة السير</span>
+                <span className="truncate font-semibold">مكاتب الاستقدام</span>
                 <span className="truncate text-xs">لوحة التحكم</span>
               </div>
             </SidebarMenuButton>

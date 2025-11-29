@@ -156,7 +156,7 @@ async function sendEmailReport(data: any) {
 </head>
 <body>
   <div class="container">
-    <h1>📊 التقرير الأسبوعي لنظام إدارة السير الذاتية</h1>
+    <h1>📊 التقرير الأسبوعي لنظام إدارة مكاتب الاستقدام</h1>
     
     <p style="text-align: center; color: #64748b; font-size: 16px;">
       الفترة: ${data.period}
@@ -247,7 +247,7 @@ async function sendEmailReport(data: any) {
 
     <div class="footer">
       <p>تم إنشاء هذا التقرير تلقائياً في ${new Date().toLocaleString('ar-EG')}</p>
-      <p>نظام إدارة السير الذاتية - QSR Final</p>
+      <p>نظام إدارة مكاتب الاستقدام - QSR Final</p>
     </div>
   </div>
 </body>

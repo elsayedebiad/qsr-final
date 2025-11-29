@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
 import { ToasterProvider } from '@/components/ToasterProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
-import ThemeForcer from '@/components/ThemeForcer';
 import Script from 'next/script';
 import "./globals.css";
 import "@/styles/animations.css";
@@ -14,8 +13,8 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "نظام إدارة السير الذاتية",
-  description: "نظام شامل لإدارة السير الذاتية مع إمكانيات التعاون المباشر",
+  title: "نظام إدارة مكاتب الاستقدام",
+  description: "نظام شامل لإدارة مكاتب الاستقدام مع إمكانيات التعاون المباشر",
   other: {
     'facebook-domain-verification': 'vhq21gzzksi4dz5wnf4tl0x1obh9c5',
   },
@@ -27,36 +26,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning data-theme="dark" className="dark">
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
-        {/* Force Dark Theme Script - Must be first */}
+        {/* Theme Loader - Prevents flash */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                // فرض الوضع المظلم فوراً
-                document.documentElement.classList.add('dark');
-                document.documentElement.setAttribute('data-theme', 'dark');
-                document.documentElement.style.colorScheme = 'dark';
+                // Load theme from localStorage
+                const savedTheme = localStorage.getItem('theme') || 'dark';
+                const root = document.documentElement;
                 
-                // منع تغيير الوضع
-                const observer = new MutationObserver(function(mutations) {
-                  mutations.forEach(function(mutation) {
-                    if (mutation.type === 'attributes' && mutation.target === document.documentElement) {
-                      if (!document.documentElement.classList.contains('dark')) {
-                        document.documentElement.classList.add('dark');
-                      }
-                      if (document.documentElement.getAttribute('data-theme') !== 'dark') {
-                        document.documentElement.setAttribute('data-theme', 'dark');
-                      }
-                    }
-                  });
-                });
-                
-                observer.observe(document.documentElement, {
-                  attributes: true,
-                  attributeFilter: ['class', 'data-theme']
-                });
+                if (savedTheme === 'light') {
+                  root.setAttribute('data-theme', 'light');
+                  root.classList.remove('dark');
+                  root.classList.add('light-mode');
+                  root.style.colorScheme = 'light';
+                } else {
+                  root.setAttribute('data-theme', 'dark');
+                  root.classList.add('dark');
+                  root.classList.remove('light-mode');
+                  root.style.colorScheme = 'dark';
+                }
               })();
             `
           }}
@@ -151,7 +142,6 @@ fbq('track', 'PageView');`,
           />
         </noscript>
         
-        <ThemeForcer />
         <AuthProvider>
           {children}
         </AuthProvider>

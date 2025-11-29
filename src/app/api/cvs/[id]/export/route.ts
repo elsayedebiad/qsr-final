@@ -351,7 +351,7 @@ function generateCVHTML(cv: any): string {
 
             <!-- Footer -->
             <div class="footer">
-                <p>تم إنشاء هذه السيرة الذاتية بواسطة نظام إدارة السير الذاتية</p>
+                <p>تم إنشاء هذه السيرة الذاتية بواسطة نظام إدارة مكاتب الاستقدام</p>
                 <p>تاريخ التصدير: ${new Date().toLocaleDateString('ar-SA')}</p>
             </div>
         </div>

@@ -104,7 +104,7 @@ export default function PaymentRequiredPage() {
           {/* الفوتر */}
           <div className="bg-muted/30 px-8 py-4 border-t border-border">
             <p className="text-center text-sm text-muted-foreground">
-              © 2025 نظام إدارة السير الذاتية - جميع الحقوق محفوظة
+              © 2025 نظام إدارة مكاتب الاستقدام - جميع الحقوق محفوظة
             </p>
           </div>
         </div>

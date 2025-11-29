@@ -738,7 +738,7 @@ export default function PublicCVPage() {
       <div className="bg-white border-t mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-gray-600">
-            <p className="mb-4">نظام إدارة السير الذاتية - قالب QSO</p>
+            <p className="mb-4">نظام إدارة مكاتب الاستقدام - قالب QSO</p>
             <div className="flex justify-center space-x-6 space-x-reverse">
               <button
                 onClick={handleShare}

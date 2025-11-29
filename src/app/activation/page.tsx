@@ -229,7 +229,7 @@ export default function ActivationPage() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-muted-foreground text-sm">
-            نظام إدارة السير الذاتية - الاسناد السريع
+            نظام إدارة مكاتب الاستقدام - الاسناد السريع
           </p>
         </div>
       </div>
