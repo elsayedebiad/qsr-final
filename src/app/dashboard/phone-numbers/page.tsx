@@ -875,7 +875,13 @@ export default function PhoneNumbersPage() {
 
               {isAdmin && (
                 <button
-                  onClick={() => setShowExpired(!showExpired)}
+                  onClick={() => {
+                    setShowExpired(!showExpired)
+                    if (!showExpired) {
+                      setShowWithdrawn(false) // إلغاء فلتر المسحوبة عند تفعيل المحولة
+                    }
+                    setPage(1)
+                  }}
                   className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift ${showExpired
                     ? 'bg-red-600 text-white'
                     : 'bg-muted text-muted-foreground hover:bg-accent'
@@ -889,8 +895,14 @@ export default function PhoneNumbersPage() {
 
               {isAdmin && (
                 <button
-                  onClick={() => setShowWithdrawn(!showWithdrawn)}
-                  className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift ${showWithdrawn
+                  onClick={() => {
+                    setShowWithdrawn(!showWithdrawn)
+                    if (!showWithdrawn) {
+                      setShowExpired(false) // إلغاء فلتر المحولة عند تفعيل المسحوبة
+                    }
+                    setPage(1)
+                  }}
+                  className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift relative ${showWithdrawn
                     ? 'bg-orange-600 text-white'
                     : 'bg-muted text-muted-foreground hover:bg-accent'
                     }`}
@@ -898,6 +910,11 @@ export default function PhoneNumbersPage() {
                   <Ban className="w-4 md:w-5 h-4 md:h-5" />
                   <span className="hidden sm:inline">{showWithdrawn ? 'إخفاء المسحوبة' : 'عرض المسحوبة'}</span>
                   <span className="sm:hidden">{showWithdrawn ? 'مسحوبة' : 'مسحوبة'}</span>
+                  {withdrawnCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-orange-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {withdrawnCount}
+                    </span>
+                  )}
                 </button>
               )}
 

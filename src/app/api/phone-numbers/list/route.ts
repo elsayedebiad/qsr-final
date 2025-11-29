@@ -75,33 +75,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // فلترة حسب الأرقام المحولة (المنتهية)
-    // الأدمن: 
-    //   - عند اختيار "جميع الأرقام" (ALL): يرى كل شيء (نشطة + محولة)
-    //   - عند الضغط على زر "عرض المحولة": يرى المحولة فقط
-    // المستخدم العادي: لا يرى الأرقام المحولة إليه إلا بعد انتهاء الوقت أو إذا كان التحويل فوري
-
-    if (user.role === 'ADMIN' && searchParams.get('showExpired') === 'true') {
-      where.isExpired = true // الأدمن اختار زر "عرض المحولة" - يعرض المحولة فقط
-    }
+    // فلترة حسب الأرقام المحولة والمسحوبة
+    const showExpired = searchParams.get('showExpired') === 'true'
+    const showWithdrawn = searchParams.get('showWithdrawn') === 'true'
+    const contactFilter = searchParams.get('contactFilter')
     
-    // فلترة الأرقام المسحوبة (أرقام جديدة منتهية ولم يتم التواصل معها)
-    if (user.role === 'ADMIN' && searchParams.get('showWithdrawn') === 'true') {
-      where.isExpired = true
-      where.isTransferred = false // ليست محولة
-      where.isContacted = false   // لم يتم التواصل معها
+    if (user.role === 'ADMIN') {
+      if (showWithdrawn) {
+        // فلترة الأرقام المسحوبة (أرقام منتهية ولم يتم التواصل معها ولم يتم تحويلها)
+        where.isExpired = true
+        where.isTransferred = false // ليست محولة
+        where.isContacted = false   // لم يتم التواصل معها
+      } else if (showExpired) {
+        // عرض المحولة فقط
+        where.isExpired = true
+      } else {
+        // فلترة عادية حسب حالة التواصل
+        if (contactFilter === 'contacted') {
+          where.isContacted = true
+        } else if (contactFilter === 'not-contacted') {
+          where.isContacted = false
+        }
+      }
     }
     // لا نضيف فلتر isExpired للأدمن عند اختيار "جميع الأرقام" (يرى الكل)
     // المستخدمون العاديون: يتم فلترة الأرقام المحولة حسب حالة المؤقت في الشرط OR أدناه
-
-    // فلترة حسب حالة التواصل
-    const contactFilter = searchParams.get('contactFilter')
-    if (contactFilter === 'contacted') {
-      where.isContacted = true
-    } else if (contactFilter === 'not-contacted') {
-      where.isContacted = false
-    }
-    // إذا كانت 'all' لا نضيف فلتر
 
     // فلترة حسب صلاحيات المستخدم
     if (user.role !== 'ADMIN' && user.salesPages && user.salesPages.length > 0) {
@@ -290,13 +288,23 @@ export async function GET(request: NextRequest) {
     // حساب عدد الأرقام المسحوبة (للأدمن فقط)
     let withdrawnCount = 0
     if (user.role === 'ADMIN') {
+      const withdrawnWhere: any = {
+        isArchived: false,
+        isExpired: true,
+        isTransferred: false, // ليست محولة
+        isContacted: false    // لم يتم التواصل معها
+      }
+      
+      // إضافة فلتر الصفحة إذا كان محدداً
+      if (salesPageId && salesPageId !== 'ALL') {
+        withdrawnWhere.OR = [
+          { salesPageId: salesPageId },
+          { originalSalesPageId: salesPageId }
+        ]
+      }
+      
       withdrawnCount = await db.phoneNumber.count({
-        where: {
-          isArchived: false,
-          isExpired: true,
-          isTransferred: false, // ليست محولة
-          isContacted: false    // لم يتم التواصل معها
-        }
+        where: withdrawnWhere
       })
     }
 
