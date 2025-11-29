@@ -43,10 +43,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // سحب الرقم - نبقيه مثل انتهاء الوقت تلقائياً
+    // سحب الرقم - جعله منتهي بدون تحويل
     const now = new Date()
     
-    // إذا لم يكن الرقم محول، نحوله للمستخدم الحالي أولاً
     let updateData: any = {
       isExpired: true,
       expiredAt: now,
@@ -54,29 +53,9 @@ export async function POST(request: NextRequest) {
       deadlineAt: null,
       deadlineHours: null,
       deadlineMinutes: null,
-      deadlineSeconds: null
-    }
-    
-    // إذا لم يكن محول، نحوله للمستخدم الحالي بحيث يظهر له محجوب
-    if (!phoneNumber.isTransferred && phoneNumber.salesPageId) {
-      // نحتاج معرف المستخدم الحالي من صفحة المبيعات
-      const salesPageAssignment = await db.userSalesPage.findFirst({
-        where: {
-          salesPageId: phoneNumber.salesPageId
-        },
-        include: {
-          user: true
-        }
-      })
-      
-      if (salesPageAssignment) {
-        updateData.isTransferred = true
-        updateData.originalSalesPageId = phoneNumber.salesPageId
-        updateData.transferredToUserId = salesPageAssignment.userId
-        updateData.transferredBy = user.id
-        updateData.transferredAt = now
-        updateData.transferReason = 'سحب يدوي من الأدمن'
-      }
+      deadlineSeconds: null,
+      // لا نحول الرقم - نتركه مسحوب فقط
+      // isTransferred يبقى false حتى يظهر في فلتر المسحوبة
     }
     
     await db.phoneNumber.update({

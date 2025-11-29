@@ -276,12 +276,26 @@ export async function GET(request: NextRequest) {
     // حساب عدد الأرقام المحولة (للأدمن فقط)
     let transferredCount = 0
     if (user.role === 'ADMIN') {
+      const transferredWhere: any = {
+        isArchived: false,
+        isExpired: true,
+        isTransferred: true
+      }
+      
+      // إضافة فلتر الصفحة إذا كان محدداً
+      if (salesPageId && salesPageId !== 'ALL') {
+        transferredWhere.AND = [
+          {
+            OR: [
+              { salesPageId: salesPageId },
+              { originalSalesPageId: salesPageId }
+            ]
+          }
+        ]
+      }
+      
       transferredCount = await db.phoneNumber.count({
-        where: {
-          isArchived: false,
-          isExpired: true,
-          isTransferred: true
-        }
+        where: transferredWhere
       })
     }
 
@@ -297,9 +311,13 @@ export async function GET(request: NextRequest) {
       
       // إضافة فلتر الصفحة إذا كان محدداً
       if (salesPageId && salesPageId !== 'ALL') {
-        withdrawnWhere.OR = [
-          { salesPageId: salesPageId },
-          { originalSalesPageId: salesPageId }
+        withdrawnWhere.AND = [
+          {
+            OR: [
+              { salesPageId: salesPageId },
+              { originalSalesPageId: salesPageId }
+            ]
+          }
         ]
       }
       
