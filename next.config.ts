@@ -46,7 +46,11 @@ const nextConfig: NextConfig = {
                 https://*.facebook.com
                 https://analytics.tiktok.com
                 https://*.tiktok.com
-                https://*.conversionsapigateway.com;
+                https://*.conversionsapigateway.com
+                https://sc-static.net
+                https://*.sc-static.net
+                https://tr.snapchat.com
+                https://*.snapchat.com;
               script-src-elem 'self' 'unsafe-inline' blob:
                 https://*.run.app
                 https://www.googletagmanager.com 
@@ -71,7 +75,11 @@ const nextConfig: NextConfig = {
                 https://*.facebook.com
                 https://analytics.tiktok.com
                 https://*.tiktok.com
-                https://*.conversionsapigateway.com;
+                https://*.conversionsapigateway.com
+                https://sc-static.net
+                https://*.sc-static.net
+                https://tr.snapchat.com
+                https://*.snapchat.com;
               connect-src 'self' 
                 https://*.run.app
                 wss://*.run.app
@@ -120,6 +128,10 @@ const nextConfig: NextConfig = {
                 https://office.live.com 
                 https://*.office.com
                 https://*.conversionsapigateway.com
+                https://sc-static.net
+                https://*.sc-static.net
+                https://tr.snapchat.com
+                https://*.snapchat.com
                 wss://*;
               img-src 'self' data: blob: https: http: 
                 https://*.run.app
@@ -145,6 +157,10 @@ const nextConfig: NextConfig = {
                 https://*.facebook.net
                 https://analytics.tiktok.com
                 https://*.tiktok.com
+                https://sc-static.net
+                https://*.sc-static.net
+                https://tr.snapchat.com
+                https://*.snapchat.com
                 https://drive.google.com 
                 https://lh3.googleusercontent.com 
                 https://*.googleusercontent.com 
@@ -199,6 +215,10 @@ const nextConfig: NextConfig = {
                 https://analytics.tiktok.com
                 https://*.tiktok.com
                 https://*.conversionsapigateway.com
+                https://sc-static.net
+                https://*.sc-static.net
+                https://tr.snapchat.com
+                https://*.snapchat.com
                 https://www.youtube.com 
                 https://youtube.com 
                 https://player.vimeo.com 
@@ -231,15 +251,15 @@ const nextConfig: NextConfig = {
   webpack: (config, { isServer }) => {
     if (isServer) {
       // تقليل حجم الـbundle للـserver
-      config.externals = [...(config.externals || []), 
-        'puppeteer', 
-        'puppeteer-core', 
+      config.externals = [...(config.externals || []),
+        'puppeteer',
+        'puppeteer-core',
         'chrome-aws-lambda',
         '@prisma/client',
         'prisma'
       ];
     }
-    
+
     // إضافة fallbacks للـNode.js modules
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -247,7 +267,7 @@ const nextConfig: NextConfig = {
       net: false,
       tls: false,
     };
-    
+
     return config;
   },
   images: {

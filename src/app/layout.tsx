@@ -52,34 +52,35 @@ export default function RootLayout({
             `
           }}
         />
-        
+
         {/* Google Tag Manager */}
-        <Script
-          id="google-tag-manager"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        {process.env.NEXT_PUBLIC_GTM_ID && (
+          <Script
+            id="google-tag-manager"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PQPPR2PP');`,
-          }}
-        />
-        
-        {/* TikTok Pixel */}
+})(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');`,
+            }}
+          />
+        )}
+
+        {/* Microsoft Clarity - بديل TikTok Pixel */}
         <Script
-          id="tiktok-pixel"
+          id="microsoft-clarity"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: `!function (w, d, t) {
-  w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script");n.type="text/javascript",n.async=!0,n.src=i+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
-  
-  ttq.load('D3LE4PRC7ZU8AFC90E4G');
-  ttq.page();
-}(window, document, 'ttq');`,
+            __html: `(function(c,l,a,r,i,t,y){
+c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+})(window, document, "clarity", "script", "mv43q3vjmh");`,
           }}
         />
-        
+
         {/* Facebook Pixel */}
         {process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && (
           <>
@@ -100,17 +101,17 @@ fbq('track', 'PageView');`,
               }}
             />
             <noscript>
-              <img 
-                height="1" 
-                width="1" 
-                style={{display: 'none'}}
+              <img
+                height="1"
+                width="1"
+                style={{ display: 'none' }}
                 src={`https://www.facebook.com/tr?id=${process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID}&ev=PageView&noscript=1`}
                 alt=""
               />
             </noscript>
           </>
         )}
-        
+
         {/* Sentry Error Tracking */}
         {process.env.NEXT_PUBLIC_SENTRY_DSN && (
           <Script
@@ -133,15 +134,17 @@ fbq('track', 'PageView');`,
         suppressHydrationWarning={true}
       >
         {/* Google Tag Manager (noscript) */}
-        <noscript>
-          <iframe 
-            src="https://www.googletagmanager.com/ns.html?id=GTM-PQPPR2PP"
-            height="0" 
-            width="0" 
-            style={{display: 'none', visibility: 'hidden'}}
-          />
-        </noscript>
-        
+        {process.env.NEXT_PUBLIC_GTM_ID && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
+              height="0"
+              width="0"
+              style={{ display: 'none', visibility: 'hidden' }}
+            />
+          </noscript>
+        )}
+
         <AuthProvider>
           {children}
         </AuthProvider>
