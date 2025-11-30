@@ -798,14 +798,14 @@ export default function PhoneNumbersPage() {
 
           {/* المؤرشفة */}
           <div
-            className="card hover-lift rounded-lg p-4 shadow-sm border-2 border-gray-500/50 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 animate-fade-in cursor-pointer"
+            className="card hover-lift rounded-lg p-4 shadow-sm border-2 border-muted bg-gradient-to-br from-muted/30 to-muted/50 animate-fade-in cursor-pointer"
             onClick={() => setShowArchived(!showArchived)}
           >
-            <div className="text-sm text-gray-700 dark:text-gray-400 mb-1 flex items-center gap-1">
+            <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
               <Archive className="w-4 h-4" />
               المؤرشفة
             </div>
-            <div className="text-2xl font-bold text-gray-600 dark:text-gray-500">
+            <div className="text-2xl font-bold text-foreground">
               {archivedCount}
             </div>
           </div>
@@ -928,7 +928,7 @@ export default function PhoneNumbersPage() {
                 <span className="hidden sm:inline">{showArchived ? 'إخفاء المؤرشفة' : 'عرض المؤرشفة'}</span>
                 <span className="sm:hidden">{showArchived ? 'مؤرشفة' : 'أرشيف'}</span>
                 {archivedCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-gray-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2 bg-muted text-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border border-border">
                     {archivedCount}
                   </span>
                 )}
@@ -997,7 +997,7 @@ export default function PhoneNumbersPage() {
                   onClick={toggleAutoTimer}
                   className={`btn px-3 md:px-4 py-2 rounded-lg flex items-center gap-1 md:gap-2 text-sm md:text-base transition-all duration-200 hover-lift ${autoTimerEnabled
                     ? 'bg-green-600 text-white'
-                    : 'bg-gray-600 text-white'
+                    : 'bg-muted text-foreground border border-border'
                     }`}
                   title={autoTimerEnabled ? 'المؤقت التلقائي 6 ساعات مفعل' : 'المؤقت التلقائي 6 ساعات معطل'}
                 >
@@ -1123,13 +1123,13 @@ export default function PhoneNumbersPage() {
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {isTransferred && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500 text-white dark:bg-green-900/30 dark:text-green-400 border border-green-600 dark:border-green-600">
                                 <Check className="w-3 h-3" />
                                 محول إليك
                               </span>
                             )}
                             {item.isContacted && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500 text-white dark:bg-blue-900/30 dark:text-blue-400 border border-blue-600 dark:border-blue-600">
                                 <MessageCircle className="w-3 h-3" />
                                 تم التواصل
                               </span>
@@ -1210,7 +1210,7 @@ export default function PhoneNumbersPage() {
                             htmlFor={`image-upload-mobile-${item.id}`}
                             className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-md cursor-pointer transition-all ${
                               isBlocked
-                                ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
+                                ? 'opacity-50 cursor-not-allowed bg-muted text-muted-foreground'
                                 : 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
                             }`}
                           >
@@ -1423,7 +1423,7 @@ export default function PhoneNumbersPage() {
                               const relation = getTransferRelation(item)
                               if (relation === 'current_recipient') {
                                 return (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500 text-white dark:bg-green-900/30 dark:text-green-400 border border-green-600 dark:border-green-600">
                                     <Check className="w-3 h-3" />
                                     محول إليك
                                   </span>
@@ -1431,7 +1431,7 @@ export default function PhoneNumbersPage() {
                               }
                               if (relation === 'original_owner' && item.deadlineAt && !item.isExpired) {
                                 return (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500 text-white dark:bg-orange-900/30 dark:text-orange-400 border border-orange-600 dark:border-orange-600">
                                     <Clock className="w-3 h-3" />
                                     محول مؤقتاً
                                   </span>
@@ -1440,7 +1440,7 @@ export default function PhoneNumbersPage() {
                               return null
                             })()}
                             {item.isContacted && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500 text-white dark:bg-blue-900/30 dark:text-blue-400 border border-blue-600 dark:border-blue-600">
                                 <MessageCircle className="w-3 h-3" />
                                 تم التواصل
                               </span>
@@ -1521,14 +1521,14 @@ export default function PhoneNumbersPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {item.isContacted ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-500 text-white dark:bg-green-900/30 dark:text-green-400 border border-green-600 dark:border-green-600">
                               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
                               تم التواصل
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                               </svg>
@@ -1574,7 +1574,7 @@ export default function PhoneNumbersPage() {
                                 htmlFor={`image-upload-${item.id}`}
                                 className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-md cursor-pointer transition-all ${
                                   isBlocked
-                                    ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
+                                    ? 'opacity-50 cursor-not-allowed bg-muted text-muted-foreground'
                                     : 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50'
                                 }`}
                               >

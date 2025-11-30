@@ -377,7 +377,7 @@ export default function DistributionPage() {
       {() => (
         <div className="space-y-6">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <div className="bg-card rounded-xl shadow-lg p-6 mb-6 border border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
@@ -477,7 +477,7 @@ export default function DistributionPage() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+          <div className="bg-card rounded-xl shadow-md p-6 border border-border">
             <div className="flex items-center justify-between mb-2">
               <Users className="h-8 w-8 text-blue-500" />
               <span className="text-2xl font-bold">{summary.totalActive}</span>
@@ -486,7 +486,7 @@ export default function DistributionPage() {
             <p className="text-xs text-gray-500 mt-1">المتوسط: {summary.averagePerPage}</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+          <div className="bg-card rounded-xl shadow-md p-6 border border-border">
             <div className="flex items-center justify-between mb-2">
               <ArrowUp className="h-8 w-8 text-green-500" />
               <span className="text-2xl font-bold">{summary.totalTodayAssigned}</span>
@@ -494,7 +494,7 @@ export default function DistributionPage() {
             <h3 className="text-sm text-gray-600 dark:text-gray-400">موزع اليوم</h3>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+          <div className="bg-card rounded-xl shadow-md p-6 border border-border">
             <div className="flex items-center justify-between mb-2">
               <ArrowDown className="h-8 w-8 text-red-500" />
               <span className="text-2xl font-bold">{summary.totalTodayRemoved}</span>
@@ -502,7 +502,7 @@ export default function DistributionPage() {
             <h3 className="text-sm text-gray-600 dark:text-gray-400">محذوف اليوم</h3>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+          <div className="bg-card rounded-xl shadow-md p-6 border border-border">
             <div className="flex items-center justify-between mb-2">
               <Activity className="h-8 w-8 text-purple-500" />
               <span className="text-2xl font-bold">{stats.filter(s => s.isActive).length}</span>
@@ -512,14 +512,14 @@ export default function DistributionPage() {
         </div>
 
         {/* Visit Statistics */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <div className="bg-card rounded-xl shadow-lg p-6 mb-6 border border-border">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Eye className="h-5 w-5 text-green-500" />
             إحصائيات الزيارات المفصلة
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {visitStats.map(page => (
-              <div key={page.salesPageId} className="border dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <div key={page.salesPageId} className="border border-border rounded-lg p-4 hover:shadow-lg transition-shadow bg-card">
                 <div className="flex items-center justify-between mb-4">
                   {editingPageId === page.salesPageId ? (
                     <div className="flex items-center gap-2 flex-1">
@@ -527,7 +527,7 @@ export default function DistributionPage() {
                         type="text"
                         value={editingPageName}
                         onChange={(e) => setEditingPageName(e.target.value)}
-                        className="flex-1 px-2 py-1 border dark:border-gray-600 rounded text-sm dark:bg-gray-700 dark:text-white"
+                        className="flex-1 px-2 py-1 border border-input rounded text-sm bg-background"
                         placeholder="اسم الصفحة"
                         autoFocus
                       />
@@ -557,7 +557,7 @@ export default function DistributionPage() {
                           setEditingPageId(page.salesPageId)
                           setEditingPageName(getSalesPageName(page.salesPageId))
                         }}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                        className="p-1 hover:bg-muted rounded transition-colors"
                         title="تعديل الاسم"
                       >
                         <Edit2 className="h-4 w-4 text-gray-500" />
@@ -621,7 +621,7 @@ export default function DistributionPage() {
         </div>
 
         {/* Distribution Rules (Middleware) */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <div className="bg-card rounded-xl shadow-lg p-6 mb-6 border border-border">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Settings className="h-5 w-5 text-blue-500" />
@@ -638,7 +638,7 @@ export default function DistributionPage() {
           {showSettings && (
             <>
               {/* معلومات مصدر البيانات وآخر حفظ */}
-              <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-blue-300 dark:border-gray-600">
+              <div className="mb-4 p-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border-2 border-primary/30">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-4">
                     {/* مصدر البيانات */}
@@ -707,17 +707,17 @@ export default function DistributionPage() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-lg border-2 border-gray-200 dark:border-gray-700">
+              <div className="overflow-x-auto rounded-lg border-2 border-border">
                 <table className="w-full">
-                  <thead className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30">
-                    <tr className="border-b-2 border-blue-200 dark:border-blue-700">
-                      <th className="text-right py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">
+                  <thead className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10">
+                    <tr className="border-b-2 border-primary/20">
+                      <th className="text-right py-3 px-4 text-sm font-bold text-foreground">
                         <div className="flex items-center gap-2">
                           <Globe className="h-4 w-4 text-blue-500" />
                           الصفحة
                         </div>
                       </th>
-                      <th className="text-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">
+                      <th className="text-center py-3 px-4 text-sm font-bold text-foreground">
                         <div className="flex flex-col items-center gap-1">
                           <div className="flex items-center gap-1">
                             <TrendingUp className="h-4 w-4 text-red-500" />
@@ -726,7 +726,7 @@ export default function DistributionPage() {
                           <span className="text-xs text-gray-500 font-normal">(من إعلانات)</span>
                         </div>
                       </th>
-                      <th className="text-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">
+                      <th className="text-center py-3 px-4 text-sm font-bold text-foreground">
                         <div className="flex flex-col items-center gap-1">
                           <div className="flex items-center gap-1">
                             <Globe className="h-4 w-4 text-blue-500" />
@@ -735,7 +735,7 @@ export default function DistributionPage() {
                           <span className="text-xs text-gray-500 font-normal">(مصادر أخرى)</span>
                         </div>
                       </th>
-                      <th className="text-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">
+                      <th className="text-center py-3 px-4 text-sm font-bold text-foreground">
                         <div className="flex flex-col items-center gap-1">
                           <div className="flex items-center gap-1">
                             <Target className="h-4 w-4 text-green-500" />
@@ -744,13 +744,13 @@ export default function DistributionPage() {
                           <span className="text-xs text-gray-500 font-normal">(تحويلات)</span>
                         </div>
                       </th>
-                      <th className="text-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">الحالة</th>
-                      <th className="text-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200">إجراءات</th>
+                      <th className="text-center py-3 px-4 text-sm font-bold text-foreground">الحالة</th>
+                      <th className="text-center py-3 px-4 text-sm font-bold text-foreground">إجراءات</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rules.map((rule, index) => (
-                      <tr key={rule.path} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <tr key={rule.path} className="border-b border-border hover:bg-muted/50">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
                             <ExternalLink className="h-4 w-4 text-gray-400" />
@@ -769,7 +769,7 @@ export default function DistributionPage() {
                                 setHasUnsavedChanges(true)
                               }}
                               disabled={!rule.isActive}
-                              className="w-20 px-2 py-1 text-center border rounded dark:bg-gray-700 dark:border-gray-600"
+                              className="w-20 px-2 py-1 text-center border border-input rounded bg-background"
                               step="0.01"
                             />
                             <Percent className="h-4 w-4 text-gray-400" />
@@ -787,7 +787,7 @@ export default function DistributionPage() {
                                 setHasUnsavedChanges(true)
                               }}
                               disabled={!rule.isActive}
-                              className="w-20 px-2 py-1 text-center border rounded dark:bg-gray-700 dark:border-gray-600"
+                              className="w-20 px-2 py-1 text-center border border-input rounded bg-background"
                               step="0.01"
                             />
                             <Percent className="h-4 w-4 text-gray-400" />
@@ -804,7 +804,7 @@ export default function DistributionPage() {
                                 setRules(newRules)
                               }}
                               disabled={!rule.isActive}
-                              className="w-24 px-2 py-1 text-center border rounded dark:bg-gray-700 dark:border-gray-600 font-semibold"
+                              className="w-24 px-2 py-1 text-center border border-input rounded bg-background font-semibold"
                               placeholder="0"
                               min="0"
                             />
@@ -1020,7 +1020,7 @@ export default function DistributionPage() {
                             return (
                               <div key={rule.path} className="flex items-center gap-2 text-xs">
                                 <span className="font-mono font-semibold min-w-[60px] text-blue-700 dark:text-blue-400">{rule.path}</span>
-                                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                                <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
                                   <div 
                                     className="bg-gradient-to-r from-blue-500 to-blue-600 h-full flex items-center justify-end pr-1 transition-all duration-300"
                                     style={{ width: `${actualPercent}%` }}
@@ -1068,7 +1068,7 @@ export default function DistributionPage() {
                             return (
                               <div key={rule.path} className="flex items-center gap-2 text-xs">
                                 <span className="font-mono font-semibold min-w-[60px] text-green-700 dark:text-green-400">{rule.path}</span>
-                                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                                <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
                                   <div 
                                     className="bg-gradient-to-r from-green-500 to-green-600 h-full flex items-center justify-end pr-1 transition-all duration-300"
                                     style={{ width: `${actualPercent}%` }}
@@ -1302,7 +1302,7 @@ export default function DistributionPage() {
                     setHasUnsavedChanges(true)
                     toast.success('تم إعادة تعيين الإعدادات الافتراضية (تذكر: اضغط حفظ!)')
                   }}
-                  className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                  className="px-6 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-all border border-border"
                 >
                   إعادة تعيين (توزيع متساوي)
                 </button>
@@ -1312,7 +1312,7 @@ export default function DistributionPage() {
         </div>
 
         {/* Auto Distribution */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <div className="bg-card rounded-xl shadow-lg p-6 mb-6 border border-border">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Zap className="h-5 w-5 text-yellow-500" />
             التوزيع التلقائي
@@ -1430,7 +1430,7 @@ export default function DistributionPage() {
         {/* Pages Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {stats.map(page => (
-            <div key={page.salesPageId} className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+            <div key={page.salesPageId} className="bg-card rounded-xl shadow-md p-6 border border-border">
               {/* Page Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3 flex-1">
@@ -1441,7 +1441,7 @@ export default function DistributionPage() {
                         type="text"
                         value={editingPageName}
                         onChange={(e) => setEditingPageName(e.target.value)}
-                        className="flex-1 px-2 py-1 border dark:border-gray-600 rounded text-sm dark:bg-gray-700 dark:text-white"
+                        className="flex-1 px-2 py-1 border border-input rounded text-sm bg-background"
                         placeholder="اسم الصفحة"
                         autoFocus
                       />
@@ -1473,7 +1473,7 @@ export default function DistributionPage() {
                           setEditingPageId(page.salesPageId)
                           setEditingPageName(getSalesPageName(page.salesPageId))
                         }}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                        className="p-1 hover:bg-muted rounded transition-colors"
                         title="تعديل الاسم"
                       >
                         <Edit2 className="h-4 w-4 text-gray-400" />

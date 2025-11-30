@@ -789,7 +789,7 @@ export default function VisitsReportPage() {
         <>
         <div className="space-y-6 w-full overflow-x-hidden px-1 md:px-0">
           {/* Header */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6">
+          <div className="bg-card rounded-xl shadow-lg p-4 md:p-6 border border-border">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3 md:gap-4">
                 <div className="p-2 md:p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
@@ -877,7 +877,7 @@ export default function VisitsReportPage() {
           </div>
 
           {/* Recent Visits */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 md:p-6">
+          <div className="bg-card rounded-xl shadow-lg p-4 md:p-6 border border-border">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
               <h2 className="text-base md:text-lg font-semibold flex items-center gap-2 flex-wrap">
                 <Eye className="h-5 w-5 text-blue-500" />
@@ -960,7 +960,7 @@ export default function VisitsReportPage() {
                 </button>
                 <button
                   onClick={resetFilters}
-                  className="px-2 sm:px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-xs sm:text-sm flex items-center gap-1"
+                  className="px-2 sm:px-3 py-1.5 bg-muted text-foreground rounded-lg hover:bg-muted/80 text-xs sm:text-sm flex items-center gap-1 border border-border"
                 >
                   <X className="h-4 w-4" />
                   <span className="hidden sm:inline">إعادة تعيين</span>
@@ -969,7 +969,7 @@ export default function VisitsReportPage() {
             </div>
             
             {/* Filters - محسّن */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-4 p-6 bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-4 p-6 bg-gradient-to-br from-muted/30 via-primary/5 to-muted/30 rounded-2xl shadow-lg border border-border">
               {/* فلتر الدولة */}
               <div className="group">
                 <label className="block text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700 dark:text-gray-200">
@@ -981,7 +981,7 @@ export default function VisitsReportPage() {
                 <select
                   value={countryFilter}
                   onChange={(e) => setCountryFilter(e.target.value)}
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-green-400 dark:hover:border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                  className="w-full px-4 py-2.5 border-2 border-input rounded-xl bg-background text-sm font-medium hover:border-green-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all cursor-pointer shadow-sm hover:shadow-md"
                 >
                   <option value="ALL" className="font-bold bg-gray-50 dark:bg-gray-800">🌍 جميع الدول ({stats?.summary.totalVisits || 0})</option>
                   {uniqueCountries.map(country => (
@@ -1003,7 +1003,7 @@ export default function VisitsReportPage() {
                 <select
                   value={pageFilter}
                   onChange={(e) => setPageFilter(e.target.value)}
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                  className="w-full px-4 py-2.5 border-2 border-input rounded-xl bg-background text-sm font-medium hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer shadow-sm hover:shadow-md"
                 >
                   <option value="ALL" className="font-bold bg-gray-50 dark:bg-gray-800">📄 جميع الصفحات ({stats?.summary.totalVisits || 0})</option>
                   {uniquePages.map(page => {
@@ -1032,7 +1032,7 @@ export default function VisitsReportPage() {
                 <select
                   value={campaignFilter}
                   onChange={(e) => setCampaignFilter(e.target.value)}
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-orange-400 dark:hover:border-orange-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                  className="w-full px-4 py-2.5 border-2 border-input rounded-xl bg-background text-sm font-medium hover:border-orange-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all cursor-pointer shadow-sm hover:shadow-md"
                 >
                   <option value="ALL" className="font-bold bg-gray-50 dark:bg-gray-800">🎯 جميع الحملات ({stats?.summary.totalVisits || 0})</option>
                   {uniqueCampaigns.map(campaign => (
@@ -1055,7 +1055,7 @@ export default function VisitsReportPage() {
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-purple-400 dark:hover:border-purple-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm hover:shadow-md"
+                  className="w-full px-4 py-2.5 border-2 border-input rounded-xl bg-background text-sm font-medium hover:border-purple-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all shadow-sm hover:shadow-md"
                 />
               </div>
               
@@ -1071,7 +1071,7 @@ export default function VisitsReportPage() {
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-pink-400 dark:hover:border-pink-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm hover:shadow-md"
+                  className="w-full px-4 py-2.5 border-2 border-input rounded-xl bg-background text-sm font-medium hover:border-pink-400 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all shadow-sm hover:shadow-md"
                 />
               </div>
             </div>
@@ -1141,7 +1141,7 @@ export default function VisitsReportPage() {
             <div className="overflow-hidden w-full">
               <table className="w-full" style={{ tableLayout: 'fixed', fontSize: `${tableFontSize}px` }}>
                 <thead>
-                  <tr className="border-b dark:border-gray-700">
+                  <tr className="border-b border-border">
                     <th className="text-center py-2 px-2 relative" style={{ width: `${columnWidths.checkbox}px` }}>
                       <button onClick={toggleAllVisits} className="hover:text-blue-500">
                         {selectedVisits.length === filteredVisits.length && filteredVisits.length > 0 ? (
@@ -1215,7 +1215,7 @@ export default function VisitsReportPage() {
                     </tr>
                   ) : (
                     filteredVisits.map((visit, index) => (
-                    <tr key={visit.id} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                    <tr key={visit.id} className={`border-b border-border hover:bg-muted/50 ${
                       index === 0 ? 'bg-green-50 dark:bg-green-900/20 border-l-4 border-l-green-500' : ''
                     }`}>
                       <td className="py-2 px-2 text-center" style={{ width: `${columnWidths.checkbox}px` }}>
@@ -1337,11 +1337,11 @@ export default function VisitsReportPage() {
             
             {/* Pagination Controls - محسّن */}
             {stats && stats.pagination && stats.pagination.totalPages > 1 && (
-              <div className="mt-6 border-t dark:border-gray-700 pt-6">
+              <div className="mt-6 border-t border-border pt-6">
                 {/* معلومات الصفحة وعدد العناصر */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <div className="px-4 py-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/30">
                       <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                         عرض {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, stats.pagination.totalItems)} من {stats.pagination.totalItems} زيارة
                       </span>
@@ -1352,7 +1352,7 @@ export default function VisitsReportPage() {
                         setItemsPerPage(Number(e.target.value))
                         setCurrentPage(1)
                       }}
-                      className="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-sm font-medium hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+                      className="px-4 py-2 border-2 border-input rounded-xl bg-background text-sm font-medium hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
                     >
                       <option value="25">25 / صفحة</option>
                       <option value="50">50 / صفحة</option>
@@ -1378,7 +1378,7 @@ export default function VisitsReportPage() {
                         }
                       }}
                       placeholder={`1-${stats.pagination.totalPages}`}
-                      className="w-20 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-center font-medium hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-20 px-3 py-2 border-2 border-input rounded-lg bg-background text-sm text-center font-medium hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                     />
                     <button
                       onClick={handleJumpToPage}
@@ -1535,7 +1535,7 @@ export default function VisitsReportPage() {
         {/* Archive Modal */}
         {showArchiveModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+            <div className="relative bg-card rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all border border-border">
               {/* Header */}
               <div className="text-center mb-6">
                 <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center mb-4 animate-pulse">
@@ -1677,7 +1677,7 @@ export default function VisitsReportPage() {
         {/* Delete Modal */}
         {showDeleteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+            <div className="relative bg-card rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all border border-border">
               {/* Header */}
               <div className="text-center mb-6">
                 <div className="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mb-4 animate-pulse">
