@@ -311,6 +311,139 @@ export default function CVsPage() {
   const [downloadModalFileName, setDownloadModalFileName] = useState('')
   const [downloadModalError, setDownloadModalError] = useState('')
 
+  // Column resizing states - القيم الافتراضية
+  const defaultColumnWidths = {
+    checkbox: 48,
+    name: 192,
+    referenceCode: 120,
+    passport: 128,
+    nationality: 128,
+    position: 128,
+    age: 80,
+    status: 120,
+    actions: 160
+  }
+
+  // قراءة العرض المحفوظ من localStorage أو استخدام القيم الافتراضية
+  const [columnWidths, setColumnWidths] = useState<{[key: string]: number}>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cvTableColumnWidths')
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch (e) {
+          console.error('Error parsing saved column widths:', e)
+        }
+      }
+    }
+    return defaultColumnWidths
+  })
+  const [resizingColumn, setResizingColumn] = useState<string | null>(null)
+  const [startX, setStartX] = useState(0)
+  const [startWidth, setStartWidth] = useState(0)
+
+  // حفظ عرض الأعمدة في localStorage عند التغيير
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cvTableColumnWidths', JSON.stringify(columnWidths))
+    }
+  }, [columnWidths])
+
+  // Handle column resize
+  const handleMouseDown = (e: React.MouseEvent, columnKey: string) => {
+    e.preventDefault()
+    setResizingColumn(columnKey)
+    setStartX(e.clientX)
+    setStartWidth(columnWidths[columnKey])
+  }
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!resizingColumn) return
+    
+    const diff = startX - e.clientX // عكس الاتجاه لأننا RTL
+    const newWidth = Math.max(50, startWidth + diff)
+    
+    setColumnWidths(prev => ({
+      ...prev,
+      [resizingColumn]: newWidth
+    }))
+  }, [resizingColumn, startX, startWidth])
+
+  const handleMouseUp = useCallback(() => {
+    setResizingColumn(null)
+  }, [])
+
+  // إعادة ضبط عرض الأعمدة للقيم الافتراضية
+  const resetColumnWidths = () => {
+    setColumnWidths(defaultColumnWidths)
+    toast.success('تم إعادة ضبط عرض الأعمدة للقيم الافتراضية')
+  }
+
+  // Font size control - التحكم في حجم الخط
+  const defaultFontSize = 14 // الحجم الافتراضي بالبكسل
+  const minFontSize = 10
+  const maxFontSize = 20
+
+  const [tableFontSize, setTableFontSize] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cvTableFontSize')
+      if (saved) {
+        const size = parseInt(saved)
+        if (size >= minFontSize && size <= maxFontSize) {
+          return size
+        }
+      }
+    }
+    return defaultFontSize
+  })
+
+  // حفظ حجم الخط في localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cvTableFontSize', tableFontSize.toString())
+    }
+  }, [tableFontSize])
+
+  // دوال تغيير حجم الخط
+  const increaseFontSize = () => {
+    setTableFontSize(prev => {
+      const newSize = Math.min(prev + 1, maxFontSize)
+      if (newSize === maxFontSize) {
+        toast('وصلت للحد الأقصى لحجم الخط', { icon: '📏' })
+      }
+      return newSize
+    })
+  }
+
+  const decreaseFontSize = () => {
+    setTableFontSize(prev => {
+      const newSize = Math.max(prev - 1, minFontSize)
+      if (newSize === minFontSize) {
+        toast('وصلت للحد الأدنى لحجم الخط', { icon: '📏' })
+      }
+      return newSize
+    })
+  }
+
+  const resetFontSize = () => {
+    setTableFontSize(defaultFontSize)
+    toast.success('تم إعادة ضبط حجم الخط للحجم الافتراضي')
+  }
+
+  useEffect(() => {
+    if (resizingColumn) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.classList.add('resizing-column')
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+        document.body.classList.remove('resizing-column')
+      }
+    }
+  }, [resizingColumn, handleMouseMove, handleMouseUp])
+
   useEffect(() => {
     fetchCVs()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2613,20 +2746,73 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
             <>
           {/* الجدول - عرض مخفي على الموبايل */}
           <div className="overflow-hidden card hidden md:block">
-            {/* رسالة توضيحية للتمرير الأفقي */}
-            <div className="bg-muted px-4 py-2 border-b border-border text-center">
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
-                <ChevronLeft className="h-3 w-3" />
-                <span>يمكنك التمرير يميناً ويساراً لعرض جميع الأعمدة</span>
-                <ChevronRight className="h-3 w-3" />
-              </p>
+            {/* رسالة توضيحية للتمرير الأفقي وتغيير حجم الأعمدة */}
+            <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 px-4 py-3 border-b border-border">
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <ChevronLeft className="h-3 w-3" />
+                    <span>يمكنك التمرير يميناً ويساراً لعرض جميع الأعمدة</span>
+                    <ChevronRight className="h-3 w-3" />
+                  </div>
+                  <div className="hidden sm:block w-px h-4 bg-border"></div>
+                  <div className="flex items-center gap-2">
+                    <Ruler className="h-3 w-3 text-primary" />
+                    <span className="font-medium text-primary">اسحب الخطوط بين الأعمدة لتغيير العرض</span>
+                  </div>
+                </div>
+                
+                {/* أزرار التحكم */}
+                <div className="flex items-center gap-2">
+                  {/* التحكم في حجم الخط */}
+                  <div className="flex items-center gap-1 bg-muted/50 border border-border rounded-lg p-1">
+                    <button
+                      onClick={decreaseFontSize}
+                      className="p-1.5 hover:bg-background rounded transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="تصغير الخط"
+                      disabled={tableFontSize <= minFontSize}
+                    >
+                      <span className="text-sm font-bold">A-</span>
+                    </button>
+                    <div className="px-2 text-xs font-medium text-foreground">
+                      {tableFontSize}px
+                    </div>
+                    <button
+                      onClick={increaseFontSize}
+                      className="p-1.5 hover:bg-background rounded transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="تكبير الخط"
+                      disabled={tableFontSize >= maxFontSize}
+                    >
+                      <span className="text-base font-bold">A+</span>
+                    </button>
+                    <div className="w-px h-4 bg-border mx-1"></div>
+                    <button
+                      onClick={resetFontSize}
+                      className="p-1.5 hover:bg-background rounded transition-all active:scale-95"
+                      title="إعادة ضبط حجم الخط"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  {/* إعادة ضبط عرض الأعمدة */}
+                  <button
+                    onClick={resetColumnWidths}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 border border-border rounded-lg transition-all text-xs font-medium hover:scale-105 active:scale-95"
+                    title="إعادة ضبط عرض الأعمدة للقيم الافتراضية"
+                  >
+                    <Ruler className="h-3 w-3" />
+                    <span className="hidden xl:inline">إعادة ضبط العرض</span>
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
-              <table className="w-full text-sm text-right text-muted-foreground min-w-max"
-                     style={{ minWidth: '1200px' }}>
+              <table className="w-full text-right text-muted-foreground min-w-max"
+                     style={{ minWidth: '1200px', tableLayout: 'fixed', fontSize: `${tableFontSize}px` }}>
                 <thead className="bg-muted border-b border-border">
                   <tr>
-                    <th className="p-4 text-center w-12">
+                    <th className="p-3 text-center relative" style={{ width: `${columnWidths.checkbox}px` }}>
                       <label className="flex items-center justify-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -2635,21 +2821,93 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                           checked={selectedCvs.length === paginatedCvs.length && paginatedCvs.length > 0}
                         />
                       </label>
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary"
+                        onMouseDown={(e) => handleMouseDown(e, 'checkbox')}
+                        title="اسحب لتغيير العرض"
+                      >
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
                     </th>
-                    <th className="px-4 py-4 font-semibold text-muted-foreground w-48 max-w-48 text-right">الاسم الكامل</th>
-                    <th className="px-3 py-4 font-semibold text-muted-foreground min-w-24 text-center">الكود المرجعي</th>
-                    <th className="px-3 py-4 font-semibold text-muted-foreground min-w-32 text-center">رقم الجواز</th>
-                    <th className="px-3 py-4 font-semibold text-muted-foreground min-w-32 text-center">الجنسية</th>
-                    <th className="px-3 py-4 font-semibold text-muted-foreground w-32 max-w-32 text-center">الوظيفة</th>
-                    <th className="px-3 py-4 font-semibold text-muted-foreground min-w-16 text-center">العمر</th>
-                    <th className="px-3 py-4 font-semibold text-muted-foreground min-w-24 text-center">الحالة</th>
-                    <th className="px-3 py-4 font-semibold text-muted-foreground min-w-40 text-center">الإجراءات</th>
+                    <th className="px-3 py-2.5 font-semibold text-muted-foreground text-right relative" style={{ width: `${columnWidths.name}px` }}>
+                      الاسم الكامل
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary"
+                        onMouseDown={(e) => handleMouseDown(e, 'name')}
+                        title="اسحب لتغيير العرض"
+                      >
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center relative" style={{ width: `${columnWidths.referenceCode}px` }}>
+                      الكود المرجعي
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary"
+                        onMouseDown={(e) => handleMouseDown(e, 'referenceCode')}
+                        title="اسحب لتغيير العرض"
+                      >
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center relative" style={{ width: `${columnWidths.passport}px` }}>
+                      رقم الجواز
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary"
+                        onMouseDown={(e) => handleMouseDown(e, 'passport')}
+                        title="اسحب لتغيير العرض"
+                      >
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center relative" style={{ width: `${columnWidths.nationality}px` }}>
+                      الجنسية
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary"
+                        onMouseDown={(e) => handleMouseDown(e, 'nationality')}
+                        title="اسحب لتغيير العرض"
+                      >
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center relative" style={{ width: `${columnWidths.position}px` }}>
+                      الوظيفة
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary"
+                        onMouseDown={(e) => handleMouseDown(e, 'position')}
+                        title="اسحب لتغيير العرض"
+                      >
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center relative" style={{ width: `${columnWidths.age}px` }}>
+                      العمر
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary"
+                        onMouseDown={(e) => handleMouseDown(e, 'age')}
+                        title="اسحب لتغيير العرض"
+                      >
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center relative" style={{ width: `${columnWidths.status}px` }}>
+                      الحالة
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary"
+                        onMouseDown={(e) => handleMouseDown(e, 'status')}
+                        title="اسحب لتغيير العرض"
+                      >
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center relative" style={{ width: `${columnWidths.actions}px` }}>
+                      الإجراءات
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {paginatedCvs.map((cv) => (
                     <tr key={cv.id} className={`${selectedCvs.includes(cv.id) ? 'bg-primary/10 ring-2 ring-primary/20' : cv.status === 'RETURNED' ? 'bg-warning/10 border-l-4 border-warning' : 'bg-card'} hover:bg-muted border-l-4 transition-all`} style={{ borderLeftColor: cv.nationality ? getCountryInfo(cv.nationality).colors.primary : 'var(--border)' }}>
-                      <td className="p-4 text-center">
+                      <td className="p-3 text-center" style={{ width: `${columnWidths.checkbox}px` }}>
                         <label className="flex items-center justify-center cursor-pointer group">
                           <input
                             type="checkbox"
@@ -2659,8 +2917,8 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                           />
                         </label>
                       </td>
-                      <td className="px-4 py-4 w-48 max-w-48">
-                        <div className="flex items-center space-x-3 max-w-full">
+                      <td className="px-3 py-2.5" style={{ width: `${columnWidths.name}px` }}>
+                        <div className="flex items-center space-x-3 max-w-full overflow-hidden">
                           <img 
                             className="h-10 w-10 rounded-full object-cover flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600" 
                             src={processImageUrl(cv.profileImage)} 
@@ -2680,27 +2938,27 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-4 text-center">
-                        <span className="text-sm font-mono text-muted-foreground bg-muted px-2 py-1 rounded">
+                      <td className="px-2 py-2.5 text-center" style={{ width: `${columnWidths.referenceCode}px` }}>
+                        <span className="text-sm font-mono text-muted-foreground bg-muted px-2 py-1 rounded truncate block">
                           {cv.referenceCode}
                         </span>
                       </td>
-                      <td className="px-3 py-4 text-center">
-                        <span className="text-sm font-medium text-foreground">
+                      <td className="px-2 py-2.5 text-center" style={{ width: `${columnWidths.passport}px` }}>
+                        <span className="text-sm font-medium text-foreground truncate block">
                           {cv.passportNumber || '-'}
                         </span>
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-2 py-2.5" style={{ width: `${columnWidths.nationality}px` }}>
                         <CountryFlag nationality={cv.nationality || ''} size="md" />
                       </td>
-                      <td className="px-3 py-4 w-32 max-w-32">
+                      <td className="px-2 py-2.5" style={{ width: `${columnWidths.position}px` }}>
                         <span className="text-sm text-foreground truncate block" title={cv.position || ''}>{cv.position}</span>
                       </td>
-                      <td className="px-3 py-4 text-center">
+                      <td className="px-2 py-2.5 text-center" style={{ width: `${columnWidths.age}px` }}>
                         <span className="text-sm font-semibold text-foreground">{cv.age}</span>
                       </td>
-                      <td className="px-3 py-4">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      <td className="px-2 py-2.5" style={{ width: `${columnWidths.status}px` }}>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full truncate block ${
                           cv.status === 'NEW' ? 'bg-primary/20 text-primary' :
                           cv.status === 'BOOKED' ? 'bg-warning/20 text-warning' :
                           cv.status === 'RETURNED' ? 'bg-warning/20 text-warning' :
@@ -2716,7 +2974,7 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                            cv.status}
                         </span>
                       </td>
-                      <td className="px-3 py-4">
+                      <td className="px-2 py-2.5" style={{ width: `${columnWidths.actions}px` }}>
                         <div className="flex items-center justify-center gap-1">
                           {/* زر عرض السيرة - متاح للجميع */}
                           <button

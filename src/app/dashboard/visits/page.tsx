@@ -317,40 +317,40 @@ export default function VisitsPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase">ID</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase">IP Address</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase">الدولة</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase">المدينة</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase">الصفحة</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase">المصدر</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium uppercase">الوقت</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-medium uppercase">ID</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-medium uppercase">IP Address</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-medium uppercase">الدولة</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-medium uppercase">المدينة</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-medium uppercase">الصفحة</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-medium uppercase">المصدر</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-medium uppercase">الوقت</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y dark:divide-gray-700">
                   {visits.map((visit) => (
                     <tr key={visit.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-6 py-4 text-sm font-mono">{visit.id}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-3 text-sm font-mono">{visit.id}</td>
+                      <td className="px-3 py-3">
                         <div className="flex items-center gap-2">
                           <Monitor className="h-4 w-4 text-gray-400" />
                           <span className="font-mono text-sm">{visit.ipAddress}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-3">
                         <div className="flex items-center gap-2">
                           <span className="text-xl">{getCountryFlag(visit.country)}</span>
                           <span className="text-sm">{visit.country || 'غير معروف'}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className="px-3 py-3 text-sm">
                         {visit.city || '-'}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-3">
                         <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">
                           {visit.targetPage}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-3">
                         {visit.isGoogle ? (
                           <span className="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded text-xs">
                             🔴 Google
@@ -365,7 +365,7 @@ export default function VisitsPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                      <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {new Date(visit.timestamp).toLocaleString('ar-EG', {

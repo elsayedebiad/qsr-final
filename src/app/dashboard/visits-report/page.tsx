@@ -5,7 +5,7 @@ import {
   Eye, Globe, MousePointerClick, TrendingUp, MapPin, 
   Calendar, Link as LinkIcon, RefreshCw, Users, BarChart3,
   Filter, X, Archive, CheckSquare, Square, ChevronLeft, ChevronRight,
-  FileSpreadsheet, Trash2, AlertTriangle
+  FileSpreadsheet, Trash2, AlertTriangle, Ruler, RotateCcw
 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 import toast from 'react-hot-toast'
@@ -105,6 +105,135 @@ export default function VisitsReportPage() {
   
   // Jump to page state
   const [jumpToPage, setJumpToPage] = useState('')
+
+  // Column resizing and font size states
+  const defaultColumnWidths = {
+    checkbox: 50,
+    ip: 130,
+    country: 120,
+    city: 120,
+    page: 180,
+    source: 120,
+    campaign: 150,
+    device: 100,
+    timestamp: 140
+  }
+
+  const [columnWidths, setColumnWidths] = useState<{[key: string]: number}>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('visitsReportTableColumnWidths')
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch (e) {
+          console.error('Error parsing saved column widths:', e)
+        }
+      }
+    }
+    return defaultColumnWidths
+  })
+
+  const [resizingColumn, setResizingColumn] = useState<string | null>(null)
+  const [startX, setStartX] = useState(0)
+  const [startWidth, setStartWidth] = useState(0)
+
+  // حفظ عرض الأعمدة في localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('visitsReportTableColumnWidths', JSON.stringify(columnWidths))
+    }
+  }, [columnWidths])
+
+  // Font size control
+  const defaultFontSize = 12
+  const minFontSize = 10
+  const maxFontSize = 16
+
+  const [tableFontSize, setTableFontSize] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('visitsReportTableFontSize')
+      if (saved) {
+        const size = parseInt(saved)
+        if (size >= minFontSize && size <= maxFontSize) {
+          return size
+        }
+      }
+    }
+    return defaultFontSize
+  })
+
+  // حفظ حجم الخط
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('visitsReportTableFontSize', tableFontSize.toString())
+    }
+  }, [tableFontSize])
+
+  // Handle column resize
+  const handleMouseDown = (e: React.MouseEvent, columnKey: string) => {
+    e.preventDefault()
+    setResizingColumn(columnKey)
+    setStartX(e.clientX)
+    setStartWidth(columnWidths[columnKey])
+  }
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!resizingColumn) return
+    const diff = startX - e.clientX
+    const newWidth = Math.max(50, startWidth + diff)
+    setColumnWidths(prev => ({
+      ...prev,
+      [resizingColumn]: newWidth
+    }))
+  }, [resizingColumn, startX, startWidth])
+
+  const handleMouseUp = useCallback(() => {
+    setResizingColumn(null)
+  }, [])
+
+  useEffect(() => {
+    if (resizingColumn) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.classList.add('resizing-column')
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+        document.body.classList.remove('resizing-column')
+      }
+    }
+  }, [resizingColumn, handleMouseMove, handleMouseUp])
+
+  // Font size functions
+  const increaseFontSize = () => {
+    setTableFontSize(prev => {
+      const newSize = Math.min(prev + 1, maxFontSize)
+      if (newSize === maxFontSize) {
+        toast('وصلت للحد الأقصى لحجم الخط', { icon: '📏' })
+      }
+      return newSize
+    })
+  }
+
+  const decreaseFontSize = () => {
+    setTableFontSize(prev => {
+      const newSize = Math.max(prev - 1, minFontSize)
+      if (newSize === minFontSize) {
+        toast('وصلت للحد الأدنى لحجم الخط', { icon: '📏' })
+      }
+      return newSize
+    })
+  }
+
+  const resetFontSize = () => {
+    setTableFontSize(defaultFontSize)
+    toast.success('تم إعادة ضبط حجم الخط')
+  }
+
+  const resetColumnWidths = () => {
+    setColumnWidths(defaultColumnWidths)
+    toast.success('تم إعادة ضبط عرض الأعمدة')
+  }
 
   // استخدام useRef لتخزين current values دون إعادة render
   const currentPageRef = useRef(currentPage)
@@ -946,11 +1075,74 @@ export default function VisitsReportPage() {
                 />
               </div>
             </div>
+            
+            {/* شريط التحكم */}
+            <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 px-4 py-3 border-b border-border">
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <ChevronLeft className="h-3 w-3" />
+                    <span>يمكنك التمرير يميناً ويساراً لعرض جميع الأعمدة</span>
+                    <ChevronRight className="h-3 w-3" />
+                  </div>
+                  <div className="hidden sm:block w-px h-4 bg-border"></div>
+                  <div className="flex items-center gap-2">
+                    <Ruler className="h-3 w-3 text-primary" />
+                    <span className="font-medium text-primary">اسحب الخطوط بين الأعمدة لتغيير العرض</span>
+                  </div>
+                </div>
+                
+                {/* أزرار التحكم */}
+                <div className="flex items-center gap-2">
+                  {/* التحكم في حجم الخط */}
+                  <div className="flex items-center gap-1 bg-muted/50 border border-border rounded-lg p-1">
+                    <button
+                      onClick={decreaseFontSize}
+                      className="p-1.5 hover:bg-background rounded transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="تصغير الخط"
+                      disabled={tableFontSize <= minFontSize}
+                    >
+                      <span className="text-sm font-bold">A-</span>
+                    </button>
+                    <div className="px-2 text-xs font-medium text-foreground">
+                      {tableFontSize}px
+                    </div>
+                    <button
+                      onClick={increaseFontSize}
+                      className="p-1.5 hover:bg-background rounded transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="تكبير الخط"
+                      disabled={tableFontSize >= maxFontSize}
+                    >
+                      <span className="text-base font-bold">A+</span>
+                    </button>
+                    <div className="w-px h-4 bg-border mx-1"></div>
+                    <button
+                      onClick={resetFontSize}
+                      className="p-1.5 hover:bg-background rounded transition-all active:scale-95"
+                      title="إعادة ضبط حجم الخط"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  {/* إعادة ضبط عرض الأعمدة */}
+                  <button
+                    onClick={resetColumnWidths}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 border border-border rounded-lg transition-all text-xs font-medium hover:scale-105 active:scale-95"
+                    title="إعادة ضبط عرض الأعمدة للقيم الافتراضية"
+                  >
+                    <Ruler className="h-3 w-3" />
+                    <span className="hidden xl:inline">إعادة ضبط العرض</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="overflow-hidden w-full">
-              <table className="w-full" style={{ tableLayout: 'auto' }}>
+              <table className="w-full" style={{ tableLayout: 'fixed', fontSize: `${tableFontSize}px` }}>
                 <thead>
-                  <tr className="border-b dark:border-gray-700 text-sm">
-                    <th className="text-center py-3 px-2 w-12">
+                  <tr className="border-b dark:border-gray-700">
+                    <th className="text-center py-2 px-2 relative" style={{ width: `${columnWidths.checkbox}px` }}>
                       <button onClick={toggleAllVisits} className="hover:text-blue-500">
                         {selectedVisits.length === filteredVisits.length && filteredVisits.length > 0 ? (
                           <CheckSquare className="h-5 w-5" />
@@ -958,16 +1150,59 @@ export default function VisitsReportPage() {
                           <Square className="h-5 w-5" />
                         )}
                       </button>
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'checkbox')} title="اسحب لتغيير العرض">
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
                     </th>
-                    <th className="text-right py-3 px-2 whitespace-nowrap">التاريخ والوقت</th>
-                    <th className="text-right py-3 px-2 whitespace-nowrap">IP</th>
-                    <th className="text-right py-3 px-2 whitespace-nowrap">الدولة</th>
-                    <th className="text-right py-3 px-2 whitespace-nowrap hidden md:table-cell">المدينة</th>
-                    <th className="text-right py-3 px-2 whitespace-nowrap">الصفحة</th>
-                    <th className="text-right py-3 px-2 whitespace-nowrap hidden lg:table-cell">الجهاز</th>
-                    <th className="text-right py-3 px-2 whitespace-nowrap">المصدر</th>
-                    <th className="text-right py-3 px-2 whitespace-nowrap w-48">الحملة</th>
-                    <th className="text-center py-3 px-2 w-12">إجراءات</th>
+                    <th className="text-right py-2 px-2 whitespace-nowrap relative" style={{ width: `${columnWidths.timestamp}px` }}>
+                      التاريخ والوقت
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'timestamp')} title="اسحب لتغيير العرض">
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="text-right py-2 px-2 whitespace-nowrap relative" style={{ width: `${columnWidths.ip}px` }}>
+                      IP
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'ip')} title="اسحب لتغيير العرض">
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="text-right py-2 px-2 whitespace-nowrap relative" style={{ width: `${columnWidths.country}px` }}>
+                      الدولة
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'country')} title="اسحب لتغيير العرض">
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="text-right py-2 px-2 whitespace-nowrap hidden md:table-cell relative" style={{ width: `${columnWidths.city}px` }}>
+                      المدينة
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'city')} title="اسحب لتغيير العرض">
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="text-right py-2 px-2 whitespace-nowrap relative" style={{ width: `${columnWidths.page}px` }}>
+                      الصفحة
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'page')} title="اسحب لتغيير العرض">
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="text-right py-2 px-2 whitespace-nowrap hidden lg:table-cell relative" style={{ width: `${columnWidths.device}px` }}>
+                      الجهاز
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'device')} title="اسحب لتغيير العرض">
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="text-right py-2 px-2 whitespace-nowrap relative" style={{ width: `${columnWidths.source}px` }}>
+                      المصدر
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'source')} title="اسحب لتغيير العرض">
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="text-right py-2 px-2 whitespace-nowrap relative" style={{ width: `${columnWidths.campaign}px` }}>
+                      الحملة
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'campaign')} title="اسحب لتغيير العرض">
+                        <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                      </div>
+                    </th>
+                    <th className="text-center py-2 px-2">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -980,10 +1215,10 @@ export default function VisitsReportPage() {
                     </tr>
                   ) : (
                     filteredVisits.map((visit, index) => (
-                    <tr key={visit.id} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm ${
+                    <tr key={visit.id} className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 ${
                       index === 0 ? 'bg-green-50 dark:bg-green-900/20 border-l-4 border-l-green-500' : ''
                     }`}>
-                      <td className="py-3 px-2 text-center">
+                      <td className="py-2 px-2 text-center" style={{ width: `${columnWidths.checkbox}px` }}>
                         <button 
                           onClick={() => toggleVisit(visit.id)}
                           className="hover:text-blue-500"
@@ -995,17 +1230,17 @@ export default function VisitsReportPage() {
                           )}
                         </button>
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-2 px-2 whitespace-nowrap" style={{ width: `${columnWidths.timestamp}px` }}>
                         <div className="flex items-center gap-2">
-                          <div>
-                            <div className="text-sm">
+                          <div className="overflow-hidden">
+                            <div className="truncate">
                               {new Date(visit.timestamp).toLocaleDateString('ar-EG', { 
                                 day: '2-digit',
                                 month: '2-digit',
                                 year: 'numeric'
                               })}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                            <div className="text-gray-500 dark:text-gray-400 truncate">
                               {new Date(visit.timestamp).toLocaleTimeString('ar-EG', { 
                                 hour: '2-digit', 
                                 minute: '2-digit',
@@ -1015,29 +1250,29 @@ export default function VisitsReportPage() {
                             </div>
                           </div>
                           {index === 0 && currentPage === 1 && (
-                            <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full font-bold animate-pulse">
+                            <span className="px-2 py-0.5 bg-green-500 text-white rounded-full font-bold animate-pulse flex-shrink-0">
                               أحدث
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-2" title={visit.ipAddress}>
-                        <span className="font-mono text-xs block overflow-hidden text-ellipsis whitespace-nowrap">{visit.ipAddress}</span>
+                      <td className="py-2 px-2" style={{ width: `${columnWidths.ip}px` }} title={visit.ipAddress}>
+                        <span className="font-mono block truncate">{visit.ipAddress}</span>
                       </td>
-                      <td className="py-3 px-2" title={visit.country || '-'}>
-                        <span className="block overflow-hidden text-ellipsis whitespace-nowrap text-xs">{visit.country || '-'}</span>
+                      <td className="py-2 px-2" style={{ width: `${columnWidths.country}px` }} title={visit.country || '-'}>
+                        <span className="block truncate">{visit.country || '-'}</span>
                       </td>
-                      <td className="py-3 px-2 hidden md:table-cell" title={visit.city || '-'}>
+                      <td className="py-2 px-2 hidden md:table-cell" style={{ width: `${columnWidths.city}px` }} title={visit.city || '-'}>
                         <span className="block overflow-hidden text-ellipsis whitespace-nowrap text-xs">{visit.city || '-'}</span>
                       </td>
-                      <td className="py-3 px-2">
-                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs block overflow-hidden text-ellipsis whitespace-nowrap" title={formatSalesPageName(visit.targetPage)}>
+                      <td className="py-2 px-2" style={{ width: `${columnWidths.page}px` }}>
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded block truncate" title={formatSalesPageName(visit.targetPage)}>
                           {formatSalesPageName(visit.targetPage)}
                         </span>
                       </td>
-                      <td className="py-3 px-2 hidden lg:table-cell">
+                      <td className="py-2 px-2 hidden lg:table-cell" style={{ width: `${columnWidths.device}px` }}>
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-xs font-medium">
+                          <span className="font-medium">
                             {visit.device === 'mobile' && '📱'}
                             {visit.device === 'tablet' && '📱'}
                             {visit.device === 'desktop' && '💻'}
@@ -1045,8 +1280,8 @@ export default function VisitsReportPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-2">
-                        <span className={`px-2 py-1 rounded text-xs block overflow-hidden text-ellipsis whitespace-nowrap ${
+                      <td className="py-2 px-2" style={{ width: `${columnWidths.source}px` }}>
+                        <span className={`px-2 py-1 rounded block truncate ${
                           visit.isGoogle
                             ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
@@ -1054,7 +1289,7 @@ export default function VisitsReportPage() {
                           {visit.utmSource?.substring(0, 8) || (visit.isGoogle ? 'Google' : 'Direct')}
                         </span>
                       </td>
-                      <td className="py-3 px-2 max-w-[192px]">
+                      <td className="py-2 px-2" style={{ width: `${columnWidths.campaign}px` }}>
                         <div className="max-h-16 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', wordBreak: 'break-word' }}>
                           {visit.gclid && (
                             <div className="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded mb-1" title={`Google Ads: ${visit.gclid}`}>
@@ -1082,7 +1317,7 @@ export default function VisitsReportPage() {
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-2 text-center">
+                      <td className="py-2 px-2 text-center">
                         <button
                           onClick={() => {
                             showDeleteConfirmation('single', 1, visit.id)

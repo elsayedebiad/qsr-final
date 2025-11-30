@@ -25,7 +25,11 @@ import {
   Users,
   MessageSquare,
   Send,
-  FileWarning
+  FileWarning,
+  Ruler,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { ar } from 'date-fns/locale'
@@ -185,6 +189,138 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   const [isAddingNote, setIsAddingNote] = useState(false)
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null)
   const [editingNoteText, setEditingNoteText] = useState('')
+  
+  // Column resizing and font size states
+  const defaultColumnWidths = {
+    contractNumber: 120,
+    passport: 120,
+    client: 150,
+    country: 100,
+    salesRep: 120,
+    office: 150,
+    status: 180,
+    date: 90,
+    days: 80,
+    creator: 100,
+    alert: 80,
+    actions: 120
+  }
+
+  const [columnWidths, setColumnWidths] = useState<{[key: string]: number}>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('contractsTableColumnWidths')
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch (e) {
+          console.error('Error parsing saved column widths:', e)
+        }
+      }
+    }
+    return defaultColumnWidths
+  })
+
+  const [resizingColumn, setResizingColumn] = useState<string | null>(null)
+  const [startX, setStartX] = useState(0)
+  const [startWidth, setStartWidth] = useState(0)
+
+  // حفظ عرض الأعمدة في localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('contractsTableColumnWidths', JSON.stringify(columnWidths))
+    }
+  }, [columnWidths])
+
+  // Font size control
+  const defaultFontSize = 13
+  const minFontSize = 10
+  const maxFontSize = 18
+
+  const [tableFontSize, setTableFontSize] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('contractsTableFontSize')
+      if (saved) {
+        const size = parseInt(saved)
+        if (size >= minFontSize && size <= maxFontSize) {
+          return size
+        }
+      }
+    }
+    return defaultFontSize
+  })
+
+  // حفظ حجم الخط
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('contractsTableFontSize', tableFontSize.toString())
+    }
+  }, [tableFontSize])
+
+  // Handle column resize
+  const handleMouseDown = (e: React.MouseEvent, columnKey: string) => {
+    e.preventDefault()
+    setResizingColumn(columnKey)
+    setStartX(e.clientX)
+    setStartWidth(columnWidths[columnKey])
+  }
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!resizingColumn) return
+    const diff = startX - e.clientX
+    const newWidth = Math.max(50, startWidth + diff)
+    setColumnWidths(prev => ({
+      ...prev,
+      [resizingColumn]: newWidth
+    }))
+  }, [resizingColumn, startX, startWidth])
+
+  const handleMouseUp = useCallback(() => {
+    setResizingColumn(null)
+  }, [])
+
+  useEffect(() => {
+    if (resizingColumn) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.classList.add('resizing-column')
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+        document.body.classList.remove('resizing-column')
+      }
+    }
+  }, [resizingColumn, handleMouseMove, handleMouseUp])
+
+  // Font size functions
+  const increaseFontSize = () => {
+    setTableFontSize(prev => {
+      const newSize = Math.min(prev + 1, maxFontSize)
+      if (newSize === maxFontSize) {
+        toast('وصلت للحد الأقصى لحجم الخط', { icon: '📏' })
+      }
+      return newSize
+    })
+  }
+
+  const decreaseFontSize = () => {
+    setTableFontSize(prev => {
+      const newSize = Math.max(prev - 1, minFontSize)
+      if (newSize === minFontSize) {
+        toast('وصلت للحد الأدنى لحجم الخط', { icon: '📏' })
+      }
+      return newSize
+    })
+  }
+
+  const resetFontSize = () => {
+    setTableFontSize(defaultFontSize)
+    toast.success('تم إعادة ضبط حجم الخط')
+  }
+
+  const resetColumnWidths = () => {
+    setColumnWidths(defaultColumnWidths)
+    toast.success('تم إعادة ضبط عرض الأعمدة')
+  }
   
   // قوائم فريدة للفلاتر - محسّنة بـ useMemo
   const uniqueSalesReps = useMemo(() => 
@@ -1163,22 +1299,140 @@ function AddContractsPageContent({ userData }: { userData: any }) {
             </div>
             {/* جدول العقود */}
             <div className="bg-card border border-border sm:border-2 overflow-hidden rounded-lg sm:rounded-2xl shadow-lg sm:shadow-xl">
+              {/* شريط التحكم */}
+              <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 px-4 py-3 border-b border-border">
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <ChevronLeft className="h-3 w-3" />
+                      <span>يمكنك التمرير يميناً ويساراً لعرض جميع الأعمدة</span>
+                      <ChevronRight className="h-3 w-3" />
+                    </div>
+                    <div className="hidden sm:block w-px h-4 bg-border"></div>
+                    <div className="flex items-center gap-2">
+                      <Ruler className="h-3 w-3 text-primary" />
+                      <span className="font-medium text-primary">اسحب الخطوط بين الأعمدة لتغيير العرض</span>
+                    </div>
+                  </div>
+                  
+                  {/* أزرار التحكم */}
+                  <div className="flex items-center gap-2">
+                    {/* التحكم في حجم الخط */}
+                    <div className="flex items-center gap-1 bg-muted/50 border border-border rounded-lg p-1">
+                      <button
+                        onClick={decreaseFontSize}
+                        className="p-1.5 hover:bg-background rounded transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="تصغير الخط"
+                        disabled={tableFontSize <= minFontSize}
+                      >
+                        <span className="text-sm font-bold">A-</span>
+                      </button>
+                      <div className="px-2 text-xs font-medium text-foreground">
+                        {tableFontSize}px
+                      </div>
+                      <button
+                        onClick={increaseFontSize}
+                        className="p-1.5 hover:bg-background rounded transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="تكبير الخط"
+                        disabled={tableFontSize >= maxFontSize}
+                      >
+                        <span className="text-base font-bold">A+</span>
+                      </button>
+                      <div className="w-px h-4 bg-border mx-1"></div>
+                      <button
+                        onClick={resetFontSize}
+                        className="p-1.5 hover:bg-background rounded transition-all active:scale-95"
+                        title="إعادة ضبط حجم الخط"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                      </button>
+                    </div>
+
+                    {/* إعادة ضبط عرض الأعمدة */}
+                    <button
+                      onClick={resetColumnWidths}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-muted/80 border border-border rounded-lg transition-all text-xs font-medium hover:scale-105 active:scale-95"
+                      title="إعادة ضبط عرض الأعمدة للقيم الافتراضية"
+                    >
+                      <Ruler className="h-3 w-3" />
+                      <span className="hidden xl:inline">إعادة ضبط العرض</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
               <div className="overflow-x-auto -mx-2 sm:mx-0">
-                <table className="w-full min-w-[800px]">
+                <table className="w-full min-w-[800px]" style={{ fontSize: `${tableFontSize}px`, tableLayout: 'fixed' }}>
                   <thead className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-b-2 border-primary/20">
                     <tr>
-                      <th className="px-2 sm:px-4 py-3 sm:py-4 text-right text-xs font-extrabold text-foreground tracking-wide">رقم العقد</th>
-                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden md:table-cell">الجواز</th>
-                      <th className="px-2 sm:px-4 py-3 sm:py-4 text-right text-xs font-extrabold text-foreground tracking-wide">العميل</th>
-                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden lg:table-cell">الدولة</th>
-                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden xl:table-cell">ممثل المبيعات</th>
-                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden lg:table-cell">المكتب</th>
-                      <th className="px-2 sm:px-4 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide">الحالة</th>
-                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden md:table-cell">التاريخ</th>
-                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden sm:table-cell">الأيام</th>
-                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden xl:table-cell">المنشئ</th>
-                      <th className="px-2 sm:px-3 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide hidden md:table-cell">تنبيه</th>
-                      <th className="px-2 sm:px-4 py-3 sm:py-4 text-center text-xs font-extrabold text-foreground tracking-wide">إجراءات</th>
+                      <th className="px-2 py-3 text-right font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.contractNumber}px` }}>
+                        رقم العقد
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'contractNumber')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden md:table-cell relative" style={{ width: `${columnWidths.passport}px` }}>
+                        الجواز
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'passport')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-right font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.client}px` }}>
+                        العميل
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'client')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden lg:table-cell relative" style={{ width: `${columnWidths.country}px` }}>
+                        الدولة
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'country')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden xl:table-cell relative" style={{ width: `${columnWidths.salesRep}px` }}>
+                        ممثل المبيعات
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'salesRep')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden lg:table-cell relative" style={{ width: `${columnWidths.office}px` }}>
+                        المكتب
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'office')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.status}px` }}>
+                        الحالة
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'status')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden md:table-cell relative" style={{ width: `${columnWidths.date}px` }}>
+                        التاريخ
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'date')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden sm:table-cell relative" style={{ width: `${columnWidths.days}px` }}>
+                        الأيام
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'days')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden xl:table-cell relative" style={{ width: `${columnWidths.creator}px` }}>
+                        المنشئ
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'creator')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden md:table-cell relative" style={{ width: `${columnWidths.alert}px` }}>
+                        تنبيه
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'alert')} title="اسحب لتغيير العرض">
+                          <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
+                        </div>
+                      </th>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.actions}px` }}>
+                        إجراءات
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
@@ -1205,87 +1459,87 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                       
                       return (
                         <tr key={contract.id} className="hover:bg-primary/5 transition-all duration-200 group">
-                          <td className="px-2 sm:px-4 py-3 sm:py-4">
-                            <div className="text-xs sm:text-sm font-bold text-primary">{contract.contractNumber}</div>
-                            <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                          <td className="px-2 py-3" style={{ width: `${columnWidths.contractNumber}px` }}>
+                            <div className="font-bold text-primary truncate">{contract.contractNumber}</div>
+                            <div className="text-muted-foreground mt-0.5 flex items-center gap-1 truncate">
                               <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50"></span>
                               {contract.contractType === 'SPECIFIC' ? 'معين' : 'مواصفات'}
                             </div>
                           </td>
-                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden md:table-cell">
-                            <div className="text-xs font-mono font-bold text-foreground bg-muted/50 px-2 py-1 rounded inline-block">
+                          <td className="px-2 py-3 text-center hidden md:table-cell" style={{ width: `${columnWidths.passport}px` }}>
+                            <div className="font-mono font-bold text-foreground bg-muted/50 px-2 py-1 rounded inline-block truncate">
                               {contract.passportNumber || contract.workerPassportNumber || '-'}
                             </div>
                           </td>
-                          <td className="px-2 sm:px-4 py-3 sm:py-4">
-                            <div className="text-xs sm:text-sm font-bold text-foreground">{contract.clientName}</div>
-                            <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                          <td className="px-2 py-3" style={{ width: `${columnWidths.client}px` }}>
+                            <div className="font-bold text-foreground truncate">{contract.clientName}</div>
+                            <div className="text-muted-foreground mt-0.5 truncate">
                               {contract.profession}
                             </div>
                           </td>
-                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden lg:table-cell">
-                            <div className="text-xs font-semibold text-foreground bg-primary/5 px-2 py-1 rounded-md inline-block">
+                          <td className="px-2 py-3 text-center hidden lg:table-cell" style={{ width: `${columnWidths.country}px` }}>
+                            <div className="font-semibold text-foreground bg-primary/5 px-2 py-1 rounded-md inline-block truncate">
                               {contract.countryName}
                             </div>
                           </td>
-                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden xl:table-cell">
-                            <div className="text-xs font-semibold text-foreground">
+                          <td className="px-2 py-3 text-center hidden xl:table-cell" style={{ width: `${columnWidths.salesRep}px` }}>
+                            <div className="font-semibold text-foreground truncate">
                               {contract.salesRepName}
                             </div>
                           </td>
-                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden lg:table-cell">
+                          <td className="px-2 py-3 text-center hidden lg:table-cell" style={{ width: `${columnWidths.office}px` }}>
                             <div className="text-xs text-muted-foreground">
                               {contract.office}
                             </div>
                           </td>
-                          <td className="px-2 sm:px-4 py-3 sm:py-4 text-center">
+                          <td className="px-2 py-3 text-center" style={{ width: `${columnWidths.status}px` }}>
                             <div className="flex flex-col items-center gap-1.5">
-                              <div className={`text-xs font-bold px-3 py-1.5 rounded-full border ${getStatusColor(contract.status)} shadow-sm`}>
+                              <div className={`font-bold px-3 py-1.5 rounded-full border ${getStatusColor(contract.status)} shadow-sm truncate max-w-full`}>
                                 {CONTRACT_STATUSES[contract.status]}
                               </div>
                               <button
                                 onClick={() => openStatusHistoryModal(contract)}
-                                className="text-[10px] text-blue-600 hover:text-blue-700 font-semibold underline hover:no-underline transition-all"
+                                className="text-blue-600 hover:text-blue-700 font-semibold underline hover:no-underline transition-all"
                                 title="عرض تفاصيل المراحل"
                               >
                                 📋 التفاصيل
                               </button>
                             </div>
                           </td>
-                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden md:table-cell">
-                            <div className="text-xs font-semibold text-foreground">
+                          <td className="px-2 py-3 text-center hidden md:table-cell" style={{ width: `${columnWidths.date}px` }}>
+                            <div className="font-semibold text-foreground truncate">
                               {format(new Date(contract.createdAt), 'dd/MM/yy', { locale: ar })}
                             </div>
                           </td>
-                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden sm:table-cell">
-                            <div className={`text-xs sm:text-sm font-extrabold px-2 py-1 rounded-lg inline-block ${
+                          <td className="px-2 py-3 text-center hidden sm:table-cell" style={{ width: `${columnWidths.days}px` }}>
+                            <div className={`font-extrabold px-2 py-1 rounded-lg inline-block ${
                               daysSinceCreation >= 40 ? 'bg-red-500/20 text-red-700' :
                               daysSinceCreation >= 20 ? 'bg-orange-500/20 text-orange-700' :
                               'bg-green-500/20 text-green-700'
                             }`}>
                               {daysSinceCreation}
                             </div>
-                            <div className="text-[10px] text-muted-foreground mt-0.5">يوم</div>
+                            <div className="text-muted-foreground mt-0.5">يوم</div>
                           </td>
-                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden xl:table-cell">
-                            <div className="text-xs font-semibold text-foreground">
+                          <td className="px-2 py-3 text-center hidden xl:table-cell" style={{ width: `${columnWidths.creator}px` }}>
+                            <div className="font-semibold text-foreground truncate">
                               {contract.createdBy?.name || '-'}
                             </div>
                           </td>
-                          <td className="px-2 sm:px-3 py-3 sm:py-4 text-center hidden md:table-cell">
+                          <td className="px-2 py-3 text-center hidden md:table-cell" style={{ width: `${columnWidths.alert}px` }}>
                             {contract.hasCVIssue ? (
-                              <div className="inline-flex items-center gap-1 text-xs text-destructive font-bold bg-destructive/10 px-2 py-1 rounded-full border border-destructive/30">
-                                <AlertTriangle className="h-3 w-3" />
-                                <span className="hidden lg:inline">{contract.cvIssueType}</span>
+                              <div className="inline-flex items-center gap-1 text-destructive font-bold bg-destructive/10 px-2 py-1 rounded-full border border-destructive/30 truncate">
+                                <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                                <span className="hidden lg:inline truncate">{contract.cvIssueType}</span>
                               </div>
                             ) : (
-                              <div className="inline-flex items-center gap-1 text-xs text-success font-bold bg-success/10 px-2 py-1 rounded-full border border-success/30">
+                              <div className="inline-flex items-center gap-1 text-success font-bold bg-success/10 px-2 py-1 rounded-full border border-success/30">
                                 <CheckCircle className="h-3 w-3" />
                                 <span className="hidden lg:inline">سليم</span>
                               </div>
                             )}
                           </td>
-                          <td className="px-2 sm:px-4 py-3 sm:py-4 text-center">
+                          <td className="px-2 py-3 text-center" style={{ width: `${columnWidths.actions}px` }}>
                             <div className="flex gap-1 sm:gap-1.5 justify-center">
                               <button
                                 onClick={() => {

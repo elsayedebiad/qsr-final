@@ -236,19 +236,19 @@ export default function UsersManagementPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">المستخدم</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">البريد الإلكتروني</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الدور</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الصلاحيات</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الحالة</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">تاريخ الإنشاء</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الإجراءات</th>
+                <th className="px-3 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">المستخدم</th>
+                <th className="px-3 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">البريد الإلكتروني</th>
+                <th className="px-3 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الدور</th>
+                <th className="px-3 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الصلاحيات</th>
+                <th className="px-3 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الحالة</th>
+                <th className="px-3 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">تاريخ الإنشاء</th>
+                <th className="px-3 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">الإجراءات</th>
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-gray-200">
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-background">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center ml-3">
                         <User className="h-6 w-6 text-primary" />
@@ -258,15 +258,15 @@ export default function UsersManagementPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     <div className="text-sm text-foreground">{user.email}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     <span className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${getRoleColor(user.role)}`}>
                       {getRoleText(user.role)}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
                       {user.permissions && user.permissions.length > 0 ? (
                         <>
@@ -287,7 +287,7 @@ export default function UsersManagementPage() {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       {user.isActive ? (
                         <>

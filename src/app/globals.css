@@ -40,6 +40,12 @@
   --sidebar-accent-foreground: #F0F6FC;
   --sidebar-border: #30363D;
   --sidebar-ring: #3B82F6;
+  
+  /* Table Spacing Variables - يمكن تخصيصها بسهولة */
+  --table-cell-padding-x: 0.75rem; /* 12px - المسافة الأفقية */
+  --table-cell-padding-y: 0.5rem;  /* 8px - المسافة الرأسية */
+  --table-header-padding-x: 0.75rem; /* 12px */
+  --table-header-padding-y: 0.625rem; /* 10px */
 }
 
 /* Modern Light Mode Colors */
@@ -98,6 +104,12 @@ html[data-theme="light"],
   
   /* Soft, layered shadows */
   --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  
+  /* Table Spacing Variables - نفس القيم للوضع النهاري */
+  --table-cell-padding-x: 0.75rem;
+  --table-cell-padding-y: 0.5rem;
+  --table-header-padding-x: 0.75rem;
+  --table-header-padding-y: 0.625rem;
   --shadow-card-hover: 0 10px 20px -5px rgba(0, 0, 0, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
   
@@ -854,17 +866,55 @@ main > header [data-sidebar="trigger"] {
   color: var(--muted-foreground);
   font-weight: 600;
   text-align: right;
-  padding: 0.75rem 1rem;
+  padding: var(--table-header-padding-y) var(--table-header-padding-x);
   border-bottom: 1px solid var(--border);
 }
 
 .table td {
-  padding: 0.75rem 1rem;
+  padding: var(--table-cell-padding-y) var(--table-cell-padding-x);
   border-bottom: 1px solid var(--border);
 }
 
 .table tbody tr:hover {
   background-color: var(--muted);
+}
+
+/* Column Resize Styles - خطوط فاصلة قابلة للسحب */
+.table th {
+  position: relative;
+}
+
+.table th .resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  background-color: transparent;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.table th .resize-handle:hover {
+  background-color: var(--primary);
+  width: 6px;
+}
+
+.table th .resize-handle:active {
+  background-color: var(--primary);
+  width: 6px;
+}
+
+/* مؤشر السحب */
+body.resizing-column {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.resizing-column * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
 
 /* Modern Form Styling */

@@ -331,7 +331,7 @@ export default function ArchivePage() {
                 <table className="w-full">
                   <thead className="border-b border-border">
                     <tr>
-                      <th className="px-4 py-4 text-right">
+                      <th className="px-3 py-2.5 text-right">
                         <input
                           type="checkbox"
                           className="w-4 h-4 text-primary bg-input border-2 border-border rounded focus:ring-2 focus:ring-primary"
@@ -339,19 +339,19 @@ export default function ArchivePage() {
                           onChange={handleSelectAll}
                         />
                       </th>
-                      <th className="px-4 py-4 font-semibold text-muted-foreground text-right">الاسم الكامل</th>
-                      <th className="px-3 py-4 font-semibold text-muted-foreground text-center">الكود المرجعي</th>
-                      <th className="px-3 py-4 font-semibold text-muted-foreground text-center">الجنسية</th>
-                      <th className="px-3 py-4 font-semibold text-muted-foreground text-center">الوظيفة</th>
-                      <th className="px-3 py-4 font-semibold text-muted-foreground text-center">العمر</th>
-                      <th className="px-3 py-4 font-semibold text-muted-foreground text-center">تاريخ الأرشفة</th>
-                      <th className="px-3 py-4 font-semibold text-muted-foreground text-center">الإجراءات</th>
+                      <th className="px-3 py-2.5 font-semibold text-muted-foreground text-right">الاسم الكامل</th>
+                      <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center">الكود المرجعي</th>
+                      <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center">الجنسية</th>
+                      <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center">الوظيفة</th>
+                      <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center">العمر</th>
+                      <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center">تاريخ الأرشفة</th>
+                      <th className="px-2 py-2.5 font-semibold text-muted-foreground text-center">الإجراءات</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {filteredCvs.map((cv) => (
                       <tr key={cv.id} className="hover:bg-muted/50 transition-colors">
-                        <td className="px-4 py-4">
+                        <td className="px-3 py-2.5">
                           <input
                             type="checkbox"
                             className="w-4 h-4 text-primary bg-input border-2 border-border rounded focus:ring-2 focus:ring-primary"
@@ -359,7 +359,7 @@ export default function ArchivePage() {
                             onChange={() => handleSelectCV(cv.id)}
                           />
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-3 py-2.5">
                           <div className="flex items-center space-x-3">
                             <div className="flex-shrink-0">
                               <User className="h-8 w-8 text-muted-foreground" />
@@ -376,32 +376,32 @@ export default function ArchivePage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-4 text-center">
+                        <td className="px-2 py-2.5 text-center">
                           <span className="text-sm font-mono text-foreground">
                             {cv.referenceCode || '-'}
                           </span>
                         </td>
-                        <td className="px-3 py-4 text-center">
+                        <td className="px-2 py-2.5 text-center">
                           <span className="text-sm text-foreground">
                             {cv.nationality || '-'}
                           </span>
                         </td>
-                        <td className="px-3 py-4 text-center">
+                        <td className="px-2 py-2.5 text-center">
                           <span className="text-sm text-foreground">
                             {cv.position || '-'}
                           </span>
                         </td>
-                        <td className="px-3 py-4 text-center">
+                        <td className="px-2 py-2.5 text-center">
                           <span className="text-sm font-semibold text-foreground">
                             {cv.age || '-'}
                           </span>
                         </td>
-                        <td className="px-3 py-4 text-center">
+                        <td className="px-2 py-2.5 text-center">
                           <span className="text-sm text-muted-foreground">
                             {new Date(cv.updatedAt).toLocaleDateString('ar-SA')}
                           </span>
                         </td>
-                        <td className="px-3 py-4">
+                        <td className="px-2 py-2.5">
                           <div className="flex items-center justify-center space-x-2">
                             <button
                               onClick={() => router.push(`/cv/${cv.id}`)}
