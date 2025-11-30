@@ -57,7 +57,7 @@
     "html2canvas": "^1.4.1",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
-    "jspdf": "^3.0.3",
+    "jspdf": "^3.0.4",
     "jszip": "^3.10.1",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.544.0",

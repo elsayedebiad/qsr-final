@@ -28,11 +28,10 @@ import {
   FileWarning,
   Ruler,
   RotateCcw,
-  ChevronLeft,
-  ChevronRight,
   ArrowUp,
   ArrowDown,
-  FileSpreadsheet
+  FileSpreadsheet,
+  FileDown
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -43,6 +42,8 @@ import {
 import * as XLSX from 'xlsx'
 import { format, differenceInDays } from 'date-fns'
 import { ar } from 'date-fns/locale'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 // قائمة المكاتب
 const OFFICES = [
@@ -184,6 +185,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
   const [showAddSalesRepModal, setShowAddSalesRepModal] = useState(false)
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
   const [selectedContractIds, setSelectedContractIds] = useState<number[]>([])
@@ -204,21 +206,31 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null)
   const [editingNoteText, setEditingNoteText] = useState('')
   
+  // حالات استيراد Excel
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importResults, setImportResults] = useState<{
+    success: number
+    failed: number
+    errors: string[]
+  } | null>(null)
+  
   // Column resizing and font size states
   const defaultColumnWidths = {
-    checkbox: 50,
-    contractNumber: 120,
-    passport: 120,
-    client: 150,
-    country: 100,
-    salesRep: 120,
-    office: 150,
-    status: 180,
-    date: 90,
-    days: 80,
-    creator: 100,
-    alert: 80,
-    actions: 120
+    checkbox: 40,
+    contractNumber: 90,
+    passport: 90,
+    client: 110,
+    country: 70,
+    salesRep: 90,
+    office: 100,
+    status: 120,
+    date: 75,
+    days: 55,
+    creator: 80,
+    alert: 60,
+    actions: 100
   }
 
   const [columnWidths, setColumnWidths] = useState<{[key: string]: number}>(() => {
@@ -247,9 +259,9 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   }, [columnWidths])
 
   // Font size control
-  const defaultFontSize = 13
-  const minFontSize = 10
-  const maxFontSize = 18
+  const defaultFontSize = 12
+  const minFontSize = 9
+  const maxFontSize = 16
 
   const [tableFontSize, setTableFontSize] = useState<number>(() => {
     if (typeof window !== 'undefined') {
@@ -807,6 +819,43 @@ function AddContractsPageContent({ userData }: { userData: any }) {
     }
   }
 
+  // حذف عقود متعددة
+  const handleBulkDelete = async () => {
+    if (selectedContractIds.length === 0) return
+
+    setIsSubmitting(true)
+
+    try {
+      // حذف كل عقد على حدة
+      const deletePromises = selectedContractIds.map(id => 
+        fetch(`/api/new-contracts?id=${id}`, {
+          method: 'DELETE'
+        })
+      )
+
+      const results = await Promise.all(deletePromises)
+      const successCount = results.filter(r => r.ok).length
+      const failCount = results.length - successCount
+
+      if (successCount > 0) {
+        toast.success(`✅ تم حذف ${successCount} عقد بنجاح`)
+      }
+      
+      if (failCount > 0) {
+        toast.error(`❌ فشل حذف ${failCount} عقد`)
+      }
+
+      setShowBulkDeleteModal(false)
+      setSelectedContractIds([])
+      fetchData(false)
+    } catch (error) {
+      console.error('❌ خطأ:', error)
+      toast.error('حدث خطأ أثناء حذف العقود')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   // إضافة ممثل مبيعات جديد
   const handleAddSalesRep = async () => {
     if (!newSalesRepName.trim()) {
@@ -908,6 +957,91 @@ function AddContractsPageContent({ userData }: { userData: any }) {
     }
   }
 
+  // استيراد من Excel
+  const handleImportExcel = async () => {
+    if (!importFile) {
+      toast.error('الرجاء اختيار ملف Excel')
+      return
+    }
+
+    setIsImporting(true)
+    setImportResults(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', importFile)
+      formData.append('userId', String(user?.id || 1))
+
+      const response = await fetch('/api/new-contracts/import-excel', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setImportResults(data)
+        toast.success(data.message)
+        
+        // تحديث البيانات
+        fetchData()
+        
+        // إعادة تعيين الملف
+        setImportFile(null)
+        
+        // إغلاق المودال بعد 3 ثواني إذا نجحت جميع العقود
+        if (data.failed === 0) {
+          setTimeout(() => {
+            setShowImportModal(false)
+            setImportResults(null)
+          }, 3000)
+        }
+      } else {
+        toast.error(data.error || 'فشل استيراد العقود')
+      }
+    } catch (error) {
+      console.error('❌ خطأ في استيراد العقود:', error)
+      toast.error('حدث خطأ أثناء استيراد العقود')
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
+  // تنزيل ملف نموذجي للاستيراد
+  const downloadTemplateExcel = () => {
+    const templateData = [{
+      'رقم العقد': 'مثال: 2024001',
+      'النوع': 'معين',
+      'العميل': 'مثال: أحمد محمد',
+      'رقم جواز العاملة': 'مثال: A1234567',
+      'المهنة': 'مثال: عاملة منزلية',
+      'الدولة': 'مثال: إثيوبيا',
+      'رقم هوية صاحب العمل': 'مثال: 1234567890',
+      'المكتب': 'إثيوبيا (دوكا)',
+      'ممثل المبيعات': 'مثال: محمد أحمد',
+      'رقم الجوال المساند': '0512345678',
+      'رقم المبيعات': '0512345679',
+      'رقم الشهر الميلادي': '12',
+      'التاريخ الحالي': '01/12/2024',
+      'الحالة': 'طلب رفع سيرة',
+      'تاريخ طلب رفع السيرة': '',
+      'تاريخ طلب التوظيف': '',
+      'يوجد مشكلة': 'لا',
+      'نوع المشكلة': '',
+      'تاريخ الإنشاء': '01/12/2024',
+      'آخر تحديث للحالة': '',
+      'عدد الأيام منذ الإنشاء': '0',
+      'المنشئ': '',
+      'ملاحظات المتابعة': ''
+    }]
+
+    const ws = XLSX.utils.json_to_sheet(templateData)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'نموذج العقود')
+    XLSX.writeFile(wb, `نموذج_استيراد_عقود.xlsx`)
+    toast.success('تم تنزيل الملف النموذجي')
+  }
+
   // تصدير إلى Excel
   const handleExportExcel = (type: 'all' | 'selected') => {
     const contractsToExport = type === 'selected' 
@@ -924,15 +1058,26 @@ function AddContractsPageContent({ userData }: { userData: any }) {
       'رقم العقد': c.contractNumber,
       'النوع': c.contractType === 'SPECIFIC' ? 'معين' : 'مواصفات',
       'العميل': c.clientName,
-      'الجواز': c.passportNumber || c.workerPassportNumber || '-',
+      'رقم جواز العاملة': c.passportNumber || c.workerPassportNumber || '-',
+      'المهنة': c.profession || '-',
       'الدولة': c.countryName,
+      'رقم هوية صاحب العمل': c.employerIdNumber || '-',
       'المكتب': c.office,
       'ممثل المبيعات': c.salesRepName,
+      'رقم الجوال المساند': c.supportMobileNumber || '-',
+      'رقم المبيعات': c.salesMobileNumber || '-',
+      'رقم الشهر الميلادي': c.currentMonth || '-',
+      'التاريخ الحالي': c.currentDate ? format(new Date(c.currentDate), 'dd/MM/yyyy') : '-',
       'الحالة': CONTRACT_STATUSES[c.status],
-      'التاريخ': format(new Date(c.createdAt), 'dd/MM/yyyy'),
-      'عدد الأيام': calculateDays(c.createdAt),
+      'تاريخ طلب رفع السيرة': c.cvUploadRequestDate ? format(new Date(c.cvUploadRequestDate), 'dd/MM/yyyy') : '-',
+      'تاريخ طلب التوظيف': c.employmentRequestDate ? format(new Date(c.employmentRequestDate), 'dd/MM/yyyy') : '-',
+      'يوجد مشكلة': c.hasCVIssue ? 'نعم' : 'لا',
+      'نوع المشكلة': c.cvIssueType || '-',
+      'تاريخ الإنشاء': format(new Date(c.createdAt), 'dd/MM/yyyy'),
+      'آخر تحديث للحالة': c.lastStatusUpdate ? format(new Date(c.lastStatusUpdate), 'dd/MM/yyyy') : '-',
+      'عدد الأيام منذ الإنشاء': calculateDays(c.createdAt),
       'المنشئ': c.createdBy?.name || '-',
-      'ملاحظات': c.followUpNotes || '-'
+      'ملاحظات المتابعة': c.followUpNotes || '-'
     }))
 
     const ws = XLSX.utils.json_to_sheet(data)
@@ -940,6 +1085,176 @@ function AddContractsPageContent({ userData }: { userData: any }) {
     XLSX.utils.book_append_sheet(wb, ws, 'العقود')
     XLSX.writeFile(wb, `contracts_export_${format(new Date(), 'yyyy-MM-dd')}.xlsx`)
     toast.success('تم تصدير ملف Excel بنجاح')
+  }
+
+  // تصدير إلى PDF
+  const handleExportPDF = async (type: 'all' | 'selected') => {
+    const contractsToExport = type === 'selected' 
+      ? contracts.filter(c => selectedContractIds.includes(c.id))
+      : filteredContracts
+
+    if (contractsToExport.length === 0) {
+      toast.error('لا توجد عقود لتصديرها')
+      return
+    }
+
+    try {
+      toast.loading('جاري إنشاء ملف PDF...', { id: 'pdf-export' })
+
+      // إنشاء عنصر مؤقت للطباعة
+      const printElement = document.createElement('div')
+      printElement.style.position = 'absolute'
+      printElement.style.left = '-9999px'
+      printElement.style.top = '0'
+      printElement.style.width = '297mm' // A4 Landscape width
+      printElement.style.backgroundColor = 'white'
+      printElement.style.fontSize = '11px'
+      printElement.style.color = 'black'
+      printElement.style.direction = 'rtl'
+
+      // تحميل خط Cairo من Google Fonts
+      const fontLink = document.createElement('link')
+      fontLink.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap'
+      fontLink.rel = 'stylesheet'
+      document.head.appendChild(fontLink)
+
+      // انتظار تحميل الخط
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // تحويل الشعار إلى base64
+      const logoImg = new Image()
+      logoImg.crossOrigin = 'anonymous'
+      
+      const logoBase64 = await new Promise<string>((resolve) => {
+        logoImg.onload = () => {
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          canvas.width = logoImg.width
+          canvas.height = logoImg.height
+          ctx?.drawImage(logoImg, 0, 0)
+          resolve(canvas.toDataURL('image/png'))
+        }
+        logoImg.onerror = () => resolve('')
+        logoImg.src = '/logo-2.png'
+      })
+
+      // إنشاء محتوى PDF مع خط Cairo وجميع البيانات
+      printElement.innerHTML = `
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+          * { font-family: 'Cairo', sans-serif !important; }
+        </style>
+        <div style="padding: 15px; max-width: 100%; font-family: 'Cairo', sans-serif; position: relative; min-height: 100%;">
+          
+          <!-- Watermark -->
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 80px; font-weight: 800; color: rgba(37, 99, 235, 0.06); white-space: nowrap; z-index: 0; pointer-events: none; font-family: 'Cairo', sans-serif;">
+            تقرير العقود الرسمي
+          </div>
+          
+          <!-- Header مع الشعار -->
+          <div style="text-align: center; margin-bottom: 20px; border-bottom: 4px solid #2563eb; padding-bottom: 15px; position: relative; z-index: 1; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); padding-top: 10px; border-radius: 8px 8px 0 0;">
+            ${logoBase64 ? `<img src="${logoBase64}" style="max-height: 70px; margin-bottom: 10px;" />` : ''}
+            <h1 style="margin: 0; color: #1e40af; font-size: 26px; font-weight: 800; font-family: 'Cairo', sans-serif;">تقرير العقود</h1>
+            <div style="display: flex; justify-content: center; gap: 30px; margin-top: 8px;">
+              <p style="margin: 0; color: #475569; font-size: 12px; font-weight: 600;">📅 تاريخ التقرير: ${format(new Date(), 'dd/MM/yyyy - hh:mm a', { locale: ar })}</p>
+              <p style="margin: 0; color: #475569; font-size: 12px; font-weight: 600;">📊 إجمالي العقود: ${contractsToExport.length} عقد</p>
+            </div>
+          </div>
+
+          <!-- الجدول -->
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9px; position: relative; z-index: 1;">
+            <thead>
+              <tr style="background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);">
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">م</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">رقم العقد</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">النوع</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">العميل</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">رقم الجواز</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">المهنة</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">الدولة</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">رقم الهوية</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">المكتب</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">ممثل المبيعات</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">الحالة</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">تاريخ الإنشاء</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">الأيام</th>
+                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">المنشئ</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${contractsToExport.map((contract, index) => `
+                <tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f1f5f9'};">
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-weight: 700; color: #64748b; font-size: 8px;">${index + 1}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-weight: 700; color: #1e40af; font-size: 9px;">${contract.contractNumber}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px;">${contract.contractType === 'SPECIFIC' ? 'معين' : 'مواصفات'}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-weight: 600; font-size: 9px;">${contract.clientName}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px; direction: ltr;">${contract.passportNumber || contract.workerPassportNumber || '-'}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px;">${contract.profession || '-'}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px;">${contract.countryName}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px; direction: ltr;">${contract.employerIdNumber || '-'}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 7px;">${contract.office}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px;">${contract.salesRepName}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 7px; color: #059669; font-weight: 600;">${CONTRACT_STATUSES[contract.status]}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px; direction: ltr;">${format(new Date(contract.createdAt), 'dd/MM/yyyy')}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px; font-weight: 700; color: ${calculateDays(contract.createdAt) > 30 ? '#dc2626' : '#059669'};">${calculateDays(contract.createdAt)}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px;">${contract.createdBy?.name || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <!-- Footer -->
+          <div style="margin-top: 20px; text-align: center; border-top: 3px solid #2563eb; padding-top: 12px; position: relative; z-index: 1; background: linear-gradient(0deg, #ffffff 0%, #f8fafc 100%); padding-bottom: 10px; border-radius: 0 0 8px 8px;">
+            ${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; margin-bottom: 8px; opacity: 0.7;" />` : ''}
+            <p style="margin: 0; color: #475569; font-size: 10px; font-weight: 600;">تم إنشاء هذا التقرير تلقائياً من نظام إدارة العقود</p>
+            <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 9px;">© ${new Date().getFullYear()} جميع الحقوق محفوظة</p>
+          </div>
+        </div>
+      `
+
+      document.body.appendChild(printElement)
+
+      // انتظار تحميل الخط والصور
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      // تحويل إلى صورة
+      const canvas = await html2canvas(printElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: printElement.offsetWidth,
+        height: printElement.offsetHeight
+      })
+
+      // إنشاء PDF بوضع أفقي (Landscape)
+      const pdf = new jsPDF('l', 'mm', 'a4')
+      const imgData = canvas.toDataURL('image/png')
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      
+      const imgX = (pdfWidth - imgWidth * ratio) / 2
+      const imgY = 5
+
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio)
+
+      // حفظ الملف
+      const fileName = `contracts_report_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.pdf`
+      pdf.save(fileName)
+
+      // تنظيف
+      document.body.removeChild(printElement)
+      document.head.removeChild(fontLink)
+      
+      toast.success('تم إنشاء ملف PDF بنجاح', { id: 'pdf-export' })
+    } catch (error) {
+      console.error('خطأ في إنشاء PDF:', error)
+      toast.error('حدث خطأ أثناء إنشاء ملف PDF', { id: 'pdf-export' })
+    }
   }
 
   // تحديد الكل
@@ -1042,57 +1357,105 @@ function AddContractsPageContent({ userData }: { userData: any }) {
 
   // مكون Shimmer Skeleton
   const ShimmerSkeleton = () => (
-    <div className="space-y-6 animate-pulse">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .shimmer-effect {
+          background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted)/0.5) 50%, hsl(var(--muted)) 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s ease-in-out infinite;
+        }
+      `}} />
+      
       {/* Header Skeleton */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-r from-muted via-muted/50 to-muted rounded-lg shimmer"></div>
-          <div className="space-y-2">
-            <div className="h-7 w-40 bg-gradient-to-r from-muted via-muted/50 to-muted rounded shimmer"></div>
-            <div className="h-4 w-56 bg-gradient-to-r from-muted via-muted/50 to-muted rounded shimmer"></div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center">
+          <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-lg shimmer-effect ml-2 sm:ml-3"></div>
+          <div>
+            <div className="h-6 sm:h-7 w-32 sm:w-40 rounded shimmer-effect mb-2"></div>
+            <div className="h-3 sm:h-4 w-40 sm:w-52 rounded shimmer-effect"></div>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="h-10 w-36 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-lg shimmer"></div>
-          <div className="h-10 w-20 bg-gradient-to-r from-muted via-muted/50 to-muted rounded-lg shimmer"></div>
+        <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+          <div className="h-9 sm:h-10 w-28 sm:w-36 rounded-lg shimmer-effect flex-1 sm:flex-initial"></div>
+          <div className="h-9 sm:h-10 w-16 sm:w-20 rounded-lg shimmer-effect"></div>
         </div>
       </div>
 
       {/* Filters Skeleton */}
-      <div className="bg-card p-6 rounded-lg border border-border space-y-4">
-        <div className="h-5 w-32 bg-gradient-to-r from-muted via-muted/50 to-muted rounded shimmer"></div>
-        <div className="h-12 w-full bg-gradient-to-r from-muted via-muted/50 to-muted rounded-lg shimmer"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="bg-card p-3 sm:p-6 rounded-lg border border-border space-y-3 sm:space-y-4 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="h-4 w-28 rounded shimmer-effect"></div>
+          <div className="h-8 w-24 rounded-lg shimmer-effect"></div>
+        </div>
+        <div className="h-10 sm:h-12 w-full rounded-lg shimmer-effect"></div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-11 bg-gradient-to-r from-muted via-muted/50 to-muted rounded-lg shimmer"></div>
+            <div key={i} className="h-9 sm:h-11 rounded-lg shimmer-effect"></div>
           ))}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
           {[1, 2].map((i) => (
-            <div key={i} className="h-11 bg-gradient-to-r from-muted via-muted/50 to-muted rounded-lg shimmer"></div>
+            <div key={i} className="h-9 sm:h-11 rounded-lg shimmer-effect"></div>
           ))}
         </div>
       </div>
 
       {/* Table Skeleton */}
-      <div className="bg-card border-2 border-border rounded-2xl overflow-hidden">
+      <div className="bg-card border border-border sm:border-2 rounded-lg sm:rounded-2xl shadow-lg overflow-hidden">
+        {/* شريط التحكم */}
+        <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 px-4 py-3 border-b border-border">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-48 rounded shimmer-effect"></div>
+              <div className="h-4 w-24 rounded shimmer-effect"></div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-24 rounded-lg shimmer-effect"></div>
+              <div className="h-8 w-24 rounded-lg shimmer-effect"></div>
+              <div className="h-8 w-20 rounded-lg shimmer-effect"></div>
+            </div>
+          </div>
+        </div>
+        
         {/* Table Header */}
-        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-b-2 border-primary/20 p-4">
-          <div className="grid grid-cols-12 gap-3">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
-              <div key={i} className="h-4 bg-gradient-to-r from-muted via-muted/50 to-muted rounded shimmer"></div>
-            ))}
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-b-2 border-primary/20 px-2 py-3">
+          <div className="flex gap-2 overflow-hidden">
+            <div className="h-4 w-10 rounded shimmer-effect flex-shrink-0"></div>
+            <div className="h-4 w-20 rounded shimmer-effect flex-shrink-0"></div>
+            <div className="h-4 w-24 rounded shimmer-effect flex-shrink-0"></div>
+            <div className="h-4 w-28 rounded shimmer-effect flex-shrink-0"></div>
+            <div className="h-4 w-20 rounded shimmer-effect flex-shrink-0"></div>
+            <div className="h-4 w-24 rounded shimmer-effect flex-shrink-0"></div>
+            <div className="h-4 w-28 rounded shimmer-effect flex-shrink-0"></div>
+            <div className="h-4 w-20 rounded shimmer-effect flex-shrink-0"></div>
+            <div className="h-4 w-16 rounded shimmer-effect flex-shrink-0"></div>
+            <div className="h-4 w-20 rounded shimmer-effect flex-shrink-0"></div>
           </div>
         </div>
         
         {/* Table Rows */}
         <div className="divide-y divide-border/50">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((row) => (
-            <div key={row} className="p-4">
-              <div className="grid grid-cols-12 gap-3 items-center">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((col) => (
-                  <div key={col} className="h-6 bg-gradient-to-r from-muted via-muted/50 to-muted rounded shimmer"></div>
-                ))}
+            <div key={row} className="px-2 py-3 hover:bg-muted/30">
+              <div className="flex gap-2 items-center overflow-hidden">
+                <div className="h-4 w-4 rounded shimmer-effect flex-shrink-0"></div>
+                <div className="h-5 w-16 rounded shimmer-effect flex-shrink-0"></div>
+                <div className="h-5 w-20 rounded shimmer-effect flex-shrink-0"></div>
+                <div className="h-5 w-24 rounded shimmer-effect flex-shrink-0"></div>
+                <div className="h-5 w-16 rounded shimmer-effect flex-shrink-0"></div>
+                <div className="h-5 w-20 rounded shimmer-effect flex-shrink-0"></div>
+                <div className="h-5 w-24 rounded shimmer-effect flex-shrink-0"></div>
+                <div className="h-5 w-16 rounded shimmer-effect flex-shrink-0"></div>
+                <div className="h-5 w-12 rounded shimmer-effect flex-shrink-0"></div>
+                <div className="flex gap-1 flex-shrink-0">
+                  <div className="h-7 w-7 rounded-lg shimmer-effect"></div>
+                  <div className="h-7 w-7 rounded-lg shimmer-effect"></div>
+                  <div className="h-7 w-7 rounded-lg shimmer-effect"></div>
+                </div>
               </div>
             </div>
           ))}
@@ -1110,7 +1473,48 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   }
 
   return (
-          <div className="space-y-4 sm:space-y-6 px-2 sm:px-0" style={{ zoom: '0.9' }}>
+          <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+            <style dangerouslySetInnerHTML={{__html: `
+              .scrollbar-custom {
+                scrollbar-width: thin;
+                scrollbar-color: hsl(var(--primary) / 0.5) hsl(var(--muted) / 0.3);
+                overflow-x: auto !important;
+                overflow-y: visible;
+              }
+              
+              .scrollbar-custom::-webkit-scrollbar {
+                height: 14px;
+              }
+              
+              .scrollbar-custom::-webkit-scrollbar-track {
+                background: hsl(var(--muted) / 0.5);
+                border-radius: 8px;
+                margin: 4px 8px;
+                border: 1px solid hsl(var(--border));
+              }
+              
+              .scrollbar-custom::-webkit-scrollbar-thumb {
+                background: linear-gradient(90deg, hsl(var(--primary) / 0.6), hsl(var(--primary) / 0.8));
+                border-radius: 8px;
+                border: 2px solid hsl(var(--muted) / 0.3);
+                background-clip: padding-box;
+              }
+              
+              .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(90deg, hsl(var(--primary) / 0.8), hsl(var(--primary)));
+                border-radius: 8px;
+                border: 2px solid hsl(var(--muted) / 0.3);
+                background-clip: padding-box;
+              }
+              
+              .scrollbar-custom::-webkit-scrollbar-thumb:active {
+                background: hsl(var(--primary));
+              }
+
+              .scrollbar-custom::-webkit-scrollbar-corner {
+                background: transparent;
+              }
+            `}} />
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center">
@@ -1391,15 +1795,14 @@ function AddContractsPageContent({ userData }: { userData: any }) {
               </div>
             </div>
             {/* جدول العقود */}
-            <div className="bg-card border border-border sm:border-2 overflow-hidden rounded-lg sm:rounded-2xl shadow-lg sm:shadow-xl">
+            <div className="bg-card border border-border sm:border-2 overflow-x-auto rounded-lg sm:rounded-2xl shadow-lg sm:shadow-xl">
               {/* شريط التحكم */}
               <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 px-4 py-3 border-b border-border">
                 <div className="flex flex-col lg:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
                   <div className="flex flex-col sm:flex-row items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <ChevronLeft className="h-3 w-3" />
+                      <span>↔️</span>
                       <span>يمكنك التمرير يميناً ويساراً لعرض جميع الأعمدة</span>
-                      <ChevronRight className="h-3 w-3" />
                     </div>
                     <div className="hidden sm:block w-px h-4 bg-border"></div>
                     <div className="flex items-center gap-2">
@@ -1425,7 +1828,17 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                   
                   {/* أزرار التحكم */}
                   <div className="flex items-center gap-2">
-                    {/* زر التصدير */}
+                    {/* زر الاستيراد */}
+                    <button 
+                      onClick={() => setShowImportModal(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg transition-all text-sm font-medium"
+                      title="استيراد عقود من Excel"
+                    >
+                      <FileSpreadsheet className="h-5 w-5" />
+                      <span className="hidden sm:inline">استيراد Excel</span>
+                    </button>
+
+                    {/* زر تصدير Excel */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-700 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-all text-sm font-medium">
@@ -1435,15 +1848,52 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleExportExcel('all')} className="cursor-pointer gap-2">
-                          <span>تصدير الكل</span>
+                          <FileSpreadsheet className="h-4 w-4" />
+                          <span>تصدير الكل إلى Excel</span>
                           <span className="text-xs text-muted-foreground">({filteredContracts.length})</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleExportExcel('selected')} className="cursor-pointer gap-2">
-                          <span>تصدير المحدد</span>
+                          <FileSpreadsheet className="h-4 w-4" />
+                          <span>تصدير المحدد إلى Excel</span>
                           <span className="text-xs text-muted-foreground">({selectedContractIds.length})</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+
+                    {/* زر تصدير PDF */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-700 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-all text-sm font-medium">
+                          <FileDown className="h-5 w-5" />
+                          <span className="hidden sm:inline">تصدير PDF</span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleExportPDF('all')} className="cursor-pointer gap-2">
+                          <FileDown className="h-4 w-4" />
+                          <span>تصدير الكل إلى PDF</span>
+                          <span className="text-xs text-muted-foreground">({filteredContracts.length})</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportPDF('selected')} className="cursor-pointer gap-2">
+                          <FileDown className="h-4 w-4" />
+                          <span>تصدير المحدد إلى PDF</span>
+                          <span className="text-xs text-muted-foreground">({selectedContractIds.length})</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* زر الحذف المتعدد */}
+                    {selectedContractIds.length > 0 && (
+                      <button 
+                        onClick={() => setShowBulkDeleteModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-700 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-all text-sm font-medium animate-in fade-in zoom-in duration-200"
+                        title="حذف العقود المحددة"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                        <span className="hidden sm:inline">حذف المحدد</span>
+                        <span className="bg-red-600 text-white px-2 py-0.5 rounded-full text-xs font-bold">{selectedContractIds.length}</span>
+                      </button>
+                    )}
 
                     {/* التحكم في حجم الخط */}
                     <div className="flex items-center gap-1 bg-muted/50 border border-border rounded-lg p-1">
@@ -1488,11 +1938,14 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                   </div>
                 </div>
               </div>
-              <div className="overflow-x-auto -mx-2 sm:mx-0">
-                <table className="w-full min-w-[800px]" style={{ fontSize: `${tableFontSize}px`, tableLayout: 'fixed' }}>
+              {/* Scroll Container */}
+              <div className="relative">
+                <div className="overflow-x-auto scrollbar-custom w-full">
+                  <div className="inline-block min-w-full">
+                    <table className="w-full" style={{ fontSize: `${tableFontSize}px`, minWidth: '1100px' }}>
                   <thead className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-b-2 border-primary/20">
                     <tr>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.checkbox}px` }}>
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide relative" style={{ minWidth: `${columnWidths.checkbox}px` }}>
                         <input 
                           type="checkbox" 
                           className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
@@ -1500,73 +1953,73 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                           onChange={toggleSelectAll}
                         />
                       </th>
-                      <th className="px-2 py-3 text-right font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.contractNumber}px` }}>
+                      <th className="px-3 py-3 text-right font-extrabold text-foreground tracking-wide relative whitespace-nowrap" style={{ minWidth: `${columnWidths.contractNumber}px` }}>
                         رقم العقد
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'contractNumber')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden md:table-cell relative" style={{ width: `${columnWidths.passport}px` }}>
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide hidden md:table-cell relative whitespace-nowrap" style={{ minWidth: `${columnWidths.passport}px` }}>
                         الجواز
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'passport')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-right font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.client}px` }}>
+                      <th className="px-3 py-3 text-right font-extrabold text-foreground tracking-wide relative whitespace-nowrap" style={{ minWidth: `${columnWidths.client}px` }}>
                         العميل
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'client')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden lg:table-cell relative" style={{ width: `${columnWidths.country}px` }}>
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide hidden lg:table-cell relative whitespace-nowrap" style={{ minWidth: `${columnWidths.country}px` }}>
                         الدولة
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'country')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden xl:table-cell relative" style={{ width: `${columnWidths.salesRep}px` }}>
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide hidden xl:table-cell relative whitespace-nowrap" style={{ minWidth: `${columnWidths.salesRep}px` }}>
                         ممثل المبيعات
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'salesRep')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden lg:table-cell relative" style={{ width: `${columnWidths.office}px` }}>
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide hidden lg:table-cell relative whitespace-nowrap" style={{ minWidth: `${columnWidths.office}px` }}>
                         المكتب
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'office')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.status}px` }}>
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide relative whitespace-nowrap" style={{ minWidth: `${columnWidths.status}px` }}>
                         الحالة
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'status')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden md:table-cell relative" style={{ width: `${columnWidths.date}px` }}>
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide hidden md:table-cell relative whitespace-nowrap" style={{ minWidth: `${columnWidths.date}px` }}>
                         التاريخ
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'date')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden sm:table-cell relative" style={{ width: `${columnWidths.days}px` }}>
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide hidden sm:table-cell relative whitespace-nowrap" style={{ minWidth: `${columnWidths.days}px` }}>
                         الأيام
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'days')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden xl:table-cell relative" style={{ width: `${columnWidths.creator}px` }}>
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide hidden xl:table-cell relative whitespace-nowrap" style={{ minWidth: `${columnWidths.creator}px` }}>
                         المنشئ
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'creator')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide hidden md:table-cell relative" style={{ width: `${columnWidths.alert}px` }}>
-                        تنبيه
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide hidden md:table-cell relative whitespace-nowrap" style={{ minWidth: `${columnWidths.alert}px` }}>
+                        التنبيهات
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'alert')} title="اسحب لتغيير العرض">
                           <div className="h-full w-full bg-border group-hover:bg-primary group-active:bg-primary"></div>
                         </div>
                       </th>
-                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.actions}px` }}>
+                      <th className="px-3 py-3 text-center font-extrabold text-foreground tracking-wide relative whitespace-nowrap" style={{ minWidth: `${columnWidths.actions}px` }}>
                         إجراءات
                       </th>
                     </tr>
@@ -1596,7 +2049,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                       
                       return (
                         <tr key={contract.id} className="hover:bg-primary/5 transition-all duration-200 group">
-                          <td className="px-2 py-3 text-center" style={{ width: `${columnWidths.checkbox}px` }}>
+                          <td className="px-3 py-3 text-center" style={{ minWidth: `${columnWidths.checkbox}px` }}>
                             <input 
                               type="checkbox" 
                               className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
@@ -1604,40 +2057,40 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                               onChange={() => toggleSelectContract(contract.id)}
                             />
                           </td>
-                          <td className="px-2 py-3" style={{ width: `${columnWidths.contractNumber}px` }}>
+                          <td className="px-3 py-3" style={{ minWidth: `${columnWidths.contractNumber}px` }}>
                             <div className="font-bold text-primary truncate">{contract.contractNumber}</div>
                             <div className="text-muted-foreground mt-0.5 flex items-center gap-1 truncate">
                               <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/50"></span>
                               {contract.contractType === 'SPECIFIC' ? 'معين' : 'مواصفات'}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center hidden md:table-cell" style={{ width: `${columnWidths.passport}px` }}>
+                          <td className="px-3 py-3 text-center hidden md:table-cell" style={{ minWidth: `${columnWidths.passport}px` }}>
                             <div className="font-mono font-bold text-foreground bg-muted/50 px-2 py-1 rounded inline-block truncate">
                               {contract.passportNumber || contract.workerPassportNumber || '-'}
                             </div>
                           </td>
-                          <td className="px-2 py-3" style={{ width: `${columnWidths.client}px` }}>
+                          <td className="px-3 py-3" style={{ minWidth: `${columnWidths.client}px` }}>
                             <div className="font-bold text-foreground truncate">{contract.clientName}</div>
                             <div className="text-muted-foreground mt-0.5 truncate">
                               {contract.profession}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center hidden lg:table-cell" style={{ width: `${columnWidths.country}px` }}>
+                          <td className="px-3 py-3 text-center hidden lg:table-cell" style={{ minWidth: `${columnWidths.country}px` }}>
                             <div className="font-semibold text-foreground bg-primary/5 px-2 py-1 rounded-md inline-block truncate">
                               {contract.countryName}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center hidden xl:table-cell" style={{ width: `${columnWidths.salesRep}px` }}>
+                          <td className="px-3 py-3 text-center hidden xl:table-cell" style={{ minWidth: `${columnWidths.salesRep}px` }}>
                             <div className="font-semibold text-foreground truncate">
                               {contract.salesRepName}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center hidden lg:table-cell" style={{ width: `${columnWidths.office}px` }}>
+                          <td className="px-3 py-3 text-center hidden lg:table-cell" style={{ minWidth: `${columnWidths.office}px` }}>
                             <div className="font-medium text-foreground truncate px-2">
                               {contract.office}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center" style={{ width: `${columnWidths.status}px` }}>
+                          <td className="px-3 py-3 text-center" style={{ minWidth: `${columnWidths.status}px` }}>
                             <div className="flex flex-col items-center gap-1.5">
                               <div className={`font-bold px-3 py-1.5 rounded-full border ${getStatusColor(contract.status)} shadow-sm truncate max-w-full`}>
                                 {CONTRACT_STATUSES[contract.status]}
@@ -1651,12 +2104,12 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                               </button>
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center hidden md:table-cell" style={{ width: `${columnWidths.date}px` }}>
+                          <td className="px-3 py-3 text-center hidden md:table-cell" style={{ minWidth: `${columnWidths.date}px` }}>
                             <div className="font-semibold text-foreground truncate">
                               {format(new Date(contract.createdAt), 'dd/MM/yy', { locale: ar })}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center hidden sm:table-cell" style={{ width: `${columnWidths.days}px` }}>
+                          <td className="px-3 py-3 text-center hidden sm:table-cell" style={{ minWidth: `${columnWidths.days}px` }}>
                             <div className={`font-extrabold px-2 py-1 rounded-lg inline-block ${
                               daysSinceCreation >= 40 ? 'bg-red-500/20 text-red-700' :
                               daysSinceCreation >= 20 ? 'bg-orange-500/20 text-orange-700' :
@@ -1666,12 +2119,12 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                             </div>
                             <div className="text-muted-foreground mt-0.5">يوم</div>
                           </td>
-                          <td className="px-2 py-3 text-center hidden xl:table-cell" style={{ width: `${columnWidths.creator}px` }}>
+                          <td className="px-3 py-3 text-center hidden xl:table-cell" style={{ minWidth: `${columnWidths.creator}px` }}>
                             <div className="font-semibold text-foreground truncate">
                               {contract.createdBy?.name || '-'}
                             </div>
                           </td>
-                          <td className="px-2 py-3 text-center hidden md:table-cell" style={{ width: `${columnWidths.alert}px` }}>
+                          <td className="px-3 py-3 text-center hidden md:table-cell" style={{ minWidth: `${columnWidths.alert}px` }}>
                             {contract.hasCVIssue ? (
                               <div className="inline-flex items-center gap-1 text-destructive font-bold bg-destructive/10 px-2 py-1 rounded-full border border-destructive/30 truncate">
                                 <AlertTriangle className="h-3 w-3 flex-shrink-0" />
@@ -1684,7 +2137,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                               </div>
                             )}
                           </td>
-                          <td className="px-2 py-3 text-center" style={{ width: `${columnWidths.actions}px` }}>
+                          <td className="px-3 py-3 text-center" style={{ minWidth: `${columnWidths.actions}px` }}>
                             <div className="flex gap-1 sm:gap-1.5 justify-center">
                               <button
                                 onClick={() => {
@@ -1727,6 +2180,8 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                     })}
                   </tbody>
                 </table>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -2661,6 +3116,129 @@ function AddContractsPageContent({ userData }: { userData: any }) {
               </div>
             )}
 
+            {/* مودال الحذف المتعدد */}
+            {showBulkDeleteModal && selectedContractIds.length > 0 && (
+              <div className="modal-overlay">
+                <div className="modal-content max-w-2xl">
+                  {/* Header */}
+                  <div className="bg-gradient-to-l from-red-500/10 via-destructive/5 to-transparent rounded-t-lg p-6 mb-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-red-500/30 rounded-xl blur-lg"></div>
+                          <div className="relative bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-3 shadow-lg">
+                            <Trash2 className="h-6 w-6 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-foreground">حذف عقود متعددة</h3>
+                          <p className="text-sm text-muted-foreground mt-1">سيتم حذف {selectedContractIds.length} عقد نهائياً</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowBulkDeleteModal(false)}
+                        className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full p-2 transition-all"
+                      >
+                        <X className="h-6 w-6" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="px-6 pb-6 space-y-6">
+                    {/* إحصائيات */}
+                    <div className="bg-gradient-to-br from-red-500/5 to-transparent rounded-xl p-5 border-2 border-red-500/20">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-red-500/10 rounded-full p-2">
+                            <FileText className="h-5 w-5 text-red-500" />
+                          </div>
+                          <h4 className="font-semibold text-foreground">العقود المحددة للحذف</h4>
+                        </div>
+                        <div className="bg-red-600 text-white px-4 py-2 rounded-full text-lg font-extrabold">
+                          {selectedContractIds.length}
+                        </div>
+                      </div>
+                      
+                      {/* قائمة العقود المحددة */}
+                      <div className="bg-background/80 rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
+                        {contracts
+                          .filter(c => selectedContractIds.includes(c.id))
+                          .slice(0, 10)
+                          .map((contract) => (
+                            <div key={contract.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border hover:border-red-500/30 transition-all">
+                              <div className="flex-1">
+                                <p className="font-bold text-foreground">{contract.contractNumber}</p>
+                                <p className="text-sm text-muted-foreground">{contract.clientName} • {contract.profession}</p>
+                              </div>
+                              <span className="text-xs px-2 py-1 bg-red-500/10 text-red-700 rounded-full">
+                                {CONTRACT_STATUSES[contract.status]}
+                              </span>
+                            </div>
+                          ))}
+                        {selectedContractIds.length > 10 && (
+                          <div className="text-center p-2 text-sm text-muted-foreground bg-muted/30 rounded-lg">
+                            + {selectedContractIds.length - 10} عقد إضافي
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* تحذير قوي */}
+                    <div className="flex items-start gap-3 p-4 bg-red-500/10 border-2 border-red-500/30 rounded-xl">
+                      <div className="flex-shrink-0 bg-red-500/20 rounded-full p-2">
+                        <AlertTriangle className="h-6 w-6 text-red-600 animate-pulse" />
+                      </div>
+                      <div className="text-sm">
+                        <p className="text-foreground font-bold mb-2 text-lg">⚠️ تحذير شديد الأهمية!</p>
+                        <ul className="text-muted-foreground space-y-1.5">
+                          <li className="flex items-start gap-2">
+                            <span className="text-red-600 font-bold mt-0.5">•</span>
+                            <span>سيتم حذف <strong className="text-red-600">{selectedContractIds.length} عقد</strong> بشكل نهائي ولا رجعة فيه</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-red-600 font-bold mt-0.5">•</span>
+                            <span>سيتم حذف جميع البيانات المرتبطة بهذه العقود</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-red-600 font-bold mt-0.5">•</span>
+                            <span>لن تتمكن من استرجاع أي من هذه العقود بعد الحذف</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex gap-3 px-6 pb-6 pt-4 border-t border-border bg-muted/20">
+                    <button
+                      onClick={() => setShowBulkDeleteModal(false)}
+                      className="flex-1 px-6 py-3 bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-xl transition-all"
+                      disabled={isSubmitting}
+                    >
+                      إلغاء
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      className="flex-1 px-6 py-3 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="spinner w-5 h-5 border-white"></div>
+                          <span>جاري الحذف...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-5 w-5" />
+                          <span>حذف {selectedContractIds.length} عقد</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* مودال إضافة ممثل مبيعات */}
             {showAddSalesRepModal && (
               <div className="modal-overlay">
@@ -2874,78 +3452,141 @@ function AddContractsPageContent({ userData }: { userData: any }) {
 
                                   {/* Content Card */}
                                   <div className={`
-                                    flex-1 rounded-xl p-4 transition-all duration-300
+                                    flex-1 rounded-xl p-5 transition-all duration-300
                                     ${isCurrentStatus 
                                       ? 'bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-2 border-primary/30 shadow-lg' 
                                       : 'bg-gradient-to-br from-card to-muted/20 border border-border group-hover:border-primary/20 group-hover:shadow-md'
                                     }
                                   `}>
-                                    {/* Header */}
-                                    <div className="flex items-start justify-between mb-3">
-                                      <div className="flex-1">
-                                        <h5 className={`text-base font-bold mb-1.5 ${isCurrentStatus ? 'text-primary' : 'text-foreground'}`}>
-                                          {CONTRACT_STATUSES[change.toStatus as keyof typeof CONTRACT_STATUSES]}
-                                        </h5>
-                                        {change.fromStatus && (
-                                          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-1.5 w-fit">
-                                            <ArrowRight className="h-3 w-3" />
-                                            <span>من: {CONTRACT_STATUSES[change.fromStatus as keyof typeof CONTRACT_STATUSES]}</span>
+                                    {/* Status Transition - Enhanced Display */}
+                                    <div className="mb-4">
+                                      {change.fromStatus ? (
+                                        <div className="flex items-center gap-3 bg-muted/50 dark:bg-muted/30 rounded-xl p-4">
+                                          {/* حالة البداية */}
+                                          <div className="flex-1 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border-2 border-red-200 dark:border-red-800/50 rounded-lg p-3 text-center">
+                                            <p className="text-[10px] text-red-600 dark:text-red-400 font-bold uppercase mb-1">الحالة السابقة</p>
+                                            <p className="text-sm font-bold text-red-900 dark:text-red-100">
+                                              {CONTRACT_STATUSES[change.fromStatus as keyof typeof CONTRACT_STATUSES]}
+                                            </p>
                                           </div>
-                                        )}
-                                      </div>
-                                      <div className="flex flex-col items-end gap-1.5">
-                                        <span className={`
-                                          text-xs px-3 py-1.5 rounded-full font-bold shadow-sm
-                                          ${isCurrentStatus 
-                                            ? 'bg-primary text-white' 
-                                            : 'bg-muted text-foreground'
-                                          }
-                                        `}>
-                                          {daysInStatus} يوم
-                                        </span>
-                                        {isCurrentStatus && (
-                                          <span className="text-[9px] px-2 py-0.5 bg-success/20 text-success rounded-full font-semibold">
-                                            الحالة الحالية
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* Details Grid */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                      <div className="flex items-center gap-2 bg-muted/30 rounded-lg p-2.5">
-                                        <div className="p-1.5 bg-blue-500/10 rounded-lg">
-                                          <Clock className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <div>
-                                          <p className="text-[9px] text-muted-foreground font-medium uppercase">التاريخ</p>
-                                          <p className="text-xs font-bold text-foreground">
-                                            {format(new Date(change.changedAt), 'dd MMM yyyy', { locale: ar })}
-                                          </p>
-                                          <p className="text-[9px] text-muted-foreground">
-                                            {format(new Date(change.changedAt), 'hh:mm a', { locale: ar })}
-                                          </p>
-                                        </div>
-                                      </div>
-
-                                      {change.changedBy && (
-                                        <div className="flex items-center gap-2 bg-muted/30 rounded-lg p-2.5">
-                                          <div className="p-1.5 bg-primary/10 rounded-lg">
-                                            <User className="h-3.5 w-3.5 text-primary" />
+                                          
+                                          {/* السهم */}
+                                          <div className="flex flex-col items-center gap-1">
+                                            <div className="relative">
+                                              <ArrowRight className={`h-8 w-8 ${isCurrentStatus ? 'text-primary' : 'text-muted-foreground'} animate-pulse`} />
+                                              <div className={`absolute inset-0 ${isCurrentStatus ? 'bg-primary/20' : 'bg-muted'} rounded-full blur-md -z-10`}></div>
+                                            </div>
+                                            <span className="text-[9px] font-bold text-muted-foreground uppercase">انتقل</span>
                                           </div>
-                                          <div>
-                                            <p className="text-[9px] text-muted-foreground font-medium uppercase">المسؤول</p>
-                                            <p className="text-xs font-bold text-foreground">{change.changedBy.name}</p>
-                                            <p className="text-[9px] text-muted-foreground">
-                                              {change.changedBy.role === 'ADMIN' ? '👑 مدير' :
-                                               change.changedBy.role === 'SUB_ADMIN' ? '⭐ أبوريشن' :
-                                               change.changedBy.role === 'CUSTOMER_SERVICE' ? '💬 خدمة عملاء' :
-                                               change.changedBy.role === 'SALES' ? '📊 مبيعات' : '👤 موظف'}
+                                          
+                                          {/* الحالة الجديدة */}
+                                          <div className={`flex-1 bg-gradient-to-br rounded-lg p-3 text-center border-2 ${
+                                            isCurrentStatus 
+                                              ? 'from-primary/20 to-primary/10 border-primary/50' 
+                                              : 'from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-green-200 dark:border-green-800/50'
+                                          }`}>
+                                            <p className={`text-[10px] font-bold uppercase mb-1 ${
+                                              isCurrentStatus ? 'text-primary' : 'text-green-600 dark:text-green-400'
+                                            }`}>
+                                              الحالة الجديدة
+                                            </p>
+                                            <p className={`text-sm font-bold ${
+                                              isCurrentStatus ? 'text-primary' : 'text-green-900 dark:text-green-100'
+                                            }`}>
+                                              {CONTRACT_STATUSES[change.toStatus as keyof typeof CONTRACT_STATUSES]}
                                             </p>
                                           </div>
                                         </div>
+                                      ) : (
+                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/30 dark:to-blue-900/20 border-2 border-blue-200 dark:border-blue-800/50 rounded-lg p-3 text-center">
+                                          <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase mb-1">تم إنشاء العقد بحالة</p>
+                                          <p className="text-sm font-bold text-blue-900 dark:text-blue-100">
+                                            {CONTRACT_STATUSES[change.toStatus as keyof typeof CONTRACT_STATUSES]}
+                                          </p>
+                                        </div>
                                       )}
                                     </div>
+
+                                    {/* Details Grid */}
+                                    <div className="grid grid-cols-3 gap-3">
+                                      {/* التاريخ والوقت */}
+                                      <div className="bg-gradient-to-br from-blue-50 to-blue-100/30 dark:from-blue-950/30 dark:to-blue-900/10 rounded-lg p-3 border border-blue-200 dark:border-blue-800/50">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <div className="p-1.5 bg-blue-600 rounded-lg">
+                                            <Calendar className="h-3.5 w-3.5 text-white" />
+                                          </div>
+                                          <p className="text-[9px] text-blue-900 dark:text-blue-100 font-bold uppercase">التاريخ</p>
+                                        </div>
+                                        <p className="text-xs font-bold text-blue-900 dark:text-blue-100 mb-1">
+                                          {format(new Date(change.changedAt), 'dd MMMM yyyy', { locale: ar })}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 text-[10px] text-blue-700 dark:text-blue-300 bg-blue-100/50 dark:bg-blue-900/20 rounded px-2 py-1">
+                                          <Clock className="h-3 w-3" />
+                                          <span className="font-bold">{format(new Date(change.changedAt), 'hh:mm a', { locale: ar })}</span>
+                                        </div>
+                                      </div>
+
+                                      {/* عدد الأيام */}
+                                      <div className={`bg-gradient-to-br rounded-lg p-3 border ${
+                                        isCurrentStatus 
+                                          ? 'from-primary/20 to-primary/10 border-primary/30' 
+                                          : 'from-purple-50 to-purple-100/30 dark:from-purple-950/30 dark:to-purple-900/10 border-purple-200 dark:border-purple-800/50'
+                                      }`}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <div className={`p-1.5 rounded-lg ${isCurrentStatus ? 'bg-primary' : 'bg-purple-600'}`}>
+                                            <Clock className="h-3.5 w-3.5 text-white" />
+                                          </div>
+                                          <p className={`text-[9px] font-bold uppercase ${
+                                            isCurrentStatus ? 'text-primary' : 'text-purple-900 dark:text-purple-100'
+                                          }`}>المدة</p>
+                                        </div>
+                                        <p className={`text-2xl font-extrabold ${
+                                          isCurrentStatus ? 'text-primary' : 'text-purple-900 dark:text-purple-100'
+                                        }`}>
+                                          {daysInStatus}
+                                        </p>
+                                        <p className={`text-[10px] font-bold ${
+                                          isCurrentStatus ? 'text-primary/70' : 'text-purple-700 dark:text-purple-300'
+                                        }`}>يوم</p>
+                                        {isCurrentStatus && (
+                                          <div className="mt-2 text-[8px] px-2 py-0.5 bg-success/20 text-success rounded-full font-bold text-center">
+                                            الحالة النشطة
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* المسؤول */}
+                                      {change.changedBy && (
+                                        <div className="bg-gradient-to-br from-orange-50 to-orange-100/30 dark:from-orange-950/30 dark:to-orange-900/10 rounded-lg p-3 border border-orange-200 dark:border-orange-800/50">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <div className="p-1.5 bg-orange-600 rounded-lg">
+                                              <User className="h-3.5 w-3.5 text-white" />
+                                            </div>
+                                            <p className="text-[9px] text-orange-900 dark:text-orange-100 font-bold uppercase">المسؤول</p>
+                                          </div>
+                                          <p className="text-xs font-bold text-orange-900 dark:text-orange-100 mb-1 truncate" title={change.changedBy.name}>
+                                            {change.changedBy.name}
+                                          </p>
+                                          <p className="text-[10px] font-bold text-orange-700 dark:text-orange-300">
+                                            {change.changedBy.role === 'ADMIN' ? '👑 مدير' :
+                                             change.changedBy.role === 'SUB_ADMIN' ? '⭐ أبوريشن' :
+                                             change.changedBy.role === 'CUSTOMER_SERVICE' ? '💬 خدمة عملاء' :
+                                             change.changedBy.role === 'SALES' ? '📊 مبيعات' : '👤 موظف'}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* الملاحظات إن وجدت */}
+                                    {change.notes && (
+                                      <div className="mt-3 bg-muted/50 rounded-lg p-3 border border-border">
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                          <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                                          <p className="text-[9px] text-muted-foreground font-bold uppercase">ملاحظات</p>
+                                        </div>
+                                        <p className="text-xs text-foreground">{change.notes}</p>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               )
@@ -3521,6 +4162,251 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                       إغلاق
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* مودال استيراد Excel */}
+            {showImportModal && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => {
+                if (!isImporting) {
+                  setShowImportModal(false)
+                  setImportFile(null)
+                  setImportResults(null)
+                }
+              }}>
+                <div className="bg-card border-2 border-border rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 px-6 py-5 border-b-2 border-border/50 sticky top-0 z-10 backdrop-blur-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping"></div>
+                          <div className="relative bg-primary/10 p-3 rounded-full">
+                            <FileSpreadsheet className="h-7 w-7 text-primary animate-pulse" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-foreground">استيراد عقود من Excel</h3>
+                          <p className="text-sm text-muted-foreground mt-0.5">قم برفع ملف Excel لاستيراد عقود متعددة</p>
+                        </div>
+                      </div>
+                      {!isImporting && (
+                        <button
+                          onClick={() => {
+                            setShowImportModal(false)
+                            setImportFile(null)
+                            setImportResults(null)
+                          }}
+                          className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-all duration-200 hover:scale-110"
+                        >
+                          <X className="h-6 w-6" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-6 space-y-6">
+                    {/* تعليمات */}
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 border-2 border-blue-200 dark:border-blue-800/50 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="bg-blue-600 p-1.5 rounded-lg">
+                            <AlertCircle className="h-5 w-5 text-white" />
+                          </div>
+                          <h4 className="font-bold text-blue-900 dark:text-blue-100 text-lg">تعليمات الاستيراد</h4>
+                        </div>
+                        <button
+                          onClick={downloadTemplateExcel}
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-bold shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
+                          title="تنزيل ملف نموذجي"
+                        >
+                          <FileSpreadsheet className="h-4 w-4" />
+                          <span>تنزيل نموذج</span>
+                        </button>
+                      </div>
+                      <ul className="text-sm text-blue-900 dark:text-blue-100 space-y-2 mr-5">
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 dark:text-blue-400 font-bold mt-0.5">•</span>
+                          <span>يجب أن يكون الملف بصيغة Excel (.xlsx أو .xls)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 dark:text-blue-400 font-bold mt-0.5">•</span>
+                          <span>يجب أن تكون أسماء الأعمدة مطابقة تماماً لملف التصدير</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 dark:text-blue-400 font-bold mt-0.5">•</span>
+                          <span><strong>الحقول المطلوبة:</strong> رقم العقد، العميل، رقم جواز العاملة، الدولة، المكتب، ممثل المبيعات</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 dark:text-blue-400 font-bold mt-0.5">•</span>
+                          <span>يمكنك تنزيل الملف النموذجي أعلاه ثم تعبئته بالبيانات</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-red-600 dark:text-red-400 font-bold mt-0.5">⚠</span>
+                          <span className="font-semibold text-red-800 dark:text-red-300">سيتم رفض العقود ذات الأرقام المكررة (في الملف أو السيستم)</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    {/* رفع الملف */}
+                    <div className="bg-muted/30 border-2 border-dashed border-border rounded-xl p-6 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300">
+                      <label className="block text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                        <FileSpreadsheet className="h-5 w-5 text-primary" />
+                        اختر ملف Excel
+                      </label>
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            setImportFile(file)
+                            setImportResults(null)
+                          }
+                        }}
+                        disabled={isImporting}
+                        className="w-full px-4 py-3 bg-input border-2 border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-gradient-to-r file:from-primary file:to-primary/80 file:text-white hover:file:from-primary/90 hover:file:to-primary/70 disabled:opacity-50 cursor-pointer transition-all"
+                      />
+                      {importFile && (
+                        <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/50 rounded-lg flex items-center gap-3">
+                          <div className="bg-green-600 p-2 rounded-lg">
+                            <CheckCircle className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-green-900 dark:text-green-100">{importFile.name}</p>
+                            <p className="text-xs text-green-700 dark:text-green-300">الحجم: {(importFile.size / 1024).toFixed(2)} كيلوبايت</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* نتائج الاستيراد */}
+                    {importResults && (
+                      <div className="bg-gradient-to-br from-muted/50 to-muted/30 border-2 border-border rounded-xl p-5 space-y-4 shadow-inner animate-in slide-in-from-top-5 duration-500">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="bg-primary/10 p-2 rounded-lg">
+                            <AlertCircle className="h-5 w-5 text-primary" />
+                          </div>
+                          <h4 className="font-bold text-foreground text-lg">نتائج الاستيراد</h4>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="bg-green-600 p-2 rounded-lg">
+                                <CheckCircle className="h-5 w-5 text-white" />
+                              </div>
+                              <span className="font-bold text-green-900 dark:text-green-100">تم بنجاح</span>
+                            </div>
+                            <p className="text-3xl font-extrabold text-green-600 dark:text-green-400">{importResults.success}</p>
+                            <p className="text-xs text-green-700 dark:text-green-300 mt-1">عقد مستورد</p>
+                          </div>
+                          
+                          <div className="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="bg-red-600 p-2 rounded-lg">
+                                <XCircle className="h-5 w-5 text-white" />
+                              </div>
+                              <span className="font-bold text-red-900 dark:text-red-100">فشل</span>
+                            </div>
+                            <p className="text-3xl font-extrabold text-red-600 dark:text-red-400">{importResults.failed}</p>
+                            <p className="text-xs text-red-700 dark:text-red-300 mt-1">عقد مرفوض</p>
+                          </div>
+                        </div>
+
+                        {importResults.errors && importResults.errors.length > 0 && (
+                          <div className="bg-red-50 dark:bg-red-950/20 border-2 border-red-200 dark:border-red-800/50 rounded-xl p-4 max-h-64 overflow-y-auto">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="bg-red-600 p-1.5 rounded-lg">
+                                <AlertTriangle className="h-4 w-4 text-white" />
+                              </div>
+                              <h5 className="font-bold text-red-900 dark:text-red-100">الأخطاء المكتشفة:</h5>
+                            </div>
+                            <ul className="text-sm text-red-800 dark:text-red-200 space-y-2">
+                              {importResults.errors.map((error, index) => (
+                                <li key={index} className="flex items-start gap-2 bg-red-100/50 dark:bg-red-900/20 p-2 rounded-lg">
+                                  <span className="text-red-600 dark:text-red-400 font-bold mt-0.5 flex-shrink-0">⚠</span>
+                                  <span className="flex-1">{error}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* رسالة الإغلاق التلقائي */}
+                        {importResults.failed === 0 && (
+                          <div className="bg-gradient-to-r from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20 border-2 border-green-200 dark:border-green-800/50 rounded-xl p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-green-600 p-2 rounded-lg animate-pulse">
+                                <CheckCircle className="h-5 w-5 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-bold text-green-900 dark:text-green-100">✅ تم الاستيراد بنجاح!</p>
+                                <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">سيتم إغلاق النافذة تلقائياً بعد 3 ثواني...</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* أزرار */}
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        onClick={handleImportExcel}
+                        disabled={!importFile || isImporting}
+                        className="flex-1 px-6 py-4 bg-gradient-to-r from-primary to-primary/80 text-white rounded-xl hover:from-primary/90 hover:to-primary/70 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all font-bold text-lg flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95"
+                      >
+                        {isImporting ? (
+                          <>
+                            <div className="relative">
+                              <RefreshCw className="h-6 w-6 animate-spin" />
+                              <div className="absolute inset-0 bg-white/20 rounded-full animate-ping"></div>
+                            </div>
+                            <span>جاري الاستيراد...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FileSpreadsheet className="h-6 w-6" />
+                            <span>بدء الاستيراد</span>
+                          </>
+                        )}
+                      </button>
+                      
+                      {!isImporting && (
+                        <button
+                          onClick={() => {
+                            setShowImportModal(false)
+                            setImportFile(null)
+                            setImportResults(null)
+                          }}
+                          className="px-6 py-4 bg-muted hover:bg-muted/70 text-foreground rounded-xl transition-all font-bold text-lg shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 border-2 border-border"
+                        >
+                          إلغاء
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Footer للملاحظة */}
+                  {isImporting && (
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 border-t-2 border-blue-200 dark:border-blue-800/50 px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-blue-500/30 rounded-full animate-ping"></div>
+                          <div className="relative bg-blue-600 p-2 rounded-full">
+                            <RefreshCw className="h-5 w-5 text-white animate-spin" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-blue-900 dark:text-blue-100">جاري معالجة البيانات...</p>
+                          <p className="text-xs text-blue-700 dark:text-blue-300">يرجى الانتظار حتى اكتمال العملية</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
