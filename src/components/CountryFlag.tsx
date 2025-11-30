@@ -127,7 +127,7 @@ const CountryFlag: React.FC<CountryFlagProps> = ({
         title={nationality}
       />
       {showName && (
-        <span className="font-medium text-sm text-foreground">
+        <span className="font-medium text-foreground">
           {displayNationality}
         </span>
       )}

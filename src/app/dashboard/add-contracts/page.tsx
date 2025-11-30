@@ -29,8 +29,18 @@ import {
   Ruler,
   RotateCcw,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowUp,
+  ArrowDown,
+  FileSpreadsheet
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import * as XLSX from 'xlsx'
 import { format, differenceInDays } from 'date-fns'
 import { ar } from 'date-fns/locale'
 
@@ -65,6 +75,7 @@ const CONTRACT_STATUSES = {
   EMBASSY_SENT: 'تم الإرسال للسفارة السعودية',
   EMBASSY_APPROVAL: 'وصل للمملكة العربية السعودية',
   TICKET_DATE_NOTIFIED: 'تم التبليغ بموعد التذكرة',
+  ARRIVAL_CONFIRMATION: 'تأكيد الوصول',
   REJECTED: 'مرفوض',
   CANCELLED: 'ملغي',
   OUTSIDE_KINGDOM: 'خارج المملكة'
@@ -168,11 +179,14 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   const [issueFilter, setIssueFilter] = useState<string>('')
   const [dateFromFilter, setDateFromFilter] = useState<string>('')
   const [dateToFilter, setDateToFilter] = useState<string>('')
+  const [daysFilter, setDaysFilter] = useState<string>('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showAddSalesRepModal, setShowAddSalesRepModal] = useState(false)
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
+  const [selectedContractIds, setSelectedContractIds] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newSalesRepName, setNewSalesRepName] = useState('')
   const [selectedCV, setSelectedCV] = useState<CVData | null>(null)
@@ -192,6 +206,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   
   // Column resizing and font size states
   const defaultColumnWidths = {
+    checkbox: 50,
     contractNumber: 120,
     passport: 120,
     client: 150,
@@ -489,8 +504,23 @@ function AddContractsPageContent({ userData }: { userData: any }) {
       })
     }
 
+    // فلتر عدد الأيام
+    if (daysFilter) {
+      const filterDays = parseInt(daysFilter)
+      if (!isNaN(filterDays)) {
+        filtered = filtered.filter(contract => calculateDays(contract.createdAt) === filterDays)
+      }
+    }
+
+    // الترتيب
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime()
+      const dateB = new Date(b.createdAt).getTime()
+      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA
+    })
+
     setFilteredContracts(filtered)
-  }, [debouncedSearchTerm, statusFilter, salesRepFilter, officeFilter, creatorFilter, issueFilter, dateFromFilter, dateToFilter, contracts])
+  }, [debouncedSearchTerm, statusFilter, salesRepFilter, officeFilter, creatorFilter, issueFilter, dateFromFilter, dateToFilter, daysFilter, sortOrder, contracts])
 
   // البحث عن السيرة الذاتية برقم الجواز - محسّنة بـ useCallback
   const searchCVByPassport = useCallback(async (passportNumber: string) => {
@@ -878,6 +908,58 @@ function AddContractsPageContent({ userData }: { userData: any }) {
     }
   }
 
+  // تصدير إلى Excel
+  const handleExportExcel = (type: 'all' | 'selected') => {
+    const contractsToExport = type === 'selected' 
+      ? contracts.filter(c => selectedContractIds.includes(c.id))
+      : filteredContracts
+
+    if (contractsToExport.length === 0) {
+      toast.error('لا توجد عقود لتصديرها')
+      return
+    }
+
+    // تحضير البيانات
+    const data = contractsToExport.map(c => ({
+      'رقم العقد': c.contractNumber,
+      'النوع': c.contractType === 'SPECIFIC' ? 'معين' : 'مواصفات',
+      'العميل': c.clientName,
+      'الجواز': c.passportNumber || c.workerPassportNumber || '-',
+      'الدولة': c.countryName,
+      'المكتب': c.office,
+      'ممثل المبيعات': c.salesRepName,
+      'الحالة': CONTRACT_STATUSES[c.status],
+      'التاريخ': format(new Date(c.createdAt), 'dd/MM/yyyy'),
+      'عدد الأيام': calculateDays(c.createdAt),
+      'المنشئ': c.createdBy?.name || '-',
+      'ملاحظات': c.followUpNotes || '-'
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'العقود')
+    XLSX.writeFile(wb, `contracts_export_${format(new Date(), 'yyyy-MM-dd')}.xlsx`)
+    toast.success('تم تصدير ملف Excel بنجاح')
+  }
+
+  // تحديد الكل
+  const toggleSelectAll = () => {
+    if (selectedContractIds.length === filteredContracts.length && filteredContracts.length > 0) {
+      setSelectedContractIds([])
+    } else {
+      setSelectedContractIds(filteredContracts.map(c => c.id))
+    }
+  }
+
+  // تحديد عقد واحد
+  const toggleSelectContract = (id: number) => {
+    if (selectedContractIds.includes(id)) {
+      setSelectedContractIds(prev => prev.filter(i => i !== id))
+    } else {
+      setSelectedContractIds(prev => [...prev, id])
+    }
+  }
+
   // إعادة تعيين النموذج
   const resetForm = () => {
     setFormData({
@@ -1070,6 +1152,8 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                       setIssueFilter('')
                       setDateFromFilter('')
                       setDateToFilter('')
+                      setDaysFilter('')
+                      setSortOrder('desc')
                     }}
                     className="text-xs text-destructive hover:text-destructive/80 flex items-center gap-1"
                   >
@@ -1234,6 +1318,15 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                   <option value="no-issue">بدون مشاكل</option>
                   <option value="stale_40">متأخرة ≥40 يوم</option>
                 </select>
+
+                {/* فلتر عدد الأيام */}
+                <input
+                  type="number"
+                  placeholder="عدد الأيام..."
+                  value={daysFilter}
+                  onChange={(e) => setDaysFilter(e.target.value)}
+                  className="px-4 py-2.5 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                />
               </div>
 
               {/* فلتر التاريخ */}
@@ -1310,13 +1403,48 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                     </div>
                     <div className="hidden sm:block w-px h-4 bg-border"></div>
                     <div className="flex items-center gap-2">
-                      <Ruler className="h-3 w-3 text-primary" />
-                      <span className="font-medium text-primary">اسحب الخطوط بين الأعمدة لتغيير العرض</span>
+                      <button
+                        onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                        className="flex items-center gap-1 hover:text-primary transition-colors"
+                        title={sortOrder === 'asc' ? 'ترتيب من الأقدم للأحدث' : 'ترتيب من الأحدث للأقدم'}
+                      >
+                        {sortOrder === 'asc' ? (
+                          <>
+                            <ArrowUp className="h-3 w-3" />
+                            <span>الأقدم أولاً</span>
+                          </>
+                        ) : (
+                          <>
+                            <ArrowDown className="h-3 w-3" />
+                            <span>الأحدث أولاً</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                   
                   {/* أزرار التحكم */}
                   <div className="flex items-center gap-2">
+                    {/* زر التصدير */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-700 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-all text-sm font-medium">
+                          <FileSpreadsheet className="h-5 w-5" />
+                          <span className="hidden sm:inline">تصدير Excel</span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleExportExcel('all')} className="cursor-pointer gap-2">
+                          <span>تصدير الكل</span>
+                          <span className="text-xs text-muted-foreground">({filteredContracts.length})</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExportExcel('selected')} className="cursor-pointer gap-2">
+                          <span>تصدير المحدد</span>
+                          <span className="text-xs text-muted-foreground">({selectedContractIds.length})</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
                     {/* التحكم في حجم الخط */}
                     <div className="flex items-center gap-1 bg-muted/50 border border-border rounded-lg p-1">
                       <button
@@ -1364,6 +1492,14 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                 <table className="w-full min-w-[800px]" style={{ fontSize: `${tableFontSize}px`, tableLayout: 'fixed' }}>
                   <thead className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-b-2 border-primary/20">
                     <tr>
+                      <th className="px-2 py-3 text-center font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.checkbox}px` }}>
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                          checked={filteredContracts.length > 0 && selectedContractIds.length === filteredContracts.length}
+                          onChange={toggleSelectAll}
+                        />
+                      </th>
                       <th className="px-2 py-3 text-right font-extrabold text-foreground tracking-wide relative" style={{ width: `${columnWidths.contractNumber}px` }}>
                         رقم العقد
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary hover:w-2 transition-all group active:bg-primary" onMouseDown={(e) => handleMouseDown(e, 'contractNumber')} title="اسحب لتغيير العرض">
@@ -1450,6 +1586,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                           case 'EMBASSY_SENT': return 'bg-green-500/10 text-green-700 border-green-500/30'
                           case 'EMBASSY_APPROVAL': return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30'
                           case 'TICKET_DATE_NOTIFIED': return 'bg-cyan-500/10 text-cyan-700 border-cyan-500/30'
+                          case 'ARRIVAL_CONFIRMATION': return 'bg-teal-500/10 text-teal-700 border-teal-500/30'
                           case 'REJECTED': return 'bg-red-500/10 text-red-700 border-red-500/30'
                           case 'CANCELLED': return 'bg-gray-500/10 text-gray-700 border-gray-500/30'
                           case 'OUTSIDE_KINGDOM': return 'bg-orange-500/10 text-orange-700 border-orange-500/30'
@@ -1459,6 +1596,14 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                       
                       return (
                         <tr key={contract.id} className="hover:bg-primary/5 transition-all duration-200 group">
+                          <td className="px-2 py-3 text-center" style={{ width: `${columnWidths.checkbox}px` }}>
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                              checked={selectedContractIds.includes(contract.id)}
+                              onChange={() => toggleSelectContract(contract.id)}
+                            />
+                          </td>
                           <td className="px-2 py-3" style={{ width: `${columnWidths.contractNumber}px` }}>
                             <div className="font-bold text-primary truncate">{contract.contractNumber}</div>
                             <div className="text-muted-foreground mt-0.5 flex items-center gap-1 truncate">
@@ -1488,7 +1633,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                             </div>
                           </td>
                           <td className="px-2 py-3 text-center hidden lg:table-cell" style={{ width: `${columnWidths.office}px` }}>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="font-medium text-foreground truncate px-2">
                               {contract.office}
                             </div>
                           </td>

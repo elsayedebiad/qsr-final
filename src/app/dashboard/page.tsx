@@ -2933,18 +2933,18 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                           <div className="min-w-0 flex-1 overflow-hidden">
                             <div className="font-semibold text-foreground truncate" title={cv.fullName}>{cv.fullName}</div>
                             {cv.fullNameArabic && (
-                              <div className="text-sm text-muted-foreground truncate" title={cv.fullNameArabic}>{cv.fullNameArabic}</div>
+                              <div className="text-muted-foreground truncate" title={cv.fullNameArabic}>{cv.fullNameArabic}</div>
                             )}
                           </div>
                         </div>
                       </td>
                       <td className="px-2 py-2.5 text-center" style={{ width: `${columnWidths.referenceCode}px` }}>
-                        <span className="text-sm font-mono text-muted-foreground bg-muted px-2 py-1 rounded truncate block">
+                        <span className="font-mono text-muted-foreground bg-muted px-2 py-1 rounded truncate block">
                           {cv.referenceCode}
                         </span>
                       </td>
                       <td className="px-2 py-2.5 text-center" style={{ width: `${columnWidths.passport}px` }}>
-                        <span className="text-sm font-medium text-foreground truncate block">
+                        <span className="font-medium text-foreground truncate block">
                           {cv.passportNumber || '-'}
                         </span>
                       </td>
@@ -2952,13 +2952,13 @@ ${cv.fullNameArabic ? `الاسم بالعربية: ${cv.fullNameArabic}\n` : ''
                         <CountryFlag nationality={cv.nationality || ''} size="md" />
                       </td>
                       <td className="px-2 py-2.5" style={{ width: `${columnWidths.position}px` }}>
-                        <span className="text-sm text-foreground truncate block" title={cv.position || ''}>{cv.position}</span>
+                        <span className="text-foreground truncate block" title={cv.position || ''}>{cv.position}</span>
                       </td>
                       <td className="px-2 py-2.5 text-center" style={{ width: `${columnWidths.age}px` }}>
-                        <span className="text-sm font-semibold text-foreground">{cv.age}</span>
+                        <span className="font-semibold text-foreground">{cv.age}</span>
                       </td>
                       <td className="px-2 py-2.5" style={{ width: `${columnWidths.status}px` }}>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full truncate block ${
+                        <span className={`px-2 py-1 font-semibold rounded-full truncate block ${
                           cv.status === 'NEW' ? 'bg-primary/20 text-primary' :
                           cv.status === 'BOOKED' ? 'bg-warning/20 text-warning' :
                           cv.status === 'RETURNED' ? 'bg-warning/20 text-warning' :
