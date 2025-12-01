@@ -282,7 +282,7 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
     },
     {
       id: 'contracts',
-      label: 'إدارة العقود',
+      label: "اداره التابعه و العقود",
       icon: Briefcase,
       adminOnly: true,
       children: [
