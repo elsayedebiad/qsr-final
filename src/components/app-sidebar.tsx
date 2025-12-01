@@ -295,7 +295,7 @@ export function AppSidebar({ user, onLogout, ...props }: AppSidebarProps) {
         },
         {
           id: 'all-contracts',
-          label: 'جميع العقود',
+          label: 'ادارة المتابعة ',
           icon: Briefcase,
           href: '/dashboard/add-contracts',
           adminOnly: true

@@ -67,6 +67,51 @@ const OFFICES = [
   'بوروندي (ALPHA)'
 ]
 
+// ترجمة أسماء الدول الشائعة للتقرير الإنجليزي
+const COUNTRY_EN: Record<string, string> = {
+  'السعودية': 'Saudi Arabia',
+  'إثيوبيا': 'Ethiopia',
+  'أثيوبيا': 'Ethiopia',
+  'أوغندا': 'Uganda',
+  'سريلانكا': 'Sri Lanka',
+  'سيرلانكا': 'Sri Lanka',
+  'بنجلاديش': 'Bangladesh',
+  'الهند': 'India',
+  'كينيا': 'Kenya',
+  'بوروندي': 'Burundi',
+  'الفلبين': 'Philippines'
+}
+
+// ترجمة أسماء المكاتب للتقرير الإنجليزي
+const OFFICE_EN: Record<string, string> = {
+  'إثيوبيا (دوكا)': 'Ethiopia (Duka)',
+  'إثيوبيا (NADYA)': 'Ethiopia (NADYA)',
+  'سريلانكا (NTW)': 'Sri Lanka (NTW)',
+  'سريلانكا (زهران)': 'Sri Lanka (Zahran)',
+  'بنجلاديش (مدر لاند)': 'Bangladesh (Mader Land)',
+  'كينيا (O.S)': 'Kenya (O.S)',
+  'كينيا (Blue.Line)': 'Kenya (Blue.Line)',
+  'كينيا (AMANI)': 'Kenya (AMANI)',
+  'الهند (عمران)': 'India (Omran)',
+  'أوغندا (EBENEZER)': 'Uganda (EBENEZER)',
+  'بنجلاديش (MTC)': 'Bangladesh (MTC)',
+  'الهند (الودود)': 'India (Al-Wadud)',
+  'سيرلانكا (ديشياني)': 'Sri Lanka (Deshyani)',
+  'الفلبين (دم دم)': 'Philippines (Dem Dem)',
+  'الهند (جميل)': 'India (Jameel)',
+  'أوغندا (Keria)': 'Uganda (Keria)',
+  'بوروندي (JLA)': 'Burundi (JLA)',
+  'بوروندي (ALPHA)': 'Burundi (ALPHA)'
+}
+
+// ترجمة بعض المسميات الوظيفية الشائعة (إن وجدت) للتقرير الإنجليزي
+const PROFESSION_EN: Record<string, string> = {
+  'عاملة منزلية': 'Housemaid',
+  'سائق': 'Driver',
+  'مربية أطفال': 'Nanny',
+  'طباخة': 'Cook'
+}
+
 // حالات العقد
 const CONTRACT_STATUSES = {
   CV_REQUEST: 'طلب رفع سيرة',
@@ -80,6 +125,21 @@ const CONTRACT_STATUSES = {
   REJECTED: 'مرفوض',
   CANCELLED: 'ملغي',
   OUTSIDE_KINGDOM: 'خارج المملكة'
+}
+
+// English labels لحالات العقد للتقارير الإنجليزية
+const CONTRACT_STATUSES_EN: Record<keyof typeof CONTRACT_STATUSES, string> = {
+  CV_REQUEST: 'CV upload requested',
+  EXTERNAL_OFFICE_APPROVAL: 'External office approval',
+  FOREIGN_MINISTRY_APPROVAL: 'Foreign ministry approval',
+  VISA_ISSUED: 'Visa issued',
+  EMBASSY_SENT: 'Sent to Saudi embassy',
+  EMBASSY_APPROVAL: 'Arrived in Saudi Arabia',
+  TICKET_DATE_NOTIFIED: 'Ticket date notified',
+  ARRIVAL_CONFIRMATION: 'Arrival confirmed',
+  REJECTED: 'Rejected',
+  CANCELLED: 'Cancelled',
+  OUTSIDE_KINGDOM: 'Outside the Kingdom'
 }
 
 interface Contract {
@@ -189,6 +249,50 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   const [showAddSalesRepModal, setShowAddSalesRepModal] = useState(false)
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
   const [selectedContractIds, setSelectedContractIds] = useState<number[]>([])
+  const [showPdfOptionsModal, setShowPdfOptionsModal] = useState(false)
+  const [pdfFontSize, setPdfFontSize] = useState(9)
+  const [pdfLanguage, setPdfLanguage] = useState<'ar' | 'en'>('ar')
+  const [pdfSelectedColumns, setPdfSelectedColumns] = useState<string[]>([
+    'index',
+    'contractNumber',
+    'contractType',
+    'clientName',
+    'workerPassportNumber',
+    'profession',
+    'countryName',
+    'employerIdNumber',
+    'office',
+    'salesRepName',
+    'status',
+    'statusDate',
+    'createdAt',
+    'days',
+    'createdBy'
+  ])
+
+  const pdfColumnsConfig = [
+    { key: 'index', labelAr: 'م', labelEn: 'No.' },
+    { key: 'contractNumber', labelAr: 'رقم العقد', labelEn: 'Contract No.' },
+    { key: 'contractType', labelAr: 'النوع', labelEn: 'Type' },
+    { key: 'clientName', labelAr: 'العميل', labelEn: 'Client' },
+    { key: 'workerPassportNumber', labelAr: 'رقم الجواز', labelEn: 'Passport No.' },
+    { key: 'profession', labelAr: 'المهنة', labelEn: 'Profession' },
+    { key: 'countryName', labelAr: 'الدولة', labelEn: 'Country' },
+    { key: 'employerIdNumber', labelAr: 'رقم الهوية', labelEn: 'ID Number' },
+    { key: 'office', labelAr: 'المكتب', labelEn: 'Office' },
+    { key: 'salesRepName', labelAr: 'ممثل المبيعات', labelEn: 'Sales rep.' },
+    { key: 'status', labelAr: 'الحالة', labelEn: 'Status' },
+    { key: 'statusDate', labelAr: 'تاريخ الحالة', labelEn: 'Status date' },
+    { key: 'createdAt', labelAr: 'تاريخ الإنشاء', labelEn: 'Created at' },
+    { key: 'days', labelAr: 'الأيام', labelEn: 'Days' },
+    { key: 'createdBy', labelAr: 'المنشئ', labelEn: 'Created by' }
+  ] as const
+
+  const togglePdfColumn = (key: string) => {
+    setPdfSelectedColumns((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    )
+  }
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newSalesRepName, setNewSalesRepName] = useState('')
   const [selectedCV, setSelectedCV] = useState<CVData | null>(null)
@@ -1087,6 +1191,22 @@ function AddContractsPageContent({ userData }: { userData: any }) {
     toast.success('تم تصدير ملف Excel بنجاح')
   }
 
+  const openPdfOptions = (type: 'all' | 'selected') => {
+    const contractsToExportCount =
+      type === 'selected'
+        ? contracts.filter((c) => selectedContractIds.includes(c.id)).length
+        : filteredContracts.length
+
+    if (contractsToExportCount === 0) {
+      toast.error('لا توجد عقود لتصديرها')
+      return
+    }
+
+    // حفظ نوع التصدير في data-attribute بسيطة
+    (window as any).__pdfExportType = type
+    setShowPdfOptionsModal(true)
+  }
+
   // تصدير إلى PDF
   const handleExportPDF = async (type: 'all' | 'selected') => {
     const contractsToExport = type === 'selected' 
@@ -1108,7 +1228,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
       printElement.style.top = '0'
       printElement.style.width = '297mm' // A4 Landscape width
       printElement.style.backgroundColor = 'white'
-      printElement.style.fontSize = '11px'
+      printElement.style.fontSize = pdfFontSize + 'px'
       printElement.style.color = 'black'
       printElement.style.direction = 'rtl'
 
@@ -1144,70 +1264,157 @@ function AddContractsPageContent({ userData }: { userData: any }) {
           @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
           * { font-family: 'Cairo', sans-serif !important; }
         </style>
-        <div style="padding: 15px; max-width: 100%; font-family: 'Cairo', sans-serif; position: relative; min-height: 100%;">
-          
-          <!-- Watermark -->
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 80px; font-weight: 800; color: rgba(37, 99, 235, 0.06); white-space: nowrap; z-index: 0; pointer-events: none; font-family: 'Cairo', sans-serif;">
-            تقرير العقود الرسمي
-          </div>
+          <div style="padding: 8px; max-width: 100%; font-family: 'Cairo', sans-serif; position: relative; min-height: 100%;">
           
           <!-- Header مع الشعار -->
-          <div style="text-align: center; margin-bottom: 20px; border-bottom: 4px solid #2563eb; padding-bottom: 15px; position: relative; z-index: 1; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); padding-top: 10px; border-radius: 8px 8px 0 0;">
-            ${logoBase64 ? `<img src="${logoBase64}" style="max-height: 70px; margin-bottom: 10px;" />` : ''}
-            <h1 style="margin: 0; color: #1e40af; font-size: 26px; font-weight: 800; font-family: 'Cairo', sans-serif;">تقرير العقود</h1>
-            <div style="display: flex; justify-content: center; gap: 30px; margin-top: 8px;">
-              <p style="margin: 0; color: #475569; font-size: 12px; font-weight: 600;">📅 تاريخ التقرير: ${format(new Date(), 'dd/MM/yyyy - hh:mm a', { locale: ar })}</p>
-              <p style="margin: 0; color: #475569; font-size: 12px; font-weight: 600;">📊 إجمالي العقود: ${contractsToExport.length} عقد</p>
+          <div style="text-align: center; margin-bottom: 8px; border-bottom: 2px solid #2563eb; padding-bottom: 6px; position: relative; z-index: 1;">
+            ${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; margin-bottom: 4px;" />` : ''}
+            <h1 style="margin: 0; color: #1e40af; font-size: 18px; font-weight: 800; font-family: 'Cairo', sans-serif;">
+              ${pdfLanguage === 'en' ? 'Contracts Report' : 'تقرير العقود'}
+            </h1>
+            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 4px; font-size: 9px;">
+              <p style="margin: 0; color: #475569; font-weight: 600;">
+                ${pdfLanguage === 'en' ? '📅 Report date: ' : '📅 تاريخ التقرير: '}
+                ${format(new Date(), 'dd/MM/yyyy - HH:mm')}
+              </p>
+              <p style="margin: 0; color: #475569; font-weight: 600;">
+                ${pdfLanguage === 'en' ? '📊 Total: ' : '📊 إجمالي العقود: '}
+                ${contractsToExport.length} ${pdfLanguage === 'en' ? 'contracts' : 'عقد'}
+              </p>
             </div>
           </div>
 
           <!-- الجدول -->
-          <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9px; position: relative; z-index: 1;">
+          <table style="width: 100%; border-collapse: collapse; margin-top: 4px; font-size: ${pdfFontSize - 1}px; position: relative; z-index: 1;">
             <thead>
               <tr style="background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);">
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">م</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">رقم العقد</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">النوع</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">العميل</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">رقم الجواز</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">المهنة</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">الدولة</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">رقم الهوية</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">المكتب</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">ممثل المبيعات</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">الحالة</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">تاريخ الإنشاء</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">الأيام</th>
-                <th style="border: 1px solid #1e3a8a; padding: 8px 4px; text-align: center; font-weight: 700; color: white; font-size: 9px;">المنشئ</th>
+              ${pdfColumnsConfig
+                .filter((col) => pdfSelectedColumns.includes(col.key))
+                .map((col) => {
+                  const label = pdfLanguage === 'en' ? col.labelEn : col.labelAr
+                  return `<th style="border: 1px solid #1e3a8a; padding: 6px 3px; text-align: center; font-weight: 700; color: white; font-size: ${pdfFontSize - 1}px;">${label}</th>`
+                })
+                .join('')}
               </tr>
             </thead>
             <tbody>
               ${contractsToExport.map((contract, index) => `
                 <tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f1f5f9'};">
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-weight: 700; color: #64748b; font-size: 8px;">${index + 1}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-weight: 700; color: #1e40af; font-size: 9px;">${contract.contractNumber}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px;">${contract.contractType === 'SPECIFIC' ? 'معين' : 'مواصفات'}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-weight: 600; font-size: 9px;">${contract.clientName}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px; direction: ltr;">${contract.passportNumber || contract.workerPassportNumber || '-'}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px;">${contract.profession || '-'}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px;">${contract.countryName}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px; direction: ltr;">${contract.employerIdNumber || '-'}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 7px;">${contract.office}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px;">${contract.salesRepName}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 7px; color: #059669; font-weight: 600;">${CONTRACT_STATUSES[contract.status]}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px; direction: ltr;">${format(new Date(contract.createdAt), 'dd/MM/yyyy')}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px; font-weight: 700; color: ${calculateDays(contract.createdAt) > 30 ? '#dc2626' : '#059669'};">${calculateDays(contract.createdAt)}</td>
-                  <td style="border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: 8px;">${contract.createdBy?.name || '-'}</td>
+                  ${pdfColumnsConfig
+                    .filter((col) => pdfSelectedColumns.includes(col.key))
+                    .map((col) => {
+                      const baseStyle = `border: 1px solid #cbd5e1; padding: 6px 3px; text-align: center; font-size: ${
+                        pdfFontSize - 1
+                      }px;`
+                      if (col.key === 'index') {
+                        return `<td style="${baseStyle} font-weight: 700; color: #64748b;">${index + 1}</td>`
+                      }
+                      if (col.key === 'contractNumber') {
+                        return `<td style="${baseStyle} font-weight: 700; color: #1e40af;">${contract.contractNumber}</td>`
+                      }
+                      if (col.key === 'contractType') {
+                        const typeLabel =
+                          pdfLanguage === 'en'
+                            ? contract.contractType === 'SPECIFIC'
+                              ? 'Specific'
+                              : 'By specifications'
+                            : contract.contractType === 'SPECIFIC'
+                            ? 'معين'
+                            : 'مواصفات'
+                        return `<td style="${baseStyle}">${typeLabel}</td>`
+                      }
+                      if (col.key === 'clientName') {
+                        return `<td style="${baseStyle} font-weight: 600;">${contract.clientName}</td>`
+                      }
+                      if (col.key === 'workerPassportNumber') {
+                        return `<td style="${baseStyle} direction: ltr;">${
+                          contract.passportNumber || contract.workerPassportNumber || '-'
+                        }</td>`
+                      }
+                      if (col.key === 'profession') {
+                        const profession =
+                          pdfLanguage === 'en'
+                            ? PROFESSION_EN[contract.profession] || contract.profession || '-'
+                            : contract.profession || '-'
+                        return `<td style="${baseStyle}">${profession}</td>`
+                      }
+                      if (col.key === 'countryName') {
+                        const country =
+                          pdfLanguage === 'en'
+                            ? COUNTRY_EN[contract.countryName] || contract.countryName
+                            : contract.countryName
+                        return `<td style="${baseStyle}">${country}</td>`
+                      }
+                      if (col.key === 'employerIdNumber') {
+                        return `<td style="${baseStyle} direction: ltr;">${
+                          contract.employerIdNumber || '-'
+                        }</td>`
+                      }
+                      if (col.key === 'office') {
+                        const office =
+                          pdfLanguage === 'en'
+                            ? OFFICE_EN[contract.office] || contract.office
+                            : contract.office
+                        return `<td style="${baseStyle} font-size: ${pdfFontSize - 2}px;">${office}</td>`
+                      }
+                      if (col.key === 'salesRepName') {
+                        return `<td style="${baseStyle}">${contract.salesRepName}</td>`
+                      }
+                      if (col.key === 'status') {
+                        const statusLabel =
+                          pdfLanguage === 'en'
+                            ? CONTRACT_STATUSES_EN[contract.status]
+                            : CONTRACT_STATUSES[contract.status]
+                        return `<td style="${baseStyle} color: #059669; font-weight: 600;">${statusLabel}</td>`
+                      }
+                      if (col.key === 'statusDate') {
+                        const statusDate =
+                          contract.lastStatusUpdate ||
+                          (contract.status === 'CV_REQUEST'
+                            ? contract.cvUploadRequestDate
+                            : contract.status === 'EXTERNAL_OFFICE_APPROVAL'
+                            ? contract.employmentRequestDate
+                            : contract.updatedAt || contract.createdAt)
+                        return `<td style="${baseStyle} direction: ltr;">${
+                          statusDate ? format(new Date(statusDate), 'dd/MM/yyyy') : '-'
+                        }</td>`
+                      }
+                      if (col.key === 'createdAt') {
+                        return `<td style="${baseStyle} direction: ltr;">${format(
+                          new Date(contract.createdAt),
+                          'dd/MM/yyyy'
+                        )}</td>`
+                      }
+                      if (col.key === 'days') {
+                        const daysVal = calculateDays(contract.createdAt)
+                        return `<td style="${baseStyle} font-weight: 700; color: ${
+                          daysVal > 30 ? '#dc2626' : '#059669'
+                        };">${daysVal}</td>`
+                      }
+                      if (col.key === 'createdBy') {
+                        return `<td style="${baseStyle}">${contract.createdBy?.name || '-'}</td>`
+                      }
+                      return `<td style="${baseStyle}">-</td>`
+                    })
+                    .join('')}
                 </tr>
               `).join('')}
             </tbody>
           </table>
 
           <!-- Footer -->
-          <div style="margin-top: 20px; text-align: center; border-top: 3px solid #2563eb; padding-top: 12px; position: relative; z-index: 1; background: linear-gradient(0deg, #ffffff 0%, #f8fafc 100%); padding-bottom: 10px; border-radius: 0 0 8px 8px;">
-            ${logoBase64 ? `<img src="${logoBase64}" style="max-height: 40px; margin-bottom: 8px; opacity: 0.7;" />` : ''}
-            <p style="margin: 0; color: #475569; font-size: 10px; font-weight: 600;">تم إنشاء هذا التقرير تلقائياً من نظام إدارة العقود</p>
-            <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 9px;">© ${new Date().getFullYear()} جميع الحقوق محفوظة</p>
+          <div style="margin-top: 8px; text-align: center; border-top: 2px solid #2563eb; padding-top: 6px; position: relative; z-index: 1;">
+            ${logoBase64 ? `<img src="${logoBase64}" style="max-height: 26px; margin-bottom: 4px; opacity: 0.7;" />` : ''}
+            <p style="margin: 0; color: #475569; font-size: 9px; font-weight: 600;">
+              ${
+                pdfLanguage === 'en'
+                  ? 'This report was generated automatically from the Contracts Management System.'
+                  : 'تم إنشاء هذا التقرير تلقائياً من نظام إدارة العقود'
+              }
+            </p>
+            <p style="margin: 2px 0 0 0; color: #94a3b8; font-size: 8px;">
+              © ${new Date().getFullYear()} ${pdfLanguage === 'en' ? 'All rights reserved.' : 'جميع الحقوق محفوظة.'}
+            </p>
           </div>
         </div>
       `
@@ -1235,12 +1442,16 @@ function AddContractsPageContent({ userData }: { userData: any }) {
       const pdfHeight = pdf.internal.pageSize.getHeight()
       const imgWidth = canvas.width
       const imgHeight = canvas.height
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
-      
-      const imgX = (pdfWidth - imgWidth * ratio) / 2
-      const imgY = 5
 
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio)
+      // الحفاظ على النسبة بدون تمديد مشوه، مع تقليل الهوامش قدر الإمكان
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      const renderWidth = imgWidth * ratio
+      const renderHeight = imgHeight * ratio
+
+      const marginX = (pdfWidth - renderWidth) / 2
+      const marginY = (pdfHeight - renderHeight) / 2
+
+      pdf.addImage(imgData, 'PNG', marginX, marginY, renderWidth, renderHeight)
 
       // حفظ الملف
       const fileName = `contracts_report_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.pdf`
@@ -1473,6 +1684,7 @@ function AddContractsPageContent({ userData }: { userData: any }) {
   }
 
   return (
+          <>
           <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
             <style dangerouslySetInnerHTML={{__html: `
               .scrollbar-custom {
@@ -1869,12 +2081,12 @@ function AddContractsPageContent({ userData }: { userData: any }) {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleExportPDF('all')} className="cursor-pointer gap-2">
+                        <DropdownMenuItem onClick={() => openPdfOptions('all')} className="cursor-pointer gap-2">
                           <FileDown className="h-4 w-4" />
                           <span>تصدير الكل إلى PDF</span>
                           <span className="text-xs text-muted-foreground">({filteredContracts.length})</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExportPDF('selected')} className="cursor-pointer gap-2">
+                        <DropdownMenuItem onClick={() => openPdfOptions('selected')} className="cursor-pointer gap-2">
                           <FileDown className="h-4 w-4" />
                           <span>تصدير المحدد إلى PDF</span>
                           <span className="text-xs text-muted-foreground">({selectedContractIds.length})</span>
@@ -4411,14 +4623,143 @@ function AddContractsPageContent({ userData }: { userData: any }) {
               </div>
             )}
           </div>
+
+          {/* مودال إعدادات تصدير PDF */}
+          {showPdfOptionsModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">خيارات تصدير PDF</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      اختر الأعمدة التي تريد تضمينها وتحكم في حجم الخط قبل إنشاء ملف PDF
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowPdfOptionsModal(false)}
+                    className="text-muted-foreground hover:text-destructive transition-colors p-2 rounded-lg hover:bg-muted"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+                  {/* اختيار لغة التقرير */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-foreground">لغة التقرير (Report language)</h4>
+                    <div className="inline-flex items-center gap-2 bg-muted/60 border border-border rounded-full p-1">
+                      <button
+                        type="button"
+                        onClick={() => setPdfLanguage('ar')}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                          pdfLanguage === 'ar'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        عربي
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPdfLanguage('en')}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                          pdfLanguage === 'en'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        English
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-2">الأعمدة في التقرير</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {pdfColumnsConfig.map((col) => (
+                        <label
+                          key={col.key}
+                          className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg border border-border text-xs cursor-pointer hover:bg-muted"
+                        >
+                          <input
+                            type="checkbox"
+                            className="rounded border-border text-primary focus:ring-primary"
+                            checked={pdfSelectedColumns.includes(col.key)}
+                            onChange={() => togglePdfColumn(col.key)}
+                          />
+                          <span className="text-foreground">{col.labelAr}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border pt-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-foreground mb-1">حجم الخط في ملف PDF</h4>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={7}
+                        max={13}
+                        value={pdfFontSize}
+                        onChange={(e) => setPdfFontSize(Number(e.target.value))}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-16 text-center">
+                        {pdfFontSize}px
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      الحجم الأصغر يناسب عدد أعمدة أكبر، والحجم الأكبر مناسب للتقارير المختصرة
+                    </p>
+                    <div className="mt-1 rounded-lg border border-dashed border-border bg-muted/40 px-4 py-3">
+                      <p className="text-[11px] text-muted-foreground mb-1">معاينة فورية لحجم الخط:</p>
+                      <p
+                        className="font-medium text-foreground"
+                        style={{ fontSize: `${pdfFontSize}px`, lineHeight: '1.6' }}
+                      >
+                        مثال: تقرير العقود الرسمية – هذا النص يوضح لك شكل الخط داخل ملف الـ PDF بالحجم الحالي.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 border-t border-border bg-muted/40 flex items-center justify-between gap-3">
+                  <button
+                    onClick={() => setShowPdfOptionsModal(false)}
+                    className="px-4 py-2 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-sm font-medium"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPdfOptionsModal(false)
+                      const exportType = (window as any).__pdfExportType as 'all' | 'selected'
+                      handleExportPDF(exportType || 'all')
+                    }}
+                    className="px-4 py-2 rounded-lg bg-primary hover:opacity-90 text-white text-sm font-medium flex items-center gap-2"
+                  >
+                    <FileDown className="h-4 w-4" />
+                    <span>إنشاء PDF الآن</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
   )
 }
 
 export default function AddContractsPage() {
   return (
     <DashboardLayout>
-      {(userData) => <AddContractsPageContent userData={userData} />}
+      {(userData) => (
+        <>
+          <AddContractsPageContent userData={userData} />
+
+          {/* مودال إعدادات تصدير PDF */}
+          {/* ملاحظة: هذا المودال مستقل عن المحتوى الأساسي */}
+        </>
+      )}
     </DashboardLayout>
   )
 }
-

@@ -77,6 +77,7 @@ interface SalesRep {
 function AddContractPageContent({ userData }: { userData: any }) {
   const router = useRouter()
   const [user, setUser] = useState<any>(userData)
+  const isAdmin = user?.role === 'ADMIN'
 
   // Update user when userData changes
   useEffect(() => {
@@ -372,19 +373,23 @@ function AddContractPageContent({ userData }: { userData: any }) {
                               <option key={rep.id} value={rep.name}>{rep.name}</option>
                             ))}
                           </select>
-                          <button
-                            type="button"
-                            onClick={() => setShowAddSalesRepModal(true)}
-                            className="px-4 py-3 bg-gradient-to-r from-primary to-primary/80 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center gap-2 font-semibold group"
-                            title="إدارة ممثلي المبيعات"
-                          >
-                            <Users className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                            <span className="hidden sm:inline">إدارة</span>
-                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => setShowAddSalesRepModal(true)}
+                              className="px-4 py-3 bg-gradient-to-r from-primary to-primary/80 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center gap-2 font-semibold group"
+                              title="إدارة ممثلي المبيعات"
+                            >
+                              <Users className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                              <span className="hidden sm:inline">إدارة</span>
+                            </button>
+                          )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          يمكنك إضافة أو حذف ممثلي المبيعات من زر الإدارة ⬆️
-                        </p>
+                        {isAdmin && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            يمكنك إضافة أو حذف ممثلي المبيعات من زر الإدارة ⬆️
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -843,7 +848,7 @@ function AddContractPageContent({ userData }: { userData: any }) {
             </div>
 
             {/* مودال إضافة ممثل مبيعات */}
-            {showAddSalesRepModal && (
+            {isAdmin && showAddSalesRepModal && (
               <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
                   {/* Header */}
