@@ -38,7 +38,7 @@ export default function RootLayout({
                 const root = document.documentElement;
                 
                 if (savedTheme === 'light') {
-                  root.setAttribute('data-theme', 'light');
+                  root.setAttribute('data-theme', 'light'); 
                   root.classList.remove('dark');
                   root.classList.add('light-mode');
                   root.style.colorScheme = 'light';

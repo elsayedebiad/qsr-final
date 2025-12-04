@@ -53,10 +53,6 @@ export async function downloadFile(
 ): Promise<boolean> {
   const { fileName, mimeType = blob.type, fallbackToNewWindow = true } = options
   
-  console.log('🔄 بدء تحميل الملف:', fileName)
-  console.log('📱 هل هو تطبيق موبايل؟', isMobileApp())
-  console.log('💾 هل يدعم التحميل المباشر؟', supportsNativeDownload())
-  
   // Method 1: Try standard download (works in most browsers)
   if (supportsNativeDownload() && !isMobileApp()) {
     try {
@@ -73,10 +69,9 @@ export async function downloadFile(
       // Clean up
       setTimeout(() => URL.revokeObjectURL(url), 1000)
       
-      console.log('✅ تم التحميل باستخدام الطريقة العادية')
       return true
     } catch (error) {
-      console.warn('⚠️ فشلت الطريقة العادية:', error)
+      // Silent error
     }
   }
   
@@ -103,11 +98,10 @@ export async function downloadFile(
             link.click()
             document.body.removeChild(link)
             
-            console.log('✅ تم التحميل باستخدام Data URL')
             resolve(true)
             return
           } catch (error) {
-            console.warn('⚠️ فشل Data URL download:', error)
+            // Silent error
           }
           
           // Approach 2: Open in new window/tab
@@ -202,29 +196,25 @@ export async function downloadFile(
                 `)
                 newWindow.document.close()
                 
-                console.log('✅ تم فتح الملف في نافذة جديدة')
                 resolve(true)
                 return
               }
             } catch (error) {
-              console.warn('⚠️ فشل في فتح نافذة جديدة:', error)
+              // Silent error
             }
           }
           
           // If all else fails
-          console.log('❌ فشلت جميع طرق التحميل')
           resolve(false)
         }
         
         reader.onerror = () => {
-          console.error('❌ خطأ في قراءة الملف')
           resolve(false)
         }
         
         reader.readAsDataURL(blob)
       })
     } catch (error) {
-      console.error('❌ خطأ في تحميل الملف للموبايل:', error)
       return false
     }
   }
@@ -238,15 +228,13 @@ export async function downloadFile(
       if (newWindow) {
         // Clean up after a delay
         setTimeout(() => URL.revokeObjectURL(url), 10000)
-        console.log('✅ تم فتح الملف في نافذة جديدة')
         return true
       }
     } catch (error) {
-      console.warn('⚠️ فشل في فتح نافذة جديدة:', error)
+      // Silent error
     }
   }
   
-  console.log('❌ فشلت جميع طرق التحميل')
   return false
 }
 
@@ -257,7 +245,6 @@ export async function downloadFromUrl(
   url: string, 
   options: DownloadOptions
 ): Promise<boolean> {
-  console.log('🔄 تحميل من URL:', url)
   
   try {
     // For mobile apps, try direct navigation first
@@ -275,19 +262,17 @@ export async function downloadFromUrl(
         link.click()
         document.body.removeChild(link)
         
-        console.log('✅ تم التحميل المباشر من URL')
         return true
       } catch (error) {
-        console.warn('⚠️ فشل التحميل المباشر:', error)
+        // Silent error
       }
       
       // Method 2: Open in new window for manual download
       try {
         window.open(url, '_blank', 'noopener,noreferrer')
-        console.log('✅ تم فتح الرابط في نافذة جديدة')
         return true
       } catch (error) {
-        console.warn('⚠️ فشل فتح النافذة الجديدة:', error)
+        // Silent error
       }
     }
     
@@ -305,16 +290,13 @@ export async function downloadFromUrl(
     return await downloadFile(blob, options)
     
   } catch (error) {
-    console.error('❌ خطأ في تحميل الملف من URL:', error)
-    
     // Final fallback: just open the URL
     if (options.fallbackToNewWindow) {
       try {
         window.open(url, '_blank')
-        console.log('✅ تم فتح الرابط كـ fallback نهائي')
         return true
       } catch (fallbackError) {
-        console.error('❌ فشل الـ fallback النهائي:', fallbackError)
+        // Silent error
       }
     }
     

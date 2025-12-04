@@ -32,14 +32,12 @@ export default function ImageWithFallback({
   const [isLoading, setIsLoading] = useState(true)
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    console.log('Image failed to load:', src)
     setHasError(true)
     setIsLoading(false)
     onError?.(e)
   }
 
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    console.log('Image loaded successfully:', src)
     setIsLoading(false)
     onLoad?.(e)
   }

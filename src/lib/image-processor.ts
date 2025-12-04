@@ -45,7 +45,6 @@ export const processImage = async (imageData: string): Promise<string | null> =>
     // 🚀 NEW: If it's a Google Drive URL, return it directly without downloading
     // The frontend will handle conversion using url-utils.ts
     if (processedUrl.includes('drive.google.com')) {
-      console.log(`✅ رابط Google Drive - سيتم استخدامه مباشرة: ${processedUrl.substring(0, 60)}...`)
       return processedUrl // Return the original Google Drive URL
     }
 
@@ -59,12 +58,9 @@ export const processImage = async (imageData: string): Promise<string | null> =>
 
     // Check if it's a Base64 image
     if (processedUrl.startsWith('data:image/')) {
-      console.log('🖼️ معالجة صورة Base64...')
-      
       // Extract the base64 data and mime type
       const matches = processedUrl.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/)
       if (!matches) {
-        console.error('تنسيق Base64 غير صحيح')
         return null
       }
 
@@ -76,14 +72,11 @@ export const processImage = async (imageData: string): Promise<string | null> =>
       const buffer = Buffer.from(base64Data, 'base64')
       await writeFile(filepath, buffer)
 
-      console.log(`✅ تم حفظ صورة Base64: ${filename}`)
       return `/uploads/images/${filename}`
     }
     
     // Check if it's an HTTP/HTTPS URL (but NOT Google Drive - already handled above)
     else if (processedUrl.startsWith('http://') || processedUrl.startsWith('https://')) {
-      console.log(`🖼️ تحميل صورة من URL: ${processedUrl}`)
-      
       try {
         const response = await fetch(processedUrl, {
           headers: {
@@ -93,15 +86,11 @@ export const processImage = async (imageData: string): Promise<string | null> =>
         })
         
         if (!response.ok) {
-          console.error(`فشل في تحميل الصورة: ${response.statusText}`)
-          console.log(`⚠️ سيتم استخدام الرابط مباشرة بدلاً من التحميل`)
           return processedUrl // Return original URL as fallback
         }
 
         const contentType = response.headers.get('content-type')
         if (!contentType || !contentType.startsWith('image/')) {
-          console.error('الرابط لا يشير إلى صورة صحيحة')
-          console.log(`⚠️ سيتم استخدام الرابط مباشرة بدلاً من التحميل`)
           return processedUrl // Return original URL as fallback
         }
 
@@ -112,18 +101,14 @@ export const processImage = async (imageData: string): Promise<string | null> =>
         const buffer = Buffer.from(await response.arrayBuffer())
         await writeFile(filepath, buffer)
 
-        console.log(`✅ تم تحميل الصورة من URL: ${filename}`)
         return `/uploads/images/${filename}`
       } catch (error) {
-        console.error(`خطأ في تحميل الصورة:`, error)
-        console.log(`⚠️ سيتم استخدام الرابط مباشرة: ${processedUrl}`)
         return processedUrl // Return original URL as fallback
       }
     }
     
     // If it's neither Base64 nor URL, treat it as a local path
     else {
-      console.log(`🖼️ مسار صورة محلي: ${processedUrl}`)
       // Return as is if it's already a valid local path
       if (processedUrl.startsWith('/uploads/') || processedUrl.startsWith('./uploads/')) {
         return processedUrl
@@ -137,7 +122,6 @@ export const processImage = async (imageData: string): Promise<string | null> =>
       return processedUrl
     }
   } catch (error) {
-    console.error(`خطأ في معالجة الصورة:`, error)
     return null
   }
 }

@@ -29,7 +29,6 @@ export function convertGoogleDriveUrl(driveUrl: string | null | undefined): stri
     
     return driveUrl
   } catch (error) {
-    console.error('خطأ في تحويل رابط Google Drive:', error)
     return driveUrl
   }
 }

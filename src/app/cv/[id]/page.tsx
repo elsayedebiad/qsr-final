@@ -115,8 +115,6 @@ export default function PublicCVPage() {
     
     // تسجيل فتح الرابط من الواتساب (إذا كان فيه معرف تتبع)
     if (trackId) {
-      console.log('🔗 تم فتح الرابط من الواتساب! Track ID:', trackId);
-      
       // تحديث حالة الرسالة إلى "تم الإرسال"
       fetch('/api/booking-clicks/update-status', {
         method: 'POST',
@@ -125,14 +123,9 @@ export default function PublicCVPage() {
           clickId: parseInt(trackId),
           messageSent: true
         })
-      })
-        .then(res => res.json())
-        .then(data => {
-          console.log('✅ تم تأكيد إرسال الرسالة!', data);
-        })
-        .catch(err => {
-          console.error('❌ فشل تحديث حالة الرسالة:', err);
-        });
+      }).catch(() => {
+        // Silent error - no need to log
+      });
     }
     
     // التحقق من معامل التحميل التلقائي
@@ -183,8 +176,6 @@ export default function PublicCVPage() {
       setImageError(false)
       setImageRetryCount(0)
       
-      console.log('📎 الرابط الأصلي:', cv.cvImageUrl)
-      
       // استخراج FILE_ID وتحويله لرابط مباشر
       const fileId = extractGoogleDriveFileId(cv.cvImageUrl)
       
@@ -193,12 +184,9 @@ export default function PublicCVPage() {
         const googleDriveDirectUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
         const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(googleDriveDirectUrl)}&w=2000&output=webp`
         setCurrentImageUrl(proxyUrl)
-        console.log('🔍 تم استخراج File ID:', fileId)
-        console.log('🔗 استخدام Proxy:', proxyUrl)
       } else {
         // إذا لم يكن Google Drive، استخدم الرابط الأصلي
         setCurrentImageUrl(cv.cvImageUrl)
-        console.log('ℹ️ استخدام الرابط الأصلي (ليس Google Drive)')
       }
     }
   }, [cv?.cvImageUrl])
@@ -234,13 +222,11 @@ export default function PublicCVPage() {
 
     if (imageRetryCount < alternativeUrls.length - 1) {
       const nextRetry = imageRetryCount + 1
-      console.log(`🔄 محاولة رابط بديل (${nextRetry}/${alternativeUrls.length}):`, alternativeUrls[nextRetry])
       setImageRetryCount(nextRetry)
       setCurrentImageUrl(alternativeUrls[nextRetry])
       setImageLoading(true)
       setImageError(false)
     } else {
-      console.error('❌ فشلت جميع المحاولات لتحميل الصورة')
       setImageError(true)
     }
   }
@@ -328,20 +314,15 @@ export default function PublicCVPage() {
       if (cv.cvImageUrl) {
         setDownloadStatus('downloading')
         setDownloadProgress(10)
-        
-        console.log('🔄 بدء تحميل صورة السيرة من:', cv.cvImageUrl)
-        console.log('📱 هل هو تطبيق موبايل؟', isMobileApp())
 
         // استخراج File ID من Google Drive
         const fileId = extractGoogleDriveFileId(cv.cvImageUrl)
         
         if (fileId) {
-          console.log('🔍 File ID:', fileId)
           setDownloadProgress(30)
           
           // استخدام رابط التحميل المباشر من Google Drive
           const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
-          console.log('🔗 رابط التحميل:', downloadUrl)
           
           setDownloadProgress(50)
           
@@ -357,7 +338,6 @@ export default function PublicCVPage() {
             setDownloadProgress(100)
             setDownloadStatus('success')
             toast.success('تم بدء تحميل الصورة من Google Drive')
-            console.log('✅ تم تحميل الصورة بنجاح')
             
             // Show mobile instructions if needed
             if (isMobileApp()) {
@@ -371,7 +351,6 @@ export default function PublicCVPage() {
           
         } else {
           // إذا لم نستطع استخراج File ID، استخدم الرابط الأصلي
-          console.warn('⚠️ لم نتمكن من استخراج File ID، استخدام الرابط الأصلي')
           setDownloadProgress(50)
           
           const downloadSuccess = await downloadFromUrl(cv.cvImageUrl, {
@@ -405,7 +384,6 @@ export default function PublicCVPage() {
         }
         
         setDownloadProgress(40)
-        console.log('🔄 استخدام API لتوليد صورة السيرة')
         
         const response = await fetch(`/api/cv/${cv.id}/alqaeid-image`, {
           headers: {
@@ -447,7 +425,6 @@ export default function PublicCVPage() {
       }
       
     } catch (error) {
-      console.error('❌ خطأ في تنزيل الصورة:', error)
       setDownloadStatus('error')
       setDownloadError(error instanceof Error ? error.message : 'حدث خطأ أثناء التحميل')
       toast.error('فشل في تحميل الصورة: ' + (error instanceof Error ? error.message : 'خطأ غير معروف'))
@@ -692,12 +669,10 @@ export default function PublicCVPage() {
                       objectFit: 'contain'
                     }}
                     onLoad={() => {
-                      console.log('✅ تم تحميل صورة السيرة بنجاح من:', currentImageUrl)
                       setImageLoading(false)
                       setImageError(false)
                     }}
                     onError={(e) => {
-                      console.error(`❌ فشل تحميل صورة السيرة (محاولة ${imageRetryCount + 1}):`, currentImageUrl)
                       setImageLoading(false)
                       // جرب رابط بديل
                       tryAlternativeUrl()

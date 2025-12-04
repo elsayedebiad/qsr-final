@@ -52,7 +52,6 @@ export default function VideoPlayer({ videoUrl, onClose, title = 'شاهد طر�
         
       } catch (e) {
         // إذا فشل URL parsing، استخدم الطريقة القديمة
-        console.log('URL parsing failed, using fallback method')
         if (videoUrl.includes('youtu.be/')) {
           videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0].split('&')[0] || ''
         } else if (videoUrl.includes('watch?v=')) {
@@ -65,8 +64,6 @@ export default function VideoPlayer({ videoUrl, onClose, title = 'شاهد طر�
       }
       
       if (videoId && videoId.length >= 10) {
-        console.log('YouTube Video ID extracted:', videoId)
-        
         // محاولة استخدام طرق مختلفة للتضمين
         const embedParams = [
           'autoplay=0',          // إيقاف التشغيل التلقائي
@@ -86,7 +83,6 @@ export default function VideoPlayer({ videoUrl, onClose, title = 'شاهد طر�
         const domain = useNoCookie ? 'youtube-nocookie.com' : 'youtube.com'
         setEmbedUrl(`https://www.${domain}/embed/${videoId}?${embedParams}`)
       } else {
-        console.error('Failed to extract YouTube video ID from:', videoUrl)
         setHasError(true)
       }
     } 
@@ -102,7 +98,6 @@ export default function VideoPlayer({ videoUrl, onClose, title = 'شاهد طر�
         }
         
         if (vimeoId) {
-          console.log('Vimeo Video ID extracted:', vimeoId)
           // معاملات Vimeo بدون autoplay ومع صوت
           const vimeoParams = [
             'autoplay=0',
@@ -117,7 +112,6 @@ export default function VideoPlayer({ videoUrl, onClose, title = 'شاهد طر�
           setEmbedUrl(videoUrl)
         }
       } catch (e) {
-        console.error('Failed to parse Vimeo URL:', e)
         setEmbedUrl(videoUrl)
       }
     }
@@ -127,7 +121,6 @@ export default function VideoPlayer({ videoUrl, onClose, title = 'شاهد طر�
       const fileIdMatch = videoUrl.match(/\/d\/([^/]+)/)
       if (fileIdMatch && fileIdMatch[1]) {
         const fileId = fileIdMatch[1]
-        console.log('Google Drive File ID extracted:', fileId)
         // استخدام preview بدون autoplay
         setEmbedUrl(`https://drive.google.com/file/d/${fileId}/preview`)
       } else {
@@ -252,7 +245,6 @@ export default function VideoPlayer({ videoUrl, onClose, title = 'شاهد طر�
                   const checkEmbed = () => {
                     // فحص ارتفاع الـ iframe
                     if (iframe.clientHeight === 0 || iframe.clientWidth === 0) {
-                      console.log('Video embed failed - dimensions are 0 (Error 153)')
                       setIsLoading(false)
                       setHasError(true)
                       return true
@@ -263,7 +255,6 @@ export default function VideoPlayer({ videoUrl, onClose, title = 'شاهد طر�
                       if (iframe.contentDocument) {
                         const body = iframe.contentDocument.body
                         if (body && body.textContent?.includes('Video unavailable')) {
-                          console.log('Video unavailable message detected')
                           setIsLoading(false)
                           setHasError(true)
                           return true
@@ -291,7 +282,6 @@ export default function VideoPlayer({ videoUrl, onClose, title = 'شاهد طر�
                   }
                 }}
                 onError={() => {
-                  console.log('iframe error occurred - video embed restricted')
                   setIsLoading(false)
                   setHasError(true)
                 }}

@@ -757,10 +757,6 @@ export default function TransferServicesPage() {
   // عرض عدد محدود من السير لتحسين الأداء
   const filteredCvs = useMemo(() => {
     const result = allFilteredCvs.slice(0, displayLimit)
-    // تسجيل فقط في بيئة التطوير وعند وجود بيانات
-    if (process.env.NODE_ENV === 'development' && allFilteredCvs.length > 0) {
-      console.log(`Filtered CVs: ${result.length} out of ${allFilteredCvs.length} total`)
-    }
     return result
   }, [allFilteredCvs, displayLimit])
 
@@ -989,10 +985,6 @@ export default function TransferServicesPage() {
       .filter((level): level is SkillLevel => !!level)
     
     const unique = Array.from(new Set(levels))
-    // تسجيل فقط في بيئة التطوير وعند وجود بيانات
-    if (process.env.NODE_ENV === 'development' && unique.length > 0) {
-      console.log('Arabic levels in data:', unique)
-    }
     return unique
   }, [cvs])
 
@@ -1004,10 +996,6 @@ export default function TransferServicesPage() {
       .filter((level): level is SkillLevel => !!level)
     
     const unique = Array.from(new Set(levels))
-    // تسجيل فقط في بيئة التطوير وعند وجود بيانات
-    if (process.env.NODE_ENV === 'development' && unique.length > 0) {
-      console.log('English levels in data:', unique)
-    }
     return unique
   }, [cvs])
 
