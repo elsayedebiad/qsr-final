@@ -1174,7 +1174,7 @@ export default function Sales8Page() {
       .filter((level): level is SkillLevel => !!level)
     
     const unique = Array.from(new Set(levels))
-    https://github.com/elsayedebiad/qsr-final    return unique
+    return unique
   }, [cvs])
 
   const uniqueEnglishLevels = useMemo(() => {
